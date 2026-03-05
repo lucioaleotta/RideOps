@@ -19,15 +19,18 @@ Per velocizzare i test in locale puoi usare lo script root:
 
 ```bash
 ./dev.sh help
-./dev.sh up
+./dev.sh start
 ./dev.sh login
 ./dev.sh me
 ./dev.sh ping-admin
-./dev.sh down
+./dev.sh stop
 ```
 
 Comandi principali disponibili:
-- `up`, `down`, `restart`, `ps`, `logs [service]`
+- locale veloce: `start`, `stop`, `restart`, `status`
+- DB container: `db-start`, `db-stop`, `db-restart`, `db-logs`
+- processi locali: `backend-start|stop|restart|logs`, `frontend-start|stop|restart|logs`
+- container full (fallback): `up`, `down`, `ps`, `logs [service]`
 - `backend-test`, `frontend-build`, `check`
 - `login [email] [password]`, `me [token]`
 - `ping-admin`, `ping-gestionale`, `ping-driver`, `logout`
