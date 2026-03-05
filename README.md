@@ -74,6 +74,31 @@ Frontend:
 - reset page: `http://localhost:5173/reset-password?token=...`
 - area protetta: `http://localhost:5173/app/**` (middleware + cookie `httpOnly`)
 
+### Services Core (EPIC-04)
+
+Ruoli abilitati: `ADMIN`, `GESTIONALE`.
+
+Backend API (`/services`):
+- `GET /services` -> lista servizi
+- `GET /services/{id}` -> dettaglio servizio
+- `POST /services` -> crea servizio
+- `PUT /services/{id}` -> aggiorna servizio
+- `DELETE /services/{id}` -> elimina servizio
+- `PATCH /services/{id}/close` -> chiude servizio
+
+Flusso stato servizio:
+- `OPEN -> ASSIGNED -> CLOSED`
+- chiusura consentita solo quando il servizio è `ASSIGNED`
+
+Frontend:
+- area servizi: `http://localhost:5173/app/services`
+- stampa A4: `http://localhost:5173/services/{id}/print`
+- lista servizi paginata con form di creazione/modifica apribile/chiudibile
+
+Importi (standard unico):
+- formattazione centralizzata EUR (`it-IT`) tramite utility `frontend/lib/currency.ts`
+- usare sempre questa utility in tutte le pagine/form per evitare formattazioni locali duplicate
+
 MVP email reset:
 - Il link reset viene salvato in tabella `email_outbox` e loggato dal backend (stub email).
 
