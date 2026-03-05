@@ -2,7 +2,7 @@
 
 Monorepo con:
 - `backend`: Spring Boot Java 21 + Maven
-- `frontend`: placeholder buildabile via Docker
+- `frontend`: Next.js App Router (login + middleware ruoli)
 
 ## CI (GitHub Actions)
 
@@ -31,6 +31,22 @@ Se il tuo `docker-compose` non supporta `--profile`:
 - Backend API: `http://localhost:8080`
 - Health Actuator: `http://localhost:8080/actuator/health`
 - Frontend: `http://localhost:5173`
+
+### Identity (JWT)
+- `POST /auth/login` -> ritorna access token JWT
+- `GET /auth/me` -> ritorna utente autenticato e ruolo
+- Rotte ruolo test:
+	- `/admin/ping` (ADMIN)
+	- `/gestionale/ping` (ADMIN, GESTIONALE)
+	- `/driver/ping` (ADMIN, DRIVER)
+
+Admin seed default:
+- email: `admin@rideops.local`
+- password: `ChangeMe123!`
+
+Frontend:
+- login page: `http://localhost:5173/login`
+- area protetta: `http://localhost:5173/app/**` (middleware + cookie `httpOnly`)
 
 `/actuator/health` è esposto da Spring Boot Actuator (nessun controller custom necessario).
 

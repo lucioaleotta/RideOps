@@ -49,8 +49,9 @@ services:
       - backend
     environment:
       FRONTEND_ENV: ${FRONTEND_ENV:-dev}
+      BACKEND_URL: ${BACKEND_URL:-http://backend:8080}
     ports:
-      - "5173:80"
+      - "5173:3000"
 
 volumes:
   postgres-data:
