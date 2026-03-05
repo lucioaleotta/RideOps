@@ -9,15 +9,18 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
+type Role = 'ADMIN' | 'GESTIONALE' | 'DRIVER';
+
 const menuItems = [
-  { href: '/app', label: 'Home', icon: '🏠' },
-  { href: '/app/admin', label: 'Admin', icon: '🛡️' },
-  { href: '/app/gestionale', label: 'Gestionale', icon: '📋' },
-  { href: '/app/driver', label: 'Driver', icon: '🚗' }
+  { href: '/app', label: 'Home', icon: '🏠', roles: ['ADMIN', 'GESTIONALE', 'DRIVER'] as Role[] },
+  { href: '/app/admin', label: 'Admin', icon: '🛡️', roles: ['ADMIN'] as Role[] },
+  { href: '/app/gestionale', label: 'Gestionale', icon: '📋', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
+  { href: '/app/driver', label: 'Driver', icon: '🚗', roles: ['ADMIN', 'DRIVER'] as Role[] }
 ];
 
 export function AppShell({ userEmail, userRole, children }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const normalizedRole = userRole.toUpperCase() as Role;
 
   const userName = useMemo(() => {
     const [name] = userEmail.split('@');
@@ -39,12 +42,14 @@ export function AppShell({ userEmail, userRole, children }: AppShellProps) {
         </Link>
 
         <nav className="menu">
-          {menuItems.map((item) => (
+          {menuItems
+            .filter((item) => item.roles.includes(normalizedRole))
+            .map((item) => (
             <Link key={item.href} href={item.href} className="menu-link">
               <span className="menu-icon" aria-hidden="true">{item.icon}</span>
               {!collapsed && <span>{item.label}</span>}
             </Link>
-          ))}
+            ))}
         </nav>
       </aside>
 
