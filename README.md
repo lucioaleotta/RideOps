@@ -13,6 +13,25 @@ Monorepo con:
 
 ## Avvio con Docker Compose (dev)
 
+### Script rapido `dev.sh`
+
+Per velocizzare i test in locale puoi usare lo script root:
+
+```bash
+./dev.sh help
+./dev.sh up
+./dev.sh login
+./dev.sh me
+./dev.sh ping-admin
+./dev.sh down
+```
+
+Comandi principali disponibili:
+- `up`, `down`, `restart`, `ps`, `logs [service]`
+- `backend-test`, `frontend-build`, `check`
+- `login [email] [password]`, `me [token]`
+- `ping-admin`, `ping-gestionale`, `ping-driver`, `logout`
+
 ### Compose v2 (consigliato)
 ```bash
 docker compose --profile dev up --build
