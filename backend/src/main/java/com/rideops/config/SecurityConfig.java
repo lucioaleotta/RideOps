@@ -53,7 +53,13 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider)
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/login", "/actuator/health", "/actuator/info").permitAll()
+                .requestMatchers(
+                    "/auth/login",
+                    "/auth/forgot-password",
+                    "/auth/reset-password",
+                    "/actuator/health",
+                    "/actuator/info"
+                ).permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/gestionale/**").hasAnyRole("ADMIN", "GESTIONALE")
                 .requestMatchers("/driver/**").hasAnyRole("ADMIN", "DRIVER")

@@ -1,41 +1,38 @@
 "use client";
 
 import { FormEvent, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
-export function LoginForm() {
-  const router = useRouter();
+export function ForgotPasswordForm() {
   const [email, setEmail] = useState('admin@rideops.local');
-  const [password, setPassword] = useState('ChangeMe123!');
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setMessage(null);
     setLoading(true);
 
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch('/api/auth/forgot-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email })
     });
 
+    const payload = (await response.json().catch(() => ({}))) as { message?: string };
     setLoading(false);
 
     if (!response.ok) {
-      const payload = (await response.json().catch(() => ({}))) as { message?: string };
-      setError(payload.message ?? 'Login fallito');
+      setError(payload.message ?? 'Errore richiesta reset password');
       return;
     }
 
-    router.push('/app');
-    router.refresh();
+    setMessage(payload.message ?? 'Richiesta inviata');
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12, maxWidth: 360 }}>
+    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12, maxWidth: 420 }}>
       <label>
         Email
         <input
@@ -46,26 +43,13 @@ export function LoginForm() {
           style={{ width: '100%', padding: 8 }}
         />
       </label>
-
-      <label>
-        Password
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ width: '100%', padding: 8 }}
-        />
-      </label>
-
       <button type="submit" disabled={loading} style={{ padding: 10 }}>
-        {loading ? 'Accesso...' : 'Accedi'}
+        {loading ? 'Invio...' : 'Invia link reset'}
       </button>
-
+      {message && <p style={{ color: 'green' }}>{message}</p>}
       {error && <p style={{ color: 'crimson' }}>{error}</p>}
-
       <p style={{ marginTop: 0 }}>
-        <Link href="/forgot-password">Password dimenticata?</Link>
+        In MVP il link di reset è inviato su outbox/log backend.
       </p>
     </form>
   );

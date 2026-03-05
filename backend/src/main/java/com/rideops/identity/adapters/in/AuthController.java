@@ -2,8 +2,10 @@ package com.rideops.identity.adapters.in;
 
 import com.rideops.identity.application.IdentityUserDetails;
 import com.rideops.identity.application.JwtService;
+import com.rideops.identity.application.PasswordResetService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,10 +26,14 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService) {
+    public AuthController(AuthenticationManager authenticationManager,
+                          JwtService jwtService,
+                          PasswordResetService passwordResetService) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/login")
@@ -52,6 +58,31 @@ public class AuthController {
         return new MeResponse(user.getId(), user.getEmail(), user.getRole().name());
     }
 
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.OK)
+    public GenericMessageResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.requestReset(request.email());
+        return new GenericMessageResponse("If your email exists, you will receive reset instructions.");
+    }
+
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.OK)
+    public GenericMessageResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        validatePassword(request.newPassword());
+        try {
+            passwordResetService.resetPassword(request.token(), request.newPassword());
+            return new GenericMessageResponse("Password updated.");
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token");
+        }
+    }
+
+    private void validatePassword(String password) {
+        if (password.length() < 8) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password must be at least 8 characters");
+        }
+    }
+
     record LoginRequest(@NotBlank @Email String email, @NotBlank String password) {
     }
 
@@ -59,5 +90,14 @@ public class AuthController {
     }
 
     record MeResponse(Long id, String email, String role) {
+    }
+
+    record ForgotPasswordRequest(@NotBlank @Email String email) {
+    }
+
+    record ResetPasswordRequest(@NotBlank String token, @NotNull @NotBlank String newPassword) {
+    }
+
+    record GenericMessageResponse(String message) {
     }
 }

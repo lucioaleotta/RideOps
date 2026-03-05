@@ -54,6 +54,8 @@ Se il tuo `docker-compose` non supporta `--profile`:
 ### Identity (JWT)
 - `POST /auth/login` -> ritorna access token JWT
 - `GET /auth/me` -> ritorna utente autenticato e ruolo
+- `POST /auth/forgot-password` -> risposta anti-enumeration (sempre generica)
+- `POST /auth/reset-password` -> reset password con token
 - Rotte ruolo test:
 	- `/admin/ping` (ADMIN)
 	- `/gestionale/ping` (ADMIN, GESTIONALE)
@@ -65,7 +67,12 @@ Admin seed default:
 
 Frontend:
 - login page: `http://localhost:5173/login`
+- forgot page: `http://localhost:5173/forgot-password`
+- reset page: `http://localhost:5173/reset-password?token=...`
 - area protetta: `http://localhost:5173/app/**` (middleware + cookie `httpOnly`)
+
+MVP email reset:
+- Il link reset viene salvato in tabella `email_outbox` e loggato dal backend (stub email).
 
 `/actuator/health` è esposto da Spring Boot Actuator (nessun controller custom necessario).
 
