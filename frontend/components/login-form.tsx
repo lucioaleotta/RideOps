@@ -35,7 +35,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12, maxWidth: 360 }}>
+    <form onSubmit={onSubmit} className="form-grid">
       <label>
         Email
         <input
@@ -43,7 +43,7 @@ export function LoginForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          style={{ width: '100%', padding: 8 }}
+          className="form-input"
         />
       </label>
 
@@ -54,17 +54,17 @@ export function LoginForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          style={{ width: '100%', padding: 8 }}
+          className="form-input"
         />
       </label>
 
-      <button type="submit" disabled={loading} style={{ padding: 10 }}>
+      <button type="submit" disabled={loading} className="primary-button">
         {loading ? 'Accesso...' : 'Accedi'}
       </button>
 
-      {error && <p style={{ color: 'crimson' }}>{error}</p>}
+      {error && <p className="error-text">{error}</p>}
 
-      <p style={{ marginTop: 0 }}>
+      <p>
         <Link href="/forgot-password">Password dimenticata?</Link>
       </p>
     </form>

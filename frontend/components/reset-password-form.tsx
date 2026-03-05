@@ -40,7 +40,7 @@ export function ResetPasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12, maxWidth: 420 }}>
+    <form onSubmit={onSubmit} className="form-grid">
       <label>
         Token reset
         <input
@@ -48,7 +48,7 @@ export function ResetPasswordForm() {
           value={token}
           onChange={(e) => setToken(e.target.value)}
           required
-          style={{ width: '100%', padding: 8 }}
+          className="form-input"
         />
       </label>
 
@@ -60,16 +60,16 @@ export function ResetPasswordForm() {
           onChange={(e) => setNewPassword(e.target.value)}
           minLength={8}
           required
-          style={{ width: '100%', padding: 8 }}
+          className="form-input"
         />
       </label>
 
-      <button type="submit" disabled={loading} style={{ padding: 10 }}>
+      <button type="submit" disabled={loading} className="primary-button">
         {loading ? 'Aggiornamento...' : 'Aggiorna password'}
       </button>
 
-      {message && <p style={{ color: 'green' }}>{message}</p>}
-      {error && <p style={{ color: 'crimson' }}>{error}</p>}
+      {message && <p className="success-text">{message}</p>}
+      {error && <p className="error-text">{error}</p>}
     </form>
   );
 }

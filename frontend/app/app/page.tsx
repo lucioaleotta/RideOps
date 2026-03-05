@@ -1,46 +1,31 @@
 import Link from 'next/link';
-import { cookies } from 'next/headers';
 
-type MePayload = {
-  id: number;
-  email: string;
-  role: string;
-};
-
-export default async function AppHomePage() {
-  const token = cookies().get('access_token')?.value;
-  const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
-
-  let me: MePayload | null = null;
-  if (token) {
-    const response = await fetch(`${backendUrl}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: 'no-store'
-    });
-
-    if (response.ok) {
-      me = (await response.json()) as MePayload;
-    }
-  }
-
+export default function AppHomePage() {
   return (
     <main>
-      <h1>Area autenticata</h1>
-      <p>{me ? `Utente: ${me.email} (${me.role})` : 'Sessione non disponibile'}</p>
-      <ul>
-        <li>
-          <Link href="/app/admin">Admin area</Link>
-        </li>
-        <li>
-          <Link href="/app/gestionale">Gestionale area</Link>
-        </li>
-        <li>
-          <Link href="/app/driver">Driver area</Link>
-        </li>
-      </ul>
-      <form action="/api/auth/logout" method="post">
-        <button type="submit">Logout</button>
-      </form>
+      <img src="/rideops-logo.svg" alt="RideOps logo" className="home-logo" />
+      <h1>Benvenuto in RideOps</h1>
+      <p>Seleziona un’area dal menu laterale oppure usa i collegamenti rapidi qui sotto.</p>
+
+      <section className="dashboard-grid">
+        <article className="dashboard-card">
+          <h3>Admin</h3>
+          <p>Configurazioni e controllo completo piattaforma.</p>
+          <Link href="/app/admin">Apri area</Link>
+        </article>
+
+        <article className="dashboard-card">
+          <h3>Gestionale</h3>
+          <p>Gestione operativa servizi e pianificazione.</p>
+          <Link href="/app/gestionale">Apri area</Link>
+        </article>
+
+        <article className="dashboard-card">
+          <h3>Driver</h3>
+          <p>Vista missioni e attività giornaliere.</p>
+          <Link href="/app/driver">Apri area</Link>
+        </article>
+      </section>
     </main>
   );
 }

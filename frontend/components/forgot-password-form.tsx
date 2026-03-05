@@ -32,7 +32,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} style={{ display: 'grid', gap: 12, maxWidth: 420 }}>
+    <form onSubmit={onSubmit} className="form-grid">
       <label>
         Email
         <input
@@ -40,15 +40,15 @@ export function ForgotPasswordForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          style={{ width: '100%', padding: 8 }}
+          className="form-input"
         />
       </label>
-      <button type="submit" disabled={loading} style={{ padding: 10 }}>
+      <button type="submit" disabled={loading} className="primary-button">
         {loading ? 'Invio...' : 'Invia link reset'}
       </button>
-      {message && <p style={{ color: 'green' }}>{message}</p>}
-      {error && <p style={{ color: 'crimson' }}>{error}</p>}
-      <p style={{ marginTop: 0 }}>
+      {message && <p className="success-text">{message}</p>}
+      {error && <p className="error-text">{error}</p>}
+      <p>
         In MVP il link di reset è inviato su outbox/log backend.
       </p>
     </form>
