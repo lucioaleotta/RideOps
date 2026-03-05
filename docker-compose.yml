@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rideops-postgres
+    profiles: ["dev"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rideops}
+      POSTGRES_USER: ${POSTGRES_USER:-rideops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-rideops}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rideops} -d ${POSTGRES_DB:-rideops}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rideops-backend
+    profiles: ["dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_NAME: ${POSTGRES_DB:-rideops}
+      DB_USER: ${POSTGRES_USER:-rideops}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-rideops}
+      SERVER_PORT: ${SERVER_PORT:-8080}
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rideops-frontend
+    profiles: ["dev"]
+    depends_on:
+      - backend
+    environment:
+      FRONTEND_ENV: ${FRONTEND_ENV:-dev}
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres-data:
