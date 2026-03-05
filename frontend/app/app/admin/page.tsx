@@ -1,10 +1,11 @@
+import { AdminUsersPanel } from '../../../components/admin-users-panel';
+
 export default function AdminPage() {
   return (
     <main>
-      <h1>Admin</h1>
-      <div className="dashboard-card">
-        <p>Accesso consentito a ruolo ADMIN.</p>
-      </div>
+      <h1>User Management (Admin)</h1>
+      <p>Gestione base utenti: creazione, assegnazione ruolo e abilitazione/disabilitazione.</p>
+      <AdminUsersPanel />
     </main>
   );
 }
