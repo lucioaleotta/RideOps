@@ -18,13 +18,17 @@ function roleAllowed(pathname: string, role: string | undefined) {
     return role === 'ADMIN' || role === 'DRIVER';
   }
 
+  if (pathname.startsWith('/app/services') || pathname.startsWith('/services/')) {
+    return role === 'ADMIN' || role === 'GESTIONALE';
+  }
+
   return true;
 }
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  if (!pathname.startsWith('/app')) {
+  if (!pathname.startsWith('/app') && !pathname.startsWith('/services/')) {
     return NextResponse.next();
   }
 
@@ -45,5 +49,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/app/:path*']
+  matcher: ['/app/:path*', '/services/:path*']
 };
