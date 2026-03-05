@@ -1,4 +1,5 @@
 import { GestionaleDriversPanel } from '../../../components/gestionale-drivers-panel';
+import { GestionaleUnassignedBadge } from '../../../components/gestionale-unassigned-badge';
 
 export default function GestionalePage() {
   return (
@@ -7,6 +8,7 @@ export default function GestionalePage() {
       <div className="dashboard-card">
         <p>Da qui puoi creare nuovi utenti DRIVER.</p>
       </div>
+      <GestionaleUnassignedBadge />
       <GestionaleDriversPanel />
     </main>
   );

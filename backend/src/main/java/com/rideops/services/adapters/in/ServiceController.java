@@ -1,14 +1,18 @@
 package com.rideops.services.adapters.in;
 
+import com.rideops.identity.application.IdentityUserDetails;
+import com.rideops.services.application.AssignServiceUseCase;
 import com.rideops.services.application.CloseServiceUseCase;
 import com.rideops.services.application.CreateServiceCommand;
 import com.rideops.services.application.CreateServiceUseCase;
 import com.rideops.services.application.DeleteServiceUseCase;
 import com.rideops.services.application.GetServiceUseCase;
+import com.rideops.services.application.GetUnassignedServicesCountUseCase;
 import com.rideops.services.application.ListServicesUseCase;
 import com.rideops.services.application.ServiceDto;
 import com.rideops.services.application.ServiceNotFoundException;
 import com.rideops.services.application.ServiceValidationException;
+import com.rideops.services.application.UnassignServiceUseCase;
 import com.rideops.services.application.UpdateServiceCommand;
 import com.rideops.services.application.UpdateServiceUseCase;
 import com.rideops.services.domain.ServiceStatus;
@@ -21,6 +25,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/services")
@@ -42,6 +48,9 @@ public class ServiceController {
     private final UpdateServiceUseCase updateServiceUseCase;
     private final DeleteServiceUseCase deleteServiceUseCase;
     private final CloseServiceUseCase closeServiceUseCase;
+    private final AssignServiceUseCase assignServiceUseCase;
+    private final UnassignServiceUseCase unassignServiceUseCase;
+    private final GetUnassignedServicesCountUseCase getUnassignedServicesCountUseCase;
     private final ListServicesUseCase listServicesUseCase;
     private final GetServiceUseCase getServiceUseCase;
 
@@ -49,12 +58,18 @@ public class ServiceController {
                              UpdateServiceUseCase updateServiceUseCase,
                              DeleteServiceUseCase deleteServiceUseCase,
                              CloseServiceUseCase closeServiceUseCase,
+                             AssignServiceUseCase assignServiceUseCase,
+                             UnassignServiceUseCase unassignServiceUseCase,
+                             GetUnassignedServicesCountUseCase getUnassignedServicesCountUseCase,
                              ListServicesUseCase listServicesUseCase,
                              GetServiceUseCase getServiceUseCase) {
         this.createServiceUseCase = createServiceUseCase;
         this.updateServiceUseCase = updateServiceUseCase;
         this.deleteServiceUseCase = deleteServiceUseCase;
         this.closeServiceUseCase = closeServiceUseCase;
+        this.assignServiceUseCase = assignServiceUseCase;
+        this.unassignServiceUseCase = unassignServiceUseCase;
+        this.getUnassignedServicesCountUseCase = getUnassignedServicesCountUseCase;
         this.listServicesUseCase = listServicesUseCase;
         this.getServiceUseCase = getServiceUseCase;
     }
@@ -115,6 +130,26 @@ public class ServiceController {
         return closeServiceUseCase.execute(serviceId);
     }
 
+    @PatchMapping("/{serviceId}/assign")
+    public ServiceDto assign(@PathVariable Long serviceId,
+                             @Valid @RequestBody AssignRequest request,
+                             @AuthenticationPrincipal IdentityUserDetails user) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
+        return assignServiceUseCase.execute(serviceId, request.driverId(), user.getId());
+    }
+
+    @PatchMapping("/{serviceId}/unassign")
+    public ServiceDto unassign(@PathVariable Long serviceId) {
+        return unassignServiceUseCase.execute(serviceId);
+    }
+
+    @GetMapping("/unassigned/count")
+    public CountResponse unassignedCount() {
+        return new CountResponse(getUnassignedServicesCountUseCase.execute());
+    }
+
     @ExceptionHandler(ServiceValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidation(ServiceValidationException exception) {
@@ -148,5 +183,11 @@ public class ServiceController {
     }
 
     record ErrorResponse(String message) {
+    }
+
+    record AssignRequest(@NotNull Long driverId) {
+    }
+
+    record CountResponse(long count) {
     }
 }

@@ -12,45 +12,25 @@ function parseBackendError(status: number, payload: unknown) {
   return NextResponse.json({ message: 'Request failed' }, { status });
 }
 
-export async function GET() {
-  const token = cookies().get('access_token')?.value;
-  if (!token) {
-    return unauthorized();
-  }
-
-  const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
-  const response = await fetch(`${backendUrl}/gestionale/drivers`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store'
-  });
-
-  const payload = await response.json().catch(() => []);
-  if (!response.ok) {
-    return parseBackendError(response.status, payload);
-  }
-
-  return NextResponse.json(payload);
-}
-
-export async function POST(request: Request) {
+export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const token = cookies().get('access_token')?.value;
   if (!token) {
     return unauthorized();
   }
 
   const body = await request.json().catch(() => null);
-  if (!body || !body.email || !body.password) {
+  if (!body || !body.driverId) {
     return NextResponse.json({ message: 'Payload non valido' }, { status: 400 });
   }
 
   const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
-  const response = await fetch(`${backendUrl}/gestionale/drivers`, {
-    method: 'POST',
+  const response = await fetch(`${backendUrl}/services/${params.id}/assign`, {
+    method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`
     },
-    body: JSON.stringify({ email: body.email, password: body.password }),
+    body: JSON.stringify({ driverId: Number(body.driverId) }),
     cache: 'no-store'
   });
 
@@ -59,5 +39,5 @@ export async function POST(request: Request) {
     return parseBackendError(response.status, payload);
   }
 
-  return NextResponse.json(payload, { status: 201 });
+  return NextResponse.json(payload);
 }

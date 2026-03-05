@@ -1,6 +1,7 @@
 package com.rideops.identity.adapters.out;
 
 import com.rideops.identity.application.admin.UserAdminRepositoryPort;
+import com.rideops.identity.domain.UserRole;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -33,5 +34,10 @@ public class UserAdminJpaAdapter implements UserAdminRepositoryPort {
     @Override
     public List<UserEntity> findAllByOrderByCreatedAtDesc() {
         return userRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Override
+    public List<UserEntity> findAllByRoleAndEnabledTrueOrderByEmailAsc(UserRole role) {
+        return userRepository.findAllByRoleAndEnabledTrueOrderByEmailAsc(role);
     }
 }

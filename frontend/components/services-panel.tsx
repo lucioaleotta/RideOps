@@ -17,8 +17,19 @@ type ServiceItem = {
   notes: string | null;
   price: number | null;
   status: ServiceStatus;
+  assignedDriverId: number | null;
+  assignedByUserId: number | null;
+  assignedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+type DriverItem = {
+  id: number;
+  email: string;
+  role: string;
+  enabled: boolean;
+  createdAt: string;
 };
 
 type ServiceFormState = {
@@ -47,6 +58,7 @@ export function ServicesPanel() {
   const PAGE_SIZE = 10;
 
   const [services, setServices] = useState<ServiceItem[]>([]);
+  const [drivers, setDrivers] = useState<DriverItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +66,20 @@ export function ServicesPanel() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [assignmentSelection, setAssignmentSelection] = useState<Record<number, number | ''>>({});
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
+
+  async function loadDrivers() {
+    const response = await fetch('/api/gestionale/drivers', { cache: 'no-store' });
+    const payload = (await response.json().catch(() => [])) as DriverItem[] | { message?: string };
+
+    if (!response.ok) {
+      setError((payload as { message?: string }).message ?? 'Errore caricamento driver');
+      return;
+    }
+
+    setDrivers(payload as DriverItem[]);
+  }
 
   async function loadServices() {
     setLoading(true);
@@ -75,7 +100,16 @@ export function ServicesPanel() {
 
   useEffect(() => {
     loadServices();
+    loadDrivers();
   }, []);
+
+  useEffect(() => {
+    const nextSelection: Record<number, number | ''> = {};
+    services.forEach((service) => {
+      nextSelection[service.id] = service.assignedDriverId ?? '';
+    });
+    setAssignmentSelection(nextSelection);
+  }, [services]);
 
   function resetForm() {
     setEditingId(null);
@@ -188,6 +222,47 @@ export function ServicesPanel() {
     await loadServices();
   }
 
+  async function onAssign(serviceId: number) {
+    const selectedDriverId = assignmentSelection[serviceId];
+    if (!selectedDriverId) {
+      setError('Seleziona un driver prima di assegnare il servizio');
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/services/${serviceId}/assign`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ driverId: selectedDriverId })
+    });
+
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { message?: string };
+      setError(payload.message ?? 'Assegnazione fallita');
+      return;
+    }
+
+    setSuccess('Servizio assegnato');
+    await loadServices();
+  }
+
+  async function onUnassign(serviceId: number) {
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/services/${serviceId}/unassign`, { method: 'PATCH' });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { message?: string };
+      setError(payload.message ?? 'Rimozione assegnazione fallita');
+      return;
+    }
+
+    setSuccess('Assegnazione rimossa');
+    await loadServices();
+  }
+
   const orderedServices = useMemo(
     () => [...services].sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime()),
     [services]
@@ -240,6 +315,7 @@ export function ServicesPanel() {
                   <th align="left">Destinazione</th>
                   <th align="left">Tipo</th>
                   <th align="left">Prezzo</th>
+                  <th align="left">Driver</th>
                   <th align="left">Stato</th>
                   <th align="left">Azioni</th>
                 </tr>
@@ -252,6 +328,11 @@ export function ServicesPanel() {
                     <td>{service.destination}</td>
                     <td>{service.type}</td>
                     <td>{formatCurrencyEUR(service.price)}</td>
+                    <td>
+                      {service.assignedDriverId
+                        ? drivers.find((driver) => driver.id === service.assignedDriverId)?.email ?? `#${service.assignedDriverId}`
+                        : '—'}
+                    </td>
                     <td>{service.status}</td>
                     <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       <button type="button" className="logout-button" onClick={() => onEdit(service)}>
@@ -264,6 +345,34 @@ export function ServicesPanel() {
                         <button type="button" className="logout-button" onClick={() => onClose(service.id)}>
                           Chiudi
                         </button>
+                      )}
+                      {service.status !== 'CLOSED' && (
+                        <>
+                          <select
+                            className="form-input"
+                            style={{ minWidth: 180 }}
+                            value={assignmentSelection[service.id] ?? ''}
+                            onChange={(event) =>
+                              setAssignmentSelection((prev) => ({
+                                ...prev,
+                                [service.id]: event.target.value ? Number(event.target.value) : ''
+                              }))
+                            }
+                          >
+                            <option value="">Seleziona driver</option>
+                            {drivers.map((driver) => (
+                              <option key={driver.id} value={driver.id}>{driver.email}</option>
+                            ))}
+                          </select>
+                          <button type="button" className="logout-button" onClick={() => onAssign(service.id)}>
+                            Assegna
+                          </button>
+                          {service.assignedDriverId && (
+                            <button type="button" className="logout-button" onClick={() => onUnassign(service.id)}>
+                              Rimuovi
+                            </button>
+                          )}
+                        </>
                       )}
                       <Link className="logout-button" href={`/services/${service.id}/print`} target="_blank">
                         Stampa
