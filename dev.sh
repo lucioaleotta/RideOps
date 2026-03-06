@@ -213,7 +213,7 @@ Uso:
   ./dev.sh backend-test
   ./dev.sh frontend-build
   ./dev.sh check
-  ./dev.sh login [email] [password]
+  ./dev.sh login [userId] [password]
   ./dev.sh me [token]
   ./dev.sh ping-admin [token]
   ./dev.sh ping-gestionale [token]
@@ -221,7 +221,7 @@ Uso:
   ./dev.sh logout
 
 Default login:
-  email: admin@rideops.local
+  userId: admin
   password: ChangeMe123!
 EOF
 }
@@ -383,12 +383,12 @@ case "$cmd" in
     ;;
 
   login)
-    local_email="${1:-admin@rideops.local}"
+    local_user_id="${1:-admin}"
     local_password="${2:-ChangeMe123!}"
 
     response="$(curl -sS -X POST "http://localhost:8080/auth/login" \
       -H "Content-Type: application/json" \
-      -d "{\"email\":\"${local_email}\",\"password\":\"${local_password}\"}")"
+      -d "{\"userId\":\"${local_user_id}\",\"password\":\"${local_password}\"}")"
 
     token="$(parse_token "$response")"
     if [[ -z "$token" ]]; then

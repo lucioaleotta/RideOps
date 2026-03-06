@@ -55,7 +55,7 @@ public class AdminUserController {
     @ResponseStatus(HttpStatus.CREATED)
     public UserSummaryDto createUser(@Valid @RequestBody CreateUserRequest request) {
         return createUserUseCase.execute(
-            new CreateUserCommand(request.email(), request.password(), request.role())
+            new CreateUserCommand(request.userId(), request.email(), request.password(), request.role())
         );
     }
 
@@ -83,7 +83,8 @@ public class AdminUserController {
         return new ErrorResponse(exception.getMessage());
     }
 
-    record CreateUserRequest(@NotBlank @Email String email,
+    record CreateUserRequest(@NotBlank String userId,
+                             @NotBlank @Email String email,
                              @NotBlank String password,
                              @NotNull UserRole role) {
     }

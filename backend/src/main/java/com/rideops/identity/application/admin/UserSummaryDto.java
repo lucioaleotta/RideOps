@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record UserSummaryDto(
     Long id,
+    String userId,
     String email,
     String role,
     boolean enabled,

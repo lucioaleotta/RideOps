@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 
 type AppShellProps = {
-  userEmail: string;
+  userId: string;
   userRole: string;
   children: React.ReactNode;
 };
@@ -19,14 +19,11 @@ const menuItems = [
   { href: '/app/driver', label: 'Driver', icon: '🚗', roles: ['ADMIN', 'DRIVER'] as Role[] }
 ];
 
-export function AppShell({ userEmail, userRole, children }: AppShellProps) {
+export function AppShell({ userId, userRole, children }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const normalizedRole = userRole.toUpperCase() as Role;
 
-  const userName = useMemo(() => {
-    const [name] = userEmail.split('@');
-    return name || userEmail;
-  }, [userEmail]);
+  const userName = useMemo(() => userId || 'utente', [userId]);
 
   const initials = useMemo(() => userName.slice(0, 2).toUpperCase(), [userName]);
 

@@ -55,7 +55,7 @@ Se il tuo `docker-compose` non supporta `--profile`:
 - Frontend: `http://localhost:5173`
 
 ### Identity (JWT)
-- `POST /auth/login` -> ritorna access token JWT
+- `POST /auth/login` -> ritorna access token JWT (login con `userId` + `password`)
 - `GET /auth/me` -> ritorna utente autenticato e ruolo
 - `POST /auth/forgot-password` -> risposta anti-enumeration (sempre generica)
 - `POST /auth/reset-password` -> reset password con token
@@ -65,6 +65,7 @@ Se il tuo `docker-compose` non supporta `--profile`:
 	- `/driver/ping` (ADMIN, DRIVER)
 
 Admin seed default:
+- userId: `admin`
 - email: `admin@rideops.local`
 - password: `ChangeMe123!`
 

@@ -10,6 +10,7 @@ public final class UserAdminMapper {
     public static UserSummaryDto toDto(UserEntity userEntity) {
         return new UserSummaryDto(
             userEntity.getId(),
+            userEntity.getUserId(),
             userEntity.getEmail(),
             userEntity.getRole().name(),
             userEntity.isEnabled(),

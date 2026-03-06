@@ -10,7 +10,7 @@ type LoginPayload = {
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  if (!body || !body.email || !body.password) {
+  if (!body || !body.userId || !body.password) {
     return NextResponse.json({ message: 'Payload non valido' }, { status: 400 });
   }
 

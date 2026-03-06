@@ -44,7 +44,7 @@ public class GestionaleDriverController {
     @ResponseStatus(HttpStatus.CREATED)
     public UserSummaryDto createDriver(@Valid @RequestBody CreateDriverRequest request) {
         return createUserUseCase.execute(
-            new CreateUserCommand(request.email(), request.password(), UserRole.DRIVER)
+            new CreateUserCommand(request.userId(), request.email(), request.password(), UserRole.DRIVER)
         );
     }
 
@@ -60,7 +60,8 @@ public class GestionaleDriverController {
         return new ErrorResponse(exception.getMessage());
     }
 
-    record CreateDriverRequest(@NotBlank @Email String email,
+    record CreateDriverRequest(@NotBlank String userId,
+                               @NotBlank @Email String email,
                                @NotBlank String password) {
     }
 

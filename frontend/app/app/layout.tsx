@@ -3,6 +3,7 @@ import { AppShell } from '../../components/app-shell';
 
 type MePayload = {
   id: number;
+  userId: string;
   email: string;
   role: string;
 };
@@ -25,7 +26,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   }
 
   return (
-    <AppShell userEmail={user?.email ?? 'utente'} userRole={user?.role ?? 'UNKNOWN'}>
+    <AppShell userId={user?.userId ?? 'utente'} userRole={user?.role ?? 'UNKNOWN'}>
       {children}
     </AppShell>
   );
