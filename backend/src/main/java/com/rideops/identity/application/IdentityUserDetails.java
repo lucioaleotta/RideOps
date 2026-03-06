@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 public class IdentityUserDetails implements UserDetails {
 
     private final Long id;
+    private final String userId;
     private final String email;
     private final String passwordHash;
     private final UserRole role;
@@ -18,6 +19,7 @@ public class IdentityUserDetails implements UserDetails {
 
     public IdentityUserDetails(UserEntity user) {
         this.id = user.getId();
+        this.userId = user.getUserId();
         this.email = user.getEmail();
         this.passwordHash = user.getPasswordHash();
         this.role = user.getRole();
@@ -30,6 +32,10 @@ public class IdentityUserDetails implements UserDetails {
 
     public String getEmail() {
         return email;
+    }
+
+    public String getUserId() {
+        return userId;
     }
 
     public UserRole getRole() {
@@ -48,7 +54,7 @@ public class IdentityUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return email;
+        return userId;
     }
 
     @Override

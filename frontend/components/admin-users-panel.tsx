@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 type UserItem = {
   id: number;
+  userId: string;
   email: string;
   role: 'ADMIN' | 'GESTIONALE' | 'DRIVER';
   enabled: boolean;
@@ -18,6 +19,7 @@ export function AdminUsersPanel() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const [userId, setUserId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserItem['role']>('DRIVER');
@@ -51,7 +53,7 @@ export function AdminUsersPanel() {
     const response = await fetch('/api/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, role })
+      body: JSON.stringify({ userId, email, password, role })
     });
 
     const payload = (await response.json().catch(() => ({}))) as { message?: string };
@@ -63,6 +65,7 @@ export function AdminUsersPanel() {
       return;
     }
 
+    setUserId('');
     setEmail('');
     setPassword('');
     setRole('DRIVER');
@@ -112,6 +115,16 @@ export function AdminUsersPanel() {
         <h3>Crea utente</h3>
         <form className="form-grid" onSubmit={onCreateUser}>
           <label>
+            User ID
+            <input
+              className="form-input"
+              value={userId}
+              onChange={(event) => setUserId(event.target.value)}
+              required
+            />
+          </label>
+
+          <label>
             Email
             <input
               className="form-input"
@@ -159,6 +172,7 @@ export function AdminUsersPanel() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
+                  <th align="left">User ID</th>
                   <th align="left">Email</th>
                   <th align="left">Ruolo</th>
                   <th align="left">Stato</th>
@@ -169,6 +183,7 @@ export function AdminUsersPanel() {
               <tbody>
                 {orderedUsers.map((user) => (
                   <tr key={user.id}>
+                    <td style={{ padding: '8px 0' }}>{user.userId}</td>
                     <td style={{ padding: '8px 0' }}>{user.email}</td>
                     <td>
                       <select

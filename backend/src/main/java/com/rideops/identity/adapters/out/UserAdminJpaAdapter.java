@@ -2,6 +2,7 @@ package com.rideops.identity.adapters.out;
 
 import com.rideops.identity.application.admin.UserAdminRepositoryPort;
 import com.rideops.identity.domain.UserRole;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,12 +23,17 @@ public class UserAdminJpaAdapter implements UserAdminRepositoryPort {
     }
 
     @Override
-    public UserEntity save(UserEntity userEntity) {
+    public boolean existsByUserIdIgnoreCase(String userId) {
+        return userRepository.existsByUserIdIgnoreCase(userId);
+    }
+
+    @Override
+    public UserEntity save(@NonNull UserEntity userEntity) {
         return userRepository.save(userEntity);
     }
 
     @Override
-    public Optional<UserEntity> findById(Long id) {
+    public Optional<UserEntity> findById(@NonNull Long id) {
         return userRepository.findById(id);
     }
 

@@ -13,6 +13,9 @@ public class CreateUserUseCase {
     private static final Pattern EMAIL_PATTERN =
         Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$", Pattern.CASE_INSENSITIVE);
 
+    private static final Pattern USER_ID_PATTERN =
+        Pattern.compile("^[A-Z0-9._-]{3,40}$", Pattern.CASE_INSENSITIVE);
+
     private static final Pattern PASSWORD_PATTERN =
         Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$");
 
@@ -26,16 +29,23 @@ public class CreateUserUseCase {
     }
 
     public UserSummaryDto execute(CreateUserCommand command) {
+        String userId = normalizeUserId(command.userId());
         String email = normalizeEmail(command.email());
+        validateUserId(userId);
         validateEmail(email);
         validatePassword(command.rawPassword());
         validateRole(command.role());
+
+        if (userAdminRepositoryPort.existsByUserIdIgnoreCase(userId)) {
+            throw new UserAdminValidationException("User ID already exists");
+        }
 
         if (userAdminRepositoryPort.existsByEmailIgnoreCase(email)) {
             throw new UserAdminValidationException("Email already exists");
         }
 
         UserEntity userEntity = new UserEntity();
+        userEntity.setUserId(userId);
         userEntity.setEmail(email);
         userEntity.setPasswordHash(passwordEncoder.encode(command.rawPassword()));
         userEntity.setRole(command.role());
@@ -49,6 +59,21 @@ public class CreateUserUseCase {
             return "";
         }
         return email.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeUserId(String userId) {
+        if (userId == null) {
+            return "";
+        }
+        return userId.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private void validateUserId(String userId) {
+        if (!USER_ID_PATTERN.matcher(userId).matches()) {
+            throw new UserAdminValidationException(
+                "User ID must be 3-40 chars and contain only letters, numbers, dot, underscore or dash"
+            );
+        }
     }
 
     private void validateEmail(String email) {

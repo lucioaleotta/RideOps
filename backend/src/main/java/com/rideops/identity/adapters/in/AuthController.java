@@ -40,7 +40,7 @@ public class AuthController {
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         try {
             var authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.email(), request.password())
+                new UsernamePasswordAuthenticationToken(request.userId(), request.password())
             );
             IdentityUserDetails principal = (IdentityUserDetails) authentication.getPrincipal();
             String token = jwtService.generateToken(principal);
@@ -55,7 +55,7 @@ public class AuthController {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
-        return new MeResponse(user.getId(), user.getEmail(), user.getRole().name());
+        return new MeResponse(user.getId(), user.getUserId(), user.getEmail(), user.getRole().name());
     }
 
     @PostMapping("/forgot-password")
@@ -83,13 +83,13 @@ public class AuthController {
         }
     }
 
-    record LoginRequest(@NotBlank @Email String email, @NotBlank String password) {
+    record LoginRequest(@NotBlank String userId, @NotBlank String password) {
     }
 
     record LoginResponse(String accessToken, String tokenType, long expiresInSeconds) {
     }
 
-    record MeResponse(Long id, String email, String role) {
+    record MeResponse(Long id, String userId, String email, String role) {
     }
 
     record ForgotPasswordRequest(@NotBlank @Email String email) {

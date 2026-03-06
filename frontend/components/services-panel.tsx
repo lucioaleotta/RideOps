@@ -40,7 +40,7 @@ type ServiceFormState = {
   durationHours: string;
   notes: string;
   price: string;
-  status: Exclude<ServiceStatus, 'CLOSED'>;
+  assignedDriverId: number | '';
 };
 
 const defaultForm: ServiceFormState = {
@@ -51,7 +51,7 @@ const defaultForm: ServiceFormState = {
   durationHours: '',
   notes: '',
   price: '',
-  status: 'OPEN'
+  assignedDriverId: ''
 };
 
 export function ServicesPanel() {
@@ -64,10 +64,24 @@ export function ServicesPanel() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingInitialStatus, setEditingInitialStatus] = useState<Exclude<ServiceStatus, 'CLOSED'>>('OPEN');
+  const [editingInitialAssignedDriverId, setEditingInitialAssignedDriverId] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [assignmentSelection, setAssignmentSelection] = useState<Record<number, number | ''>>({});
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
+
+  const thStyle = {
+    textAlign: 'left' as const,
+    padding: '0 12px 10px 0',
+    whiteSpace: 'nowrap' as const,
+    borderBottom: '1px solid #dce8f5'
+  };
+
+  const tdStyle = {
+    padding: '10px 12px 10px 0',
+    verticalAlign: 'top' as const,
+    borderBottom: '1px solid #eaf1f9'
+  };
 
   async function loadDrivers() {
     const response = await fetch('/api/gestionale/drivers', { cache: 'no-store' });
@@ -103,16 +117,10 @@ export function ServicesPanel() {
     loadDrivers();
   }, []);
 
-  useEffect(() => {
-    const nextSelection: Record<number, number | ''> = {};
-    services.forEach((service) => {
-      nextSelection[service.id] = service.assignedDriverId ?? '';
-    });
-    setAssignmentSelection(nextSelection);
-  }, [services]);
-
   function resetForm() {
     setEditingId(null);
+    setEditingInitialStatus('OPEN');
+    setEditingInitialAssignedDriverId(null);
     setForm(defaultForm);
   }
 
@@ -126,7 +134,7 @@ export function ServicesPanel() {
     setIsFormOpen(false);
   }
 
-  function toPayload() {
+  function toPayload(status: Exclude<ServiceStatus, 'CLOSED'>) {
     return {
       startAt: form.startAt,
       pickupLocation: form.pickupLocation,
@@ -135,8 +143,46 @@ export function ServicesPanel() {
       durationHours: form.type === 'TOUR' ? Number(form.durationHours) : null,
       notes: form.notes.trim() || null,
       price: form.price.trim() ? Number(form.price) : null,
-      status: form.status
+      status
     };
+  }
+
+  function selectedDriverId(): number | null {
+    return form.assignedDriverId ? Number(form.assignedDriverId) : null;
+  }
+
+  async function syncAssignment(serviceId: number, desiredDriverId: number | null) {
+    const shouldSkip = editingId != null && editingInitialAssignedDriverId === desiredDriverId;
+    if (shouldSkip) {
+      return true;
+    }
+
+    if (desiredDriverId) {
+      const response = await fetch(`/api/services/${serviceId}/assign`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ driverId: desiredDriverId })
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { message?: string };
+        setError(payload.message ?? 'Assegnazione fallita');
+        return false;
+      }
+
+      return true;
+    }
+
+    if (editingId != null && editingInitialAssignedDriverId) {
+      const response = await fetch(`/api/services/${serviceId}/unassign`, { method: 'PATCH' });
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { message?: string };
+        setError(payload.message ?? 'Rimozione assegnazione fallita');
+        return false;
+      }
+    }
+
+    return true;
   }
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
@@ -151,14 +197,27 @@ export function ServicesPanel() {
     const response = await fetch(targetUrl, {
       method,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(toPayload())
+      body: JSON.stringify(toPayload(editingId ? editingInitialStatus : 'OPEN'))
     });
 
-    const payload = (await response.json().catch(() => ({}))) as { message?: string };
-    setSubmitting(false);
+    const payload = (await response.json().catch(() => ({}))) as Partial<ServiceItem> & { message?: string };
 
     if (!response.ok) {
+      setSubmitting(false);
       setError(payload.message ?? 'Operazione fallita');
+      return;
+    }
+
+    const serviceId = editingId ?? payload.id;
+    if (!serviceId) {
+      setSubmitting(false);
+      setError('Impossibile identificare il servizio salvato');
+      return;
+    }
+
+    const assignmentSynced = await syncAssignment(serviceId, selectedDriverId());
+    setSubmitting(false);
+    if (!assignmentSynced) {
       return;
     }
 
@@ -174,6 +233,8 @@ export function ServicesPanel() {
     }
 
     setEditingId(service.id);
+    setEditingInitialStatus(service.status);
+    setEditingInitialAssignedDriverId(service.assignedDriverId);
     setIsFormOpen(true);
     setError(null);
     setSuccess(null);
@@ -185,7 +246,7 @@ export function ServicesPanel() {
       durationHours: service.durationHours ? String(service.durationHours) : '',
       notes: service.notes ?? '',
       price: service.price != null ? String(service.price) : '',
-      status: service.status
+      assignedDriverId: service.assignedDriverId ?? ''
     });
   }
 
@@ -219,47 +280,6 @@ export function ServicesPanel() {
     }
 
     setSuccess('Servizio chiuso');
-    await loadServices();
-  }
-
-  async function onAssign(serviceId: number) {
-    const selectedDriverId = assignmentSelection[serviceId];
-    if (!selectedDriverId) {
-      setError('Seleziona un driver prima di assegnare il servizio');
-      return;
-    }
-
-    setError(null);
-    setSuccess(null);
-
-    const response = await fetch(`/api/services/${serviceId}/assign`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ driverId: selectedDriverId })
-    });
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => ({}))) as { message?: string };
-      setError(payload.message ?? 'Assegnazione fallita');
-      return;
-    }
-
-    setSuccess('Servizio assegnato');
-    await loadServices();
-  }
-
-  async function onUnassign(serviceId: number) {
-    setError(null);
-    setSuccess(null);
-
-    const response = await fetch(`/api/services/${serviceId}/unassign`, { method: 'PATCH' });
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => ({}))) as { message?: string };
-      setError(payload.message ?? 'Rimozione assegnazione fallita');
-      return;
-    }
-
-    setSuccess('Assegnazione rimossa');
     await loadServices();
   }
 
@@ -306,35 +326,36 @@ export function ServicesPanel() {
           <p>Caricamento servizi...</p>
         ) : (
           <>
-            <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div style={{ overflowX: 'auto', marginTop: 8 }}>
+            <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
-                  <th align="left">Inizio</th>
-                  <th align="left">Pickup</th>
-                  <th align="left">Destinazione</th>
-                  <th align="left">Tipo</th>
-                  <th align="left">Prezzo</th>
-                  <th align="left">Driver</th>
-                  <th align="left">Stato</th>
-                  <th align="left">Azioni</th>
+                  <th style={thStyle}>Inizio</th>
+                  <th style={thStyle}>Pickup</th>
+                  <th style={thStyle}>Destinazione</th>
+                  <th style={thStyle}>Tipo</th>
+                  <th style={thStyle}>Prezzo</th>
+                  <th style={thStyle}>Driver</th>
+                  <th style={thStyle}>Stato</th>
+                  <th style={thStyle}>Azioni</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedServices.map((service) => (
                   <tr key={service.id}>
-                    <td style={{ padding: '8px 0' }}>{new Date(service.startAt).toLocaleString('it-IT')}</td>
-                    <td>{service.pickupLocation}</td>
-                    <td>{service.destination}</td>
-                    <td>{service.type}</td>
-                    <td>{formatCurrencyEUR(service.price)}</td>
-                    <td>
+                    <td style={tdStyle}>{new Date(service.startAt).toLocaleString('it-IT')}</td>
+                    <td style={{ ...tdStyle, minWidth: 220, lineHeight: 1.35 }}>{service.pickupLocation}</td>
+                    <td style={{ ...tdStyle, minWidth: 220, lineHeight: 1.35 }}>{service.destination}</td>
+                    <td style={tdStyle}>{service.type}</td>
+                    <td style={tdStyle}>{formatCurrencyEUR(service.price)}</td>
+                    <td style={{ ...tdStyle, minWidth: 200 }}>
                       {service.assignedDriverId
                         ? drivers.find((driver) => driver.id === service.assignedDriverId)?.email ?? `#${service.assignedDriverId}`
                         : '—'}
                     </td>
-                    <td>{service.status}</td>
-                    <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <td style={tdStyle}>{service.status}</td>
+                    <td style={{ ...tdStyle, minWidth: 220 }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                       <button type="button" className="logout-button" onClick={() => onEdit(service)}>
                         Modifica
                       </button>
@@ -346,37 +367,10 @@ export function ServicesPanel() {
                           Chiudi
                         </button>
                       )}
-                      {service.status !== 'CLOSED' && (
-                        <>
-                          <select
-                            className="form-input"
-                            style={{ minWidth: 180 }}
-                            value={assignmentSelection[service.id] ?? ''}
-                            onChange={(event) =>
-                              setAssignmentSelection((prev) => ({
-                                ...prev,
-                                [service.id]: event.target.value ? Number(event.target.value) : ''
-                              }))
-                            }
-                          >
-                            <option value="">Seleziona driver</option>
-                            {drivers.map((driver) => (
-                              <option key={driver.id} value={driver.id}>{driver.email}</option>
-                            ))}
-                          </select>
-                          <button type="button" className="logout-button" onClick={() => onAssign(service.id)}>
-                            Assegna
-                          </button>
-                          {service.assignedDriverId && (
-                            <button type="button" className="logout-button" onClick={() => onUnassign(service.id)}>
-                              Rimuovi
-                            </button>
-                          )}
-                        </>
-                      )}
                       <Link className="logout-button" href={`/services/${service.id}/print`} target="_blank">
                         Stampa
                       </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -393,16 +387,20 @@ export function ServicesPanel() {
                   className="logout-button"
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
+                  aria-label="Pagina precedente"
+                  title="Pagina precedente"
                 >
-                  Precedente
+                  ←
                 </button>
                 <button
                   type="button"
                   className="logout-button"
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
+                  aria-label="Pagina successiva"
+                  title="Pagina successiva"
                 >
-                  Successiva
+                  →
                 </button>
               </div>
             </div>
@@ -492,14 +490,21 @@ export function ServicesPanel() {
             </label>
 
             <label>
-              Stato
+              Driver (opzionale)
               <select
                 className="form-input"
-                value={form.status}
-                onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as 'OPEN' | 'ASSIGNED' }))}
+                value={form.assignedDriverId}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    assignedDriverId: event.target.value ? Number(event.target.value) : ''
+                  }))
+                }
               >
-                <option value="OPEN">OPEN</option>
-                <option value="ASSIGNED">ASSIGNED</option>
+                <option value="">Non assegnato</option>
+                {drivers.map((driver) => (
+                  <option key={driver.id} value={driver.id}>{driver.email}</option>
+                ))}
               </select>
             </label>
 

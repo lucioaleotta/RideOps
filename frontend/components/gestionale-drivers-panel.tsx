@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 
 export function GestionaleDriversPanel() {
+  const [userId, setUserId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -18,10 +19,10 @@ export function GestionaleDriversPanel() {
     const response = await fetch('/api/gestionale/drivers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ userId, email, password })
     });
 
-    const payload = (await response.json().catch(() => ({}))) as { message?: string; email?: string };
+    const payload = (await response.json().catch(() => ({}))) as { message?: string; email?: string; userId?: string };
 
     setSubmitting(false);
 
@@ -30,15 +31,26 @@ export function GestionaleDriversPanel() {
       return;
     }
 
+    setUserId('');
     setEmail('');
     setPassword('');
-    setSuccess(`Driver creato: ${payload.email ?? 'ok'}`);
+    setSuccess(`Driver creato: ${payload.userId ?? payload.email ?? 'ok'}`);
   }
 
   return (
     <article className="dashboard-card">
       <h3>Crea Driver</h3>
       <form className="form-grid" onSubmit={onCreateDriver}>
+        <label>
+          User ID driver
+          <input
+            className="form-input"
+            value={userId}
+            onChange={(event) => setUserId(event.target.value)}
+            required
+          />
+        </label>
+
         <label>
           Email driver
           <input
