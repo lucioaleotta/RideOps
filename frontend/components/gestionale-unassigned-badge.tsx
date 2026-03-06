@@ -1,5 +1,6 @@
 "use client";
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export function GestionaleUnassignedBadge() {
@@ -26,6 +27,13 @@ export function GestionaleUnassignedBadge() {
     <article className="dashboard-card">
       <h3>Servizi non assegnati</h3>
       {error ? <p className="error-text">{error}</p> : <p style={{ fontSize: 28, margin: 0 }}>{count}</p>}
+      {!error && (
+        <p style={{ marginTop: 10, marginBottom: 0 }}>
+          <Link href="/app/services?unassigned=1" className="logout-button compact-button" style={{ display: 'inline-block' }}>
+            Vedi non assegnati
+          </Link>
+        </p>
+      )}
     </article>
   );
 }

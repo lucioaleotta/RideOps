@@ -9,6 +9,7 @@ export function GestionaleDriversPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   async function onCreateDriver(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -39,7 +40,18 @@ export function GestionaleDriversPanel() {
 
   return (
     <article className="dashboard-card">
-      <h3>Crea Driver</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <h3>Crea Driver</h3>
+        <button
+          type="button"
+          className="primary-button compact-button"
+          onClick={() => setIsCreateOpen((prev) => !prev)}
+        >
+          {isCreateOpen ? 'Nascondi form' : 'Nuovo driver'}
+        </button>
+      </div>
+
+      {isCreateOpen && (
       <form className="form-grid" onSubmit={onCreateDriver}>
         <label>
           User ID driver
@@ -74,10 +86,11 @@ export function GestionaleDriversPanel() {
           />
         </label>
 
-        <button type="submit" className="primary-button" disabled={submitting}>
+        <button type="submit" className="primary-button compact-button" disabled={submitting}>
           {submitting ? 'Creazione...' : 'Crea driver'}
         </button>
       </form>
+      )}
 
       {error && <p className="error-text">{error}</p>}
       {success && <p>{success}</p>}

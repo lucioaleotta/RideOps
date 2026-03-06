@@ -18,6 +18,7 @@ export function AdminUsersPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const [userId, setUserId] = useState('');
   const [email, setEmail] = useState('');
@@ -112,7 +113,18 @@ export function AdminUsersPanel() {
   return (
     <section style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
-        <h3>Crea utente</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <h3>Crea utente</h3>
+          <button
+            type="button"
+            className="primary-button compact-button"
+            onClick={() => setIsCreateOpen((prev) => !prev)}
+          >
+            {isCreateOpen ? 'Nascondi form' : 'Nuovo utente'}
+          </button>
+        </div>
+
+        {isCreateOpen && (
         <form className="form-grid" onSubmit={onCreateUser}>
           <label>
             User ID
@@ -156,10 +168,11 @@ export function AdminUsersPanel() {
             </select>
           </label>
 
-          <button type="submit" className="primary-button" disabled={submitting}>
+          <button type="submit" className="primary-button compact-button" disabled={submitting}>
             {submitting ? 'Creazione...' : 'Crea utente'}
           </button>
         </form>
+        )}
       </article>
 
       <article className="dashboard-card">

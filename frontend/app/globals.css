@@ -76,6 +76,12 @@ a:hover {
   cursor: not-allowed;
 }
 
+.compact-button {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
 .error-text {
   color: #d32f2f;
 }

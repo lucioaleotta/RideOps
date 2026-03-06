@@ -53,7 +53,15 @@ public class RideServiceJpaAdapter implements ServiceRepositoryPort {
             specification = specification.and((root, query, cb) -> cb.equal(root.get("assignedDriverId"), driverId));
         }
         if (status != null) {
-            specification = specification.and((root, query, cb) -> cb.equal(root.get("status"), status));
+            if (status == ServiceStatus.ASSIGNED) {
+                specification = specification.and((root, query, cb) -> cb.and(
+                    cb.isNotNull(root.get("assignedDriverId")),
+                    cb.isNotNull(root.get("assignedByUserId")),
+                    cb.isNotNull(root.get("assignedAt"))
+                ));
+            } else {
+                specification = specification.and((root, query, cb) -> cb.equal(root.get("status"), status));
+            }
         }
         if (type != null) {
             specification = specification.and((root, query, cb) -> cb.equal(root.get("type"), type));
