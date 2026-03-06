@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -34,6 +35,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -75,12 +77,19 @@ public class ServiceController {
     }
 
     @GetMapping
-    public List<ServiceDto> list() {
-        return listServicesUseCase.execute();
+    public List<ServiceDto> list(@RequestParam(required = false) LocalDateTime from,
+                                 @RequestParam(required = false) LocalDateTime to,
+                                 @RequestParam(required = false) Long driverId,
+                                 @RequestParam(required = false) ServiceStatus status,
+                                 @RequestParam(required = false) ServiceType type) {
+        if (from != null && to != null && !from.isBefore(to)) {
+            throw new ServiceValidationException("Invalid range: 'from' must be before 'to'");
+        }
+        return listServicesUseCase.execute(from, to, driverId, status, type);
     }
 
     @GetMapping("/{serviceId}")
-    public ServiceDto getById(@PathVariable Long serviceId) {
+    public ServiceDto getById(@PathVariable @NonNull Long serviceId) {
         return getServiceUseCase.execute(serviceId);
     }
 
@@ -102,7 +111,7 @@ public class ServiceController {
     }
 
     @PutMapping("/{serviceId}")
-    public ServiceDto update(@PathVariable Long serviceId,
+    public ServiceDto update(@PathVariable @NonNull Long serviceId,
                              @Valid @RequestBody UpdateServiceRequest request) {
         return updateServiceUseCase.execute(
             serviceId,
@@ -121,17 +130,17 @@ public class ServiceController {
 
     @DeleteMapping("/{serviceId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long serviceId) {
+    public void delete(@PathVariable @NonNull Long serviceId) {
         deleteServiceUseCase.execute(serviceId);
     }
 
     @PatchMapping("/{serviceId}/close")
-    public ServiceDto close(@PathVariable Long serviceId) {
+    public ServiceDto close(@PathVariable @NonNull Long serviceId) {
         return closeServiceUseCase.execute(serviceId);
     }
 
     @PatchMapping("/{serviceId}/assign")
-    public ServiceDto assign(@PathVariable Long serviceId,
+    public ServiceDto assign(@PathVariable @NonNull Long serviceId,
                              @Valid @RequestBody AssignRequest request,
                              @AuthenticationPrincipal IdentityUserDetails user) {
         if (user == null) {
@@ -141,7 +150,7 @@ public class ServiceController {
     }
 
     @PatchMapping("/{serviceId}/unassign")
-    public ServiceDto unassign(@PathVariable Long serviceId) {
+    public ServiceDto unassign(@PathVariable @NonNull Long serviceId) {
         return unassignServiceUseCase.execute(serviceId);
     }
 

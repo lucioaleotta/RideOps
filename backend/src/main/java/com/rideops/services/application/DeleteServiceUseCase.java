@@ -1,6 +1,8 @@
 package com.rideops.services.application;
 
 import com.rideops.services.adapters.out.RideServiceEntity;
+import java.util.Objects;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,9 +14,9 @@ public class DeleteServiceUseCase {
         this.serviceRepositoryPort = serviceRepositoryPort;
     }
 
-    public void execute(Long serviceId) {
+    public void execute(@NonNull Long serviceId) {
         RideServiceEntity entity = serviceRepositoryPort.findById(serviceId)
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
-        serviceRepositoryPort.delete(entity);
+        serviceRepositoryPort.delete(Objects.requireNonNull(entity));
     }
 }

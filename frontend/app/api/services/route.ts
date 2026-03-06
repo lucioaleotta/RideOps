@@ -12,14 +12,27 @@ function parseBackendError(status: number, payload: unknown) {
   return NextResponse.json({ message: 'Request failed' }, { status });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const token = cookies().get('access_token')?.value;
   if (!token) {
     return unauthorized();
   }
 
   const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
-  const response = await fetch(`${backendUrl}/services`, {
+  const incomingUrl = new URL(request.url);
+  const backendQuery = new URLSearchParams();
+  ['from', 'to', 'driverId', 'status', 'type'].forEach((key) => {
+    const value = incomingUrl.searchParams.get(key);
+    if (value) {
+      backendQuery.set(key, value);
+    }
+  });
+
+  const targetUrl = backendQuery.size > 0
+    ? `${backendUrl}/services?${backendQuery.toString()}`
+    : `${backendUrl}/services`;
+
+  const response = await fetch(targetUrl, {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store'
   });

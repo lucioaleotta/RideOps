@@ -2,9 +2,13 @@ package com.rideops.services.adapters.out;
 
 import com.rideops.services.application.ServiceRepositoryPort;
 import com.rideops.services.domain.ServiceStatus;
+import com.rideops.services.domain.ServiceType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -17,18 +21,45 @@ public class RideServiceJpaAdapter implements ServiceRepositoryPort {
     }
 
     @Override
-    public RideServiceEntity save(RideServiceEntity entity) {
+    public RideServiceEntity save(@NonNull RideServiceEntity entity) {
         return rideServiceRepository.save(entity);
     }
 
     @Override
-    public Optional<RideServiceEntity> findById(Long id) {
+    public Optional<RideServiceEntity> findById(@NonNull Long id) {
         return rideServiceRepository.findById(id);
     }
 
     @Override
     public List<RideServiceEntity> findAllByOrderByStartAtDesc() {
         return rideServiceRepository.findAllByOrderByStartAtDesc();
+    }
+
+    @Override
+    public List<RideServiceEntity> findByFilters(LocalDateTime from,
+                                                 LocalDateTime to,
+                                                 Long driverId,
+                                                 ServiceStatus status,
+                                                 ServiceType type) {
+        Specification<RideServiceEntity> specification = Specification.where(null);
+
+        if (from != null) {
+            specification = specification.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("startAt"), from));
+        }
+        if (to != null) {
+            specification = specification.and((root, query, cb) -> cb.lessThan(root.get("startAt"), to));
+        }
+        if (driverId != null) {
+            specification = specification.and((root, query, cb) -> cb.equal(root.get("assignedDriverId"), driverId));
+        }
+        if (status != null) {
+            specification = specification.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+        if (type != null) {
+            specification = specification.and((root, query, cb) -> cb.equal(root.get("type"), type));
+        }
+
+        return rideServiceRepository.findAll(specification, Sort.by(Sort.Direction.ASC, "startAt"));
     }
 
     @Override
@@ -50,7 +81,7 @@ public class RideServiceJpaAdapter implements ServiceRepositoryPort {
     }
 
     @Override
-    public void delete(RideServiceEntity entity) {
+    public void delete(@NonNull RideServiceEntity entity) {
         rideServiceRepository.delete(entity);
     }
 }

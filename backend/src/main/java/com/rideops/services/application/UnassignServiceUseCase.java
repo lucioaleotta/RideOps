@@ -2,6 +2,7 @@ package com.rideops.services.application;
 
 import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.domain.ServiceStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,7 +14,7 @@ public class UnassignServiceUseCase {
         this.serviceRepositoryPort = serviceRepositoryPort;
     }
 
-    public ServiceDto execute(Long serviceId) {
+    public ServiceDto execute(@NonNull Long serviceId) {
         RideServiceEntity service = serviceRepositoryPort.findById(serviceId)
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 

@@ -4,8 +4,10 @@ import com.rideops.services.domain.ServiceStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface RideServiceRepository extends JpaRepository<RideServiceEntity, Long> {
+public interface RideServiceRepository extends JpaRepository<RideServiceEntity, Long>,
+    JpaSpecificationExecutor<RideServiceEntity> {
 
     List<RideServiceEntity> findAllByOrderByStartAtDesc();
 

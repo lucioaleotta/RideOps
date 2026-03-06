@@ -2,17 +2,25 @@ package com.rideops.services.application;
 
 import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.domain.ServiceStatus;
+import com.rideops.services.domain.ServiceType;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.lang.NonNull;
 
 public interface ServiceRepositoryPort {
 
-    RideServiceEntity save(RideServiceEntity entity);
+    RideServiceEntity save(@NonNull RideServiceEntity entity);
 
-    Optional<RideServiceEntity> findById(Long id);
+    Optional<RideServiceEntity> findById(@NonNull Long id);
 
     List<RideServiceEntity> findAllByOrderByStartAtDesc();
+
+    List<RideServiceEntity> findByFilters(LocalDateTime from,
+                                          LocalDateTime to,
+                                          Long driverId,
+                                          ServiceStatus status,
+                                          ServiceType type);
 
     List<RideServiceEntity> findAllByAssignedDriverIdAndStartAtBetweenOrderByStartAtAsc(Long driverId,
                                                                                           LocalDateTime from,
@@ -23,5 +31,5 @@ public interface ServiceRepositoryPort {
 
     long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status);
 
-    void delete(RideServiceEntity entity);
+    void delete(@NonNull RideServiceEntity entity);
 }

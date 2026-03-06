@@ -4,6 +4,7 @@ import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.domain.RideService;
 import com.rideops.services.domain.ServiceDomainException;
 import com.rideops.services.domain.ServiceStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,7 +16,7 @@ public class CloseServiceUseCase {
         this.serviceRepositoryPort = serviceRepositoryPort;
     }
 
-    public ServiceDto execute(Long serviceId) {
+    public ServiceDto execute(@NonNull Long serviceId) {
         RideServiceEntity entity = serviceRepositoryPort.findById(serviceId)
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
