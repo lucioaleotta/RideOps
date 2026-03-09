@@ -104,7 +104,11 @@ function sameDate(left: Date, right: Date) {
     && left.getDate() === right.getDate();
 }
 
-export function CalendarDashboard() {
+type CalendarDashboardProps = {
+  driverMode?: boolean;
+};
+
+export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps) {
   const [view, setView] = useState<ViewMode>('month');
   const [cursorDate, setCursorDate] = useState(() => startOfDay(new Date()));
   const [filters, setFilters] = useState<FilterState>(filtersDefault);
@@ -138,6 +142,11 @@ export function CalendarDashboard() {
   }, [view, cursorDate]);
 
   useEffect(() => {
+    if (driverMode) {
+      setDrivers([]);
+      return;
+    }
+
     async function loadDrivers() {
       const response = await fetch('/api/gestionale/drivers', { cache: 'no-store' });
       const payload = (await response.json().catch(() => [])) as DriverItem[] | { message?: string };
@@ -148,12 +157,60 @@ export function CalendarDashboard() {
     }
 
     loadDrivers();
-  }, []);
+  }, [driverMode]);
 
   useEffect(() => {
     async function loadServices() {
       setLoading(true);
       setError(null);
+
+      if (driverMode) {
+        const [todayResponse, upcomingResponse] = await Promise.all([
+          fetch('/api/driver/services/today', { cache: 'no-store' }),
+          fetch('/api/driver/services/upcoming', { cache: 'no-store' })
+        ]);
+
+        const todayPayload = (await todayResponse.json().catch(() => [])) as ServiceItem[] | { message?: string };
+        const upcomingPayload = (await upcomingResponse.json().catch(() => [])) as ServiceItem[] | { message?: string };
+
+        if (!todayResponse.ok) {
+          setError((todayPayload as { message?: string }).message ?? 'Errore caricamento servizi driver');
+          setLoading(false);
+          setServices([]);
+          return;
+        }
+
+        if (!upcomingResponse.ok) {
+          setError((upcomingPayload as { message?: string }).message ?? 'Errore caricamento servizi driver');
+          setLoading(false);
+          setServices([]);
+          return;
+        }
+
+        const byId = new Map<number, ServiceItem>();
+        [...(todayPayload as ServiceItem[]), ...(upcomingPayload as ServiceItem[])].forEach((item) => {
+          byId.set(item.id, item);
+        });
+
+        const filtered = Array.from(byId.values())
+          .filter((service) => {
+            if (filters.status && service.status !== filters.status) {
+              return false;
+            }
+            if (filters.type && service.type !== filters.type) {
+              return false;
+            }
+
+            const at = new Date(service.startAt);
+            return at >= range.from && at < range.to;
+          })
+          .sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime());
+
+        setServices(filtered);
+        setLoading(false);
+        setSelectedServiceId((prev) => (prev && filtered.some((item) => item.id === prev) ? prev : filtered[0]?.id ?? null));
+        return;
+      }
 
       const query = new URLSearchParams({
         from: toLocalDateTimeParam(range.from),
@@ -187,7 +244,7 @@ export function CalendarDashboard() {
     }
 
     loadServices();
-  }, [range.from, range.to, filters.driverId, filters.status, filters.type]);
+  }, [driverMode, range.from, range.to, filters.driverId, filters.status, filters.type]);
 
   const selectedService = useMemo(
     () => services.find((service) => service.id === selectedServiceId) ?? null,
@@ -197,6 +254,10 @@ export function CalendarDashboard() {
   const selectedServiceDriverLabel = useMemo(() => {
     if (!selectedService || !selectedService.assignedDriverId) {
       return 'Non Assegnato a Driver';
+    }
+
+    if (driverMode) {
+      return 'Assegnato a te';
     }
 
     const driver = drivers.find((item) => item.id === selectedService.assignedDriverId);
@@ -209,7 +270,7 @@ export function CalendarDashboard() {
       return `${fullName} (${driver.userId || driver.email})`;
     }
     return driver.userId || driver.email;
-  }, [selectedService, drivers]);
+  }, [driverMode, selectedService, drivers]);
 
   const servicesByDay = useMemo(() => {
     const map = new Map<string, ServiceItem[]>();
@@ -404,19 +465,21 @@ export function CalendarDashboard() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
-          <label>
-            Driver
-            <select
-              className="form-input"
-              value={filters.driverId}
-              onChange={(event) => setFilters((prev) => ({ ...prev, driverId: event.target.value ? Number(event.target.value) : '' }))}
-            >
-              <option value="">Tutti</option>
-              {drivers.map((driver) => (
-                <option key={driver.id} value={driver.id}>{driver.userId}</option>
-              ))}
-            </select>
-          </label>
+          {!driverMode && (
+            <label>
+              Driver
+              <select
+                className="form-input"
+                value={filters.driverId}
+                onChange={(event) => setFilters((prev) => ({ ...prev, driverId: event.target.value ? Number(event.target.value) : '' }))}
+              >
+                <option value="">Tutti</option>
+                {drivers.map((driver) => (
+                  <option key={driver.id} value={driver.id}>{driver.userId}</option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <label>
             Stato

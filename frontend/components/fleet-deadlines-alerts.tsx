@@ -34,6 +34,7 @@ type VehicleItem = {
 type FleetDeadlinesAlertsProps = {
   withinDays?: number;
   title?: string;
+  suppressUnauthorizedError?: boolean;
 };
 
 function dateOnly(isoDate: string) {
@@ -81,7 +82,11 @@ function urgencyLabel(days: number) {
   return `Prossima (${days} gg)`;
 }
 
-export function FleetDeadlinesAlerts({ withinDays = 30, title = 'Allarmi scadenze veicoli' }: FleetDeadlinesAlertsProps) {
+export function FleetDeadlinesAlerts({
+  withinDays = 30,
+  title = 'Allarmi scadenze veicoli',
+  suppressUnauthorizedError = false
+}: FleetDeadlinesAlertsProps) {
   const [items, setItems] = useState<DeadlineItem[]>([]);
   const [vehiclesById, setVehiclesById] = useState<Record<number, VehicleItem>>({});
   const [loading, setLoading] = useState(true);
@@ -96,6 +101,13 @@ export function FleetDeadlinesAlerts({ withinDays = 30, title = 'Allarmi scadenz
       const payload = (await response.json().catch(() => [])) as DeadlineItem[] | { message?: string };
 
       if (!response.ok) {
+        if (suppressUnauthorizedError && (response.status === 401 || response.status === 403)) {
+          setItems([]);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+
         setError((payload as { message?: string }).message ?? 'Errore caricamento scadenze');
         setItems([]);
         setLoading(false);
@@ -107,7 +119,7 @@ export function FleetDeadlinesAlerts({ withinDays = 30, title = 'Allarmi scadenz
     }
 
     loadAlerts();
-  }, [withinDays]);
+  }, [suppressUnauthorizedError, withinDays]);
 
   useEffect(() => {
     async function loadVehicles() {

@@ -156,6 +156,8 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
     return { display: 'inline-block' } as const;
   }, [serviceAlertCounts.overdue, serviceAlertCounts.upcoming]);
 
+  const serviceAlertHref = normalizedRole === 'DRIVER' ? '/app/driver' : '/app/services';
+
   useEffect(() => {
     const canSeeServiceAlerts = normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER';
     if (!canSeeServiceAlerts) {
@@ -312,7 +314,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
             )}
 
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER') && (
-              <Link href="/app/services" className="logout-button" style={serviceAlertStyle}>
+              <Link href={serviceAlertHref} className="logout-button" style={serviceAlertStyle}>
                 Allarme Service: {serviceAlertCounts.total}
               </Link>
             )}
