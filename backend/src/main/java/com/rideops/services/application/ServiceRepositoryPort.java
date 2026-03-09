@@ -34,5 +34,20 @@ public interface ServiceRepositoryPort {
 
     long countByAssignedDriverIdAndStatusIn(Long driverId, Collection<ServiceStatus> statuses);
 
+    long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusIn(
+        Long vehicleId,
+        LocalDateTime from,
+        LocalDateTime to,
+        Collection<ServiceStatus> statuses
+    );
+
+    long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusInAndIdNot(
+        Long vehicleId,
+        LocalDateTime from,
+        LocalDateTime to,
+        Collection<ServiceStatus> statuses,
+        Long excludedServiceId
+    );
+
     void delete(@NonNull RideServiceEntity entity);
 }

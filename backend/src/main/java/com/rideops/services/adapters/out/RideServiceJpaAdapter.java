@@ -95,6 +95,39 @@ public class RideServiceJpaAdapter implements ServiceRepositoryPort {
     }
 
     @Override
+    public long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusIn(
+        Long vehicleId,
+        LocalDateTime from,
+        LocalDateTime to,
+        Collection<ServiceStatus> statuses
+    ) {
+        return rideServiceRepository.countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusIn(
+            vehicleId,
+            from,
+            to,
+            statuses
+        );
+    }
+
+    @Override
+    public long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusInAndIdNot(
+        Long vehicleId,
+        LocalDateTime from,
+        LocalDateTime to,
+        Collection<ServiceStatus> statuses,
+        Long excludedServiceId
+    ) {
+        return rideServiceRepository
+            .countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusInAndIdNot(
+                vehicleId,
+                from,
+                to,
+                statuses,
+                excludedServiceId
+            );
+    }
+
+    @Override
     public void delete(@NonNull RideServiceEntity entity) {
         rideServiceRepository.delete(entity);
     }

@@ -83,6 +83,22 @@ type PlanFormState = {
   notes: string;
 };
 
+type UnavailabilityItem = {
+  id: number;
+  vehicleId: number;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type UnavailabilityFormState = {
+  startDate: string;
+  endDate: string;
+  reason: string;
+};
+
 const defaultOccurrenceForm: OccurrenceFormState = {
   planId: '',
   type: 'BOLLO',
@@ -106,6 +122,12 @@ const defaultPlanForm: PlanFormState = {
   standardCost: '0',
   currency: 'EUR',
   notes: ''
+};
+
+const defaultUnavailabilityForm: UnavailabilityFormState = {
+  startDate: '',
+  endDate: '',
+  reason: ''
 };
 
 function typeLabel(type: DeadlineType) {
@@ -164,12 +186,16 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
   const [newVehicleForm, setNewVehicleForm] = useState({ plate: '', seats: '', type: 'SEDAN' as VehicleType, notes: '' });
   const [occurrenceForm, setOccurrenceForm] = useState<OccurrenceFormState>(defaultOccurrenceForm);
   const [planForm, setPlanForm] = useState<PlanFormState>(defaultPlanForm);
+  const [unavailabilities, setUnavailabilities] = useState<UnavailabilityItem[]>([]);
+  const [unavailabilityForm, setUnavailabilityForm] = useState<UnavailabilityFormState>(defaultUnavailabilityForm);
 
   const [showOccurrenceForm, setShowOccurrenceForm] = useState(false);
   const [showPlanForm, setShowPlanForm] = useState(false);
+  const [showUnavailabilityForm, setShowUnavailabilityForm] = useState(false);
   const [showVehicleForm, setShowVehicleForm] = useState(false);
   const [editingOccurrenceId, setEditingOccurrenceId] = useState<number | null>(null);
   const [editingPlanId, setEditingPlanId] = useState<number | null>(null);
+  const [editingUnavailabilityId, setEditingUnavailabilityId] = useState<number | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -230,6 +256,18 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
     setLoading(false);
   }
 
+  async function loadVehicleUnavailabilities(vehicleId: number) {
+    const response = await fetch(`/api/fleet/vehicles/${vehicleId}/unavailabilities`, { cache: 'no-store' });
+    const payload = (await response.json().catch(() => [])) as UnavailabilityItem[] | { message?: string };
+
+    if (!response.ok) {
+      setError((payload as { message?: string }).message ?? 'Errore caricamento manutenzioni veicolo');
+      return;
+    }
+
+    setUnavailabilities(payload as UnavailabilityItem[]);
+  }
+
   useEffect(() => {
     loadVehicles();
   }, []);
@@ -238,8 +276,10 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
     if (selectedVehicleId) {
       setShowVehicleForm(false);
       loadVehicleDetail(selectedVehicleId);
+      loadVehicleUnavailabilities(selectedVehicleId);
     } else {
       setDetail(null);
+      setUnavailabilities([]);
       setLoading(false);
     }
   }, [selectedVehicleId]);
@@ -459,6 +499,65 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
     if (selectedVehicleId) {
       await loadVehicleDetail(selectedVehicleId);
     }
+  }
+
+  async function saveUnavailability(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedVehicleId) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    const targetUrl = editingUnavailabilityId
+      ? `/api/fleet/unavailabilities/${editingUnavailabilityId}`
+      : `/api/fleet/vehicles/${selectedVehicleId}/unavailabilities`;
+
+    const response = await fetch(targetUrl, {
+      method: editingUnavailabilityId ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        startDate: unavailabilityForm.startDate,
+        endDate: unavailabilityForm.endDate,
+        reason: unavailabilityForm.reason
+      })
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as { message?: string };
+    if (!response.ok) {
+      setError(payload.message ?? 'Salvataggio manutenzione non riuscito');
+      return;
+    }
+
+    setSuccess(editingUnavailabilityId ? 'Manutenzione aggiornata' : 'Manutenzione inserita');
+    setEditingUnavailabilityId(null);
+    setUnavailabilityForm(defaultUnavailabilityForm);
+    setShowUnavailabilityForm(true);
+    await loadVehicleUnavailabilities(selectedVehicleId);
+  }
+
+  async function deleteUnavailability(unavailabilityId: number) {
+    if (!selectedVehicleId) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/fleet/unavailabilities/${unavailabilityId}`, { method: 'DELETE' });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { message?: string };
+      setError(payload.message ?? 'Eliminazione manutenzione non riuscita');
+      return;
+    }
+
+    setSuccess('Manutenzione eliminata');
+    if (editingUnavailabilityId === unavailabilityId) {
+      setEditingUnavailabilityId(null);
+      setUnavailabilityForm(defaultUnavailabilityForm);
+    }
+    await loadVehicleUnavailabilities(selectedVehicleId);
   }
 
   async function syncMissingOccurrences() {
@@ -926,6 +1025,116 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </article>
+
+          <article className="dashboard-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <h3>4) Manutenzioni e indisponibilità</h3>
+              <button
+                type="button"
+                className="primary-button compact-button"
+                onClick={() => {
+                  setShowUnavailabilityForm((prev) => !prev);
+                  setEditingUnavailabilityId(null);
+                  setUnavailabilityForm(defaultUnavailabilityForm);
+                }}
+              >
+                {showUnavailabilityForm ? 'Chiudi manutenzione' : 'Nuova manutenzione'}
+              </button>
+            </div>
+
+            {showUnavailabilityForm && (
+              <form className="form-grid" onSubmit={saveUnavailability}>
+                <label>
+                  Dal giorno
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={unavailabilityForm.startDate}
+                    onChange={(event) => setUnavailabilityForm((prev) => ({ ...prev, startDate: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  Al giorno
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={unavailabilityForm.endDate}
+                    onChange={(event) => setUnavailabilityForm((prev) => ({ ...prev, endDate: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  Motivo guasto/manutenzione
+                  <input
+                    className="form-input"
+                    value={unavailabilityForm.reason}
+                    onChange={(event) => setUnavailabilityForm((prev) => ({ ...prev, reason: event.target.value }))}
+                    required
+                  />
+                </label>
+                <button type="submit" className="primary-button compact-button">
+                  {editingUnavailabilityId ? 'Aggiorna manutenzione' : 'Salva manutenzione'}
+                </button>
+              </form>
+            )}
+
+            <div style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Inizio</th>
+                    <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Fine</th>
+                    <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Motivo</th>
+                    <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {unavailabilities.length === 0 ? (
+                    <tr>
+                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }} colSpan={4}>
+                        Nessuna manutenzione registrata.
+                      </td>
+                    </tr>
+                  ) : (
+                    unavailabilities.map((item) => (
+                      <tr key={item.id}>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.startDate}</td>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.endDate}</td>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.reason}</td>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button
+                              type="button"
+                              className="primary-button compact-button"
+                              onClick={() => {
+                                setEditingUnavailabilityId(item.id);
+                                setShowUnavailabilityForm(true);
+                                setUnavailabilityForm({
+                                  startDate: item.startDate,
+                                  endDate: item.endDate,
+                                  reason: item.reason
+                                });
+                              }}
+                            >
+                              Modifica
+                            </button>
+                            <button
+                              type="button"
+                              className="logout-button"
+                              onClick={() => deleteUnavailability(item.id)}
+                            >
+                              Elimina
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

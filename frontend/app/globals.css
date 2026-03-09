@@ -175,6 +175,7 @@ a:hover {
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 14px;
+  min-width: 0;
 }
 
 .topbar {
@@ -228,6 +229,7 @@ a:hover {
   border-radius: 16px;
   box-shadow: var(--shadow);
   padding: 22px;
+  min-width: 0;
 }
 
 .home-public {

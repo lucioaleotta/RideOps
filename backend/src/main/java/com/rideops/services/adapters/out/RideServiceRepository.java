@@ -22,4 +22,19 @@ public interface RideServiceRepository extends JpaRepository<RideServiceEntity, 
     long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status);
 
     long countByAssignedDriverIdAndStatusIn(Long assignedDriverId, Collection<ServiceStatus> statuses);
+
+    long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusIn(
+        Long assignedVehicleId,
+        LocalDateTime from,
+        LocalDateTime to,
+        Collection<ServiceStatus> statuses
+    );
+
+    long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusInAndIdNot(
+        Long assignedVehicleId,
+        LocalDateTime from,
+        LocalDateTime to,
+        Collection<ServiceStatus> statuses,
+        Long id
+    );
 }

@@ -13,6 +13,9 @@ public record CreateServiceCommand(
     Integer durationHours,
     String notes,
     BigDecimal price,
-    ServiceStatus status
+    ServiceStatus status,
+    Long assignedVehicleId,
+    Boolean overrideVehicleDayConflict,
+    Boolean overrideVehicleMaintenanceConflict
 ) {
 }

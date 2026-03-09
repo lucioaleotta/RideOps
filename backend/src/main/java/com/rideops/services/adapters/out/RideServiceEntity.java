@@ -52,6 +52,9 @@ public class RideServiceEntity {
     @Column(name = "assigned_driver_id")
     private Long assignedDriverId;
 
+    @Column(name = "assigned_vehicle_id")
+    private Long assignedVehicleId;
+
     @Column(name = "assigned_by_user_id")
     private Long assignedByUserId;
 
@@ -152,6 +155,14 @@ public class RideServiceEntity {
 
     public void setAssignedDriverId(Long assignedDriverId) {
         this.assignedDriverId = assignedDriverId;
+    }
+
+    public Long getAssignedVehicleId() {
+        return assignedVehicleId;
+    }
+
+    public void setAssignedVehicleId(Long assignedVehicleId) {
+        this.assignedVehicleId = assignedVehicleId;
     }
 
     public Long getAssignedByUserId() {

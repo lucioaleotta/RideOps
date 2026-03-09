@@ -19,6 +19,7 @@ public final class ServiceMapper {
             entity.getPrice(),
             entity.getStatus(),
             entity.getAssignedDriverId(),
+            entity.getAssignedVehicleId(),
             entity.getAssignedByUserId(),
             entity.getAssignedAt(),
             entity.getCreatedAt(),

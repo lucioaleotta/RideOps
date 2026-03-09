@@ -16,6 +16,7 @@ public record ServiceDto(
     BigDecimal price,
     ServiceStatus status,
     Long assignedDriverId,
+    Long assignedVehicleId,
     Long assignedByUserId,
     LocalDateTime assignedAt,
     LocalDateTime createdAt,

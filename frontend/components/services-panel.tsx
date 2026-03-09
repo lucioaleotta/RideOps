@@ -1,6 +1,5 @@
 "use client";
 
-import Link from 'next/link';
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatCurrencyEUR } from '../lib/currency';
@@ -19,6 +18,7 @@ type ServiceItem = {
   price: number | null;
   status: ServiceStatus;
   assignedDriverId: number | null;
+  assignedVehicleId: number | null;
   assignedByUserId: number | null;
   assignedAt: string | null;
   createdAt: string;
@@ -45,6 +45,15 @@ type ServiceFormState = {
   notes: string;
   price: string;
   assignedDriverId: number | '';
+  assignedVehicleId: number | '';
+};
+
+type VehicleItem = {
+  id: number;
+  plate: string;
+  seats: number;
+  type: string;
+  notes: string | null;
 };
 
 type ServicesFilterState = {
@@ -63,8 +72,12 @@ const defaultForm: ServiceFormState = {
   durationHours: '',
   notes: '',
   price: '',
-  assignedDriverId: ''
+  assignedDriverId: '',
+  assignedVehicleId: ''
 };
+
+const vehicleDayConflictMessage = 'Il veicolo risulta già assegnato ad un altro servizio nella stessa giornata';
+const vehicleMaintenanceConflictMessage = 'Il veicolo risulta in manutenzione nella giornata del servizio';
 
 const defaultFilters: ServicesFilterState = {
   status: '',
@@ -75,13 +88,13 @@ const defaultFilters: ServicesFilterState = {
 };
 
 export function ServicesPanel() {
-    function driverLabel(driver: DriverItem) {
-      const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(' ').trim();
-      if (fullName) {
-        return `${fullName} (${driver.userId || driver.email})`;
-      }
-      return driver.userId || driver.email;
+  function driverLabel(driver: DriverItem) {
+    const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(' ').trim();
+    if (fullName) {
+      return fullName;
     }
+    return driver.email;
+  }
 
   const PAGE_SIZE = 10;
   const searchParams = useSearchParams();
@@ -89,6 +102,7 @@ export function ServicesPanel() {
 
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +111,8 @@ export function ServicesPanel() {
   const [editingInitialStatus, setEditingInitialStatus] = useState<Exclude<ServiceStatus, 'CLOSED'>>('OPEN');
   const [editingInitialAssignedDriverId, setEditingInitialAssignedDriverId] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+  const [selectedForPrintIds, setSelectedForPrintIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
@@ -156,6 +172,18 @@ export function ServicesPanel() {
     setDrivers(payload as DriverItem[]);
   }
 
+  async function loadVehicles() {
+    const response = await fetch('/api/fleet/vehicles', { cache: 'no-store' });
+    const payload = (await response.json().catch(() => [])) as VehicleItem[] | { message?: string };
+
+    if (!response.ok) {
+      setError((payload as { message?: string }).message ?? 'Errore caricamento veicoli');
+      return;
+    }
+
+    setVehicles(payload as VehicleItem[]);
+  }
+
   async function loadServices() {
     setLoading(true);
     setError(null);
@@ -198,6 +226,7 @@ export function ServicesPanel() {
 
   useEffect(() => {
     loadDrivers();
+    loadVehicles();
   }, []);
 
   useEffect(() => {
@@ -241,7 +270,8 @@ export function ServicesPanel() {
       durationHours: form.type === 'TOUR' ? Number(form.durationHours) : null,
       notes: form.notes.trim() || null,
       price: form.price.trim() ? Number(form.price) : null,
-      status
+      status,
+      assignedVehicleId: form.assignedVehicleId ? Number(form.assignedVehicleId) : null
     };
   }
 
@@ -292,15 +322,57 @@ export function ServicesPanel() {
     const targetUrl = editingId ? `/api/services/${editingId}` : '/api/services';
     const method = editingId ? 'PUT' : 'POST';
 
-    const response = await fetch(targetUrl, {
-      method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(toPayload(editingId ? editingInitialStatus : 'OPEN'))
-    });
+    let overrideVehicleDayConflict = false;
+    let overrideVehicleMaintenanceConflict = false;
+    let payload: (Partial<ServiceItem> & { message?: string }) = {};
+    let responseOk = false;
 
-    const payload = (await response.json().catch(() => ({}))) as Partial<ServiceItem> & { message?: string };
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const response = await fetch(targetUrl, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...toPayload(editingId ? editingInitialStatus : 'OPEN'),
+          overrideVehicleDayConflict,
+          overrideVehicleMaintenanceConflict
+        })
+      });
 
-    if (!response.ok) {
+      payload = (await response.json().catch(() => ({}))) as Partial<ServiceItem> & { message?: string };
+
+      if (response.ok) {
+        responseOk = true;
+        break;
+      }
+
+      const backendMessage = payload.message ?? 'Operazione fallita';
+
+      if (!overrideVehicleDayConflict && backendMessage.includes(vehicleDayConflictMessage)) {
+        const confirmed = window.confirm(
+          `${vehicleDayConflictMessage}. Vuoi continuare comunque con l'assegnazione?`
+        );
+        if (confirmed) {
+          overrideVehicleDayConflict = true;
+          continue;
+        }
+      }
+
+      if (!overrideVehicleMaintenanceConflict && backendMessage.includes(vehicleMaintenanceConflictMessage)) {
+        const confirmed = window.confirm(
+          `${vehicleMaintenanceConflictMessage}. Vuoi continuare comunque con l'assegnazione?`
+        );
+        if (confirmed) {
+          overrideVehicleMaintenanceConflict = true;
+          continue;
+        }
+      }
+
+      setSubmitting(false);
+      setError(backendMessage);
+      return;
+    }
+
+    if (!responseOk) {
       setSubmitting(false);
       setError(payload.message ?? 'Operazione fallita');
       return;
@@ -344,7 +416,8 @@ export function ServicesPanel() {
       durationHours: service.durationHours ? String(service.durationHours) : '',
       notes: service.notes ?? '',
       price: service.price != null ? String(service.price) : '',
-      assignedDriverId: service.assignedDriverId ?? ''
+      assignedDriverId: service.assignedDriverId ?? '',
+      assignedVehicleId: service.assignedVehicleId ?? ''
     });
   }
 
@@ -381,6 +454,71 @@ export function ServicesPanel() {
     await loadServices();
   }
 
+  function openPrint(serviceId: number) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.open(`/services/${serviceId}/print`, '_blank', 'noopener,noreferrer');
+  }
+
+  function togglePrintSelection(serviceId: number) {
+    setSelectedForPrintIds((prev) => (
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
+    ));
+  }
+
+  function toggleSelectAllOnPage(checked: boolean) {
+    const pageIds = paginatedServices.map((item) => item.id);
+    if (!checked) {
+      setSelectedForPrintIds((prev) => prev.filter((id) => !pageIds.includes(id)));
+      return;
+    }
+
+    setSelectedForPrintIds((prev) => {
+      const next = new Set(prev);
+      pageIds.forEach((id) => next.add(id));
+      return Array.from(next);
+    });
+  }
+
+  function printSelectedServices() {
+    if (selectedForPrintIds.length === 0) {
+      setError('Seleziona almeno un servizio da stampare');
+      return;
+    }
+
+    setError(null);
+    setSuccess(`Apro ${selectedForPrintIds.length} servizi in stampa`);
+    const idsParam = selectedForPrintIds.join(',');
+    window.open(`/services/print?ids=${encodeURIComponent(idsParam)}`, '_blank', 'noopener,noreferrer');
+  }
+
+  function assignedDriverLabel(service: ServiceItem) {
+    if (!service.assignedDriverId) {
+      return 'Non assegnato';
+    }
+
+    const found = drivers.find((driver) => driver.id === service.assignedDriverId);
+    if (!found) {
+      return `#${service.assignedDriverId}`;
+    }
+
+    return driverLabel(found);
+  }
+
+  function assignedVehicleLabel(service: ServiceItem) {
+    if (!service.assignedVehicleId) {
+      return 'Non assegnato';
+    }
+    const found = vehicles.find((vehicle) => vehicle.id === service.assignedVehicleId);
+    if (!found) {
+      return `#${service.assignedVehicleId}`;
+    }
+    return found.plate;
+  }
+
   const orderedServices = useMemo(
     () => [...services].sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime()),
     [services]
@@ -399,10 +537,32 @@ export function ServicesPanel() {
     return orderedServices.slice(start, start + PAGE_SIZE);
   }, [orderedServices, currentPage]);
 
+  const selectedService = useMemo(
+    () => orderedServices.find((item) => item.id === selectedServiceId) ?? null,
+    [orderedServices, selectedServiceId]
+  );
+
+  useEffect(() => {
+    if (!selectedServiceId) {
+      return;
+    }
+    if (!orderedServices.some((item) => item.id === selectedServiceId)) {
+      setSelectedServiceId(null);
+    }
+  }, [orderedServices, selectedServiceId]);
+
+  useEffect(() => {
+    const validIds = new Set(orderedServices.map((item) => item.id));
+    setSelectedForPrintIds((prev) => prev.filter((id) => validIds.has(id)));
+  }, [orderedServices]);
+
+  const allCurrentPageSelected = paginatedServices.length > 0
+    && paginatedServices.every((service) => selectedForPrintIds.includes(service.id));
+
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
+    <section style={{ display: 'grid', gap: 16, maxWidth: '100%' }}>
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <h3>Lista servizi</h3>
           <button
             type="button"
@@ -505,7 +665,7 @@ export function ServicesPanel() {
           </div>
         </div>
         {filters.onlyUnassigned && (
-          <div style={{ marginTop: 8, marginBottom: 8, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ marginTop: 8, marginBottom: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 600 }}>Filtro attivo: Non assegnati</span>
             <button
               type="button"
@@ -522,62 +682,178 @@ export function ServicesPanel() {
           <p>Caricamento servizi...</p>
         ) : (
           <>
-            <div style={{ overflowX: 'auto', marginTop: 8 }}>
-            <table style={{ width: '100%', minWidth: 980, borderCollapse: 'collapse' }}>
+            {selectedService && (
+              <div className="dashboard-card" style={{ marginTop: 10, background: '#eef6ff' }}>
+                <strong>Servizio selezionato #{selectedService.id}</strong>
+                <p style={{ margin: '6px 0 0' }}>
+                  {new Date(selectedService.startAt).toLocaleString('it-IT')} - {typeLabel(selectedService.type)} - {statusLabel(selectedService.status)}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  {selectedService.pickupLocation} {'->'} {selectedService.destination}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Driver:</strong> {assignedDriverLabel(selectedService)}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Veicolo:</strong> {assignedVehicleLabel(selectedService)}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Prezzo:</strong> {formatCurrencyEUR(selectedService.price)}
+                </p>
+                {selectedService.notes && (
+                  <p style={{ margin: '6px 0 0' }}>
+                    <strong>Note:</strong> {selectedService.notes}
+                  </p>
+                )}
+                <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button type="button" className="primary-button compact-button" onClick={() => onEdit(selectedService)}>
+                    Modifica
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-button compact-button"
+                    style={{ background: '#d32f2f' }}
+                    onClick={() => onDelete(selectedService.id)}
+                  >
+                    Elimina
+                  </button>
+                  {selectedService.status === 'ASSIGNED' && (
+                    <button
+                      type="button"
+                      className="primary-button compact-button"
+                      style={{ background: '#ef6c00' }}
+                      onClick={() => onClose(selectedService.id)}
+                    >
+                      Chiudi
+                    </button>
+                  )}
+                  <button type="button" className="primary-button compact-button" onClick={() => openPrint(selectedService.id)}>
+                    Stampa
+                  </button>
+                  <button
+                    type="button"
+                    className="logout-button compact-button"
+                    onClick={() => setSelectedServiceId(null)}
+                  >
+                    Deseleziona
+                  </button>
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+              <small style={{ color: 'var(--muted)' }}>
+                Selezionati per stampa: {selectedForPrintIds.length}
+              </small>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="primary-button compact-button"
+                  onClick={printSelectedServices}
+                >
+                  Stampa selezionati
+                </button>
+                <button
+                  type="button"
+                  className="logout-button compact-button"
+                  onClick={() => setSelectedForPrintIds([])}
+                  disabled={selectedForPrintIds.length === 0}
+                >
+                  Pulisci selezione
+                </button>
+              </div>
+            </div>
+            <div style={{ overflowX: 'auto', marginTop: 8, maxWidth: '100%' }}>
+            <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
+                  <th style={thStyle}>
+                    <input
+                      type="checkbox"
+                      checked={allCurrentPageSelected}
+                      onChange={(event) => toggleSelectAllOnPage(event.target.checked)}
+                      aria-label="Seleziona tutti i servizi in pagina per la stampa"
+                    />
+                  </th>
                   <th style={thStyle}>Inizio</th>
                   <th style={thStyle}>Pickup</th>
                   <th style={thStyle}>Destinazione</th>
                   <th style={thStyle}>Tipo</th>
                   <th style={thStyle}>Prezzo</th>
                   <th style={thStyle}>Driver</th>
+                  <th style={thStyle}>Veicolo</th>
                   <th style={thStyle}>Stato</th>
                   <th style={thStyle}>Azioni</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedServices.map((service) => (
-                  <tr key={service.id}>
+                  <tr
+                    key={service.id}
+                    style={{
+                      background: selectedServiceId === service.id ? '#eaf4ff' : 'transparent',
+                      color: service.status === 'CLOSED' ? '#7f8ea3' : 'inherit'
+                    }}
+                  >
+                    <td style={tdStyle}>
+                      <input
+                        type="checkbox"
+                        checked={selectedForPrintIds.includes(service.id)}
+                        onChange={() => togglePrintSelection(service.id)}
+                        aria-label={`Seleziona servizio ${service.id} per stampa multipla`}
+                      />
+                    </td>
                     <td style={tdStyle}>{new Date(service.startAt).toLocaleString('it-IT')}</td>
-                    <td style={{ ...tdStyle, minWidth: 220, lineHeight: 1.35 }}>{service.pickupLocation}</td>
-                    <td style={{ ...tdStyle, minWidth: 220, lineHeight: 1.35 }}>{service.destination}</td>
+                    <td style={{ ...tdStyle, minWidth: 180, lineHeight: 1.35 }}>{service.pickupLocation}</td>
+                    <td style={{ ...tdStyle, minWidth: 180, lineHeight: 1.35 }}>{service.destination}</td>
                     <td style={tdStyle}>{typeLabel(service.type)}</td>
                     <td style={tdStyle}>{formatCurrencyEUR(service.price)}</td>
-                    <td style={{ ...tdStyle, minWidth: 200 }}>
-                      {service.assignedDriverId
-                        ? driverLabel(drivers.find((driver) => driver.id === service.assignedDriverId) ?? {
-                          id: service.assignedDriverId,
-                          userId: '',
-                          email: `#${service.assignedDriverId}`,
-                          role: 'DRIVER',
-                          enabled: true,
-                          createdAt: ''
-                        })
-                        : '—'}
+                    <td style={{ ...tdStyle, minWidth: 140 }}>
+                      {assignedDriverLabel(service)}
                     </td>
-                    <td style={tdStyle}>{statusLabel(service.status)}</td>
-                    <td style={{ ...tdStyle, minWidth: 320 }}>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'nowrap', alignItems: 'center' }}>
-                      <button type="button" className="logout-button" onClick={() => onEdit(service)}>
-                        Modifica
-                      </button>
-                      <button type="button" className="logout-button" onClick={() => onDelete(service.id)}>
-                        Elimina
-                      </button>
-                      {service.status === 'ASSIGNED' && (
-                        <button type="button" className="logout-button" onClick={() => onClose(service.id)}>
-                          Chiudi
-                        </button>
-                      )}
-                      <Link
-                        className="logout-button"
-                        href={`/services/${service.id}/print`}
-                        target="_blank"
-                        style={{ whiteSpace: 'nowrap' }}
+                    <td style={{ ...tdStyle, minWidth: 100 }}>
+                      {assignedVehicleLabel(service)}
+                    </td>
+                    <td style={tdStyle}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '4px 8px',
+                          borderRadius: 999,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          background:
+                            service.status === 'CLOSED'
+                              ? '#eceff3'
+                              : service.status === 'ASSIGNED'
+                                ? '#e8f5e9'
+                                : '#fff4e5',
+                          color:
+                            service.status === 'CLOSED'
+                              ? '#5f6b7a'
+                              : service.status === 'ASSIGNED'
+                                ? '#2e7d32'
+                                : '#b26a00'
+                        }}
                       >
-                        Stampa
-                      </Link>
+                        {statusLabel(service.status)}
+                      </span>
+                    </td>
+                    <td style={{ ...tdStyle, minWidth: 180 }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          className="primary-button compact-button"
+                          onClick={() => setSelectedServiceId(service.id)}
+                        >
+                          Seleziona
+                        </button>
+                        <button
+                          type="button"
+                          className="primary-button compact-button"
+                          onClick={() => openPrint(service.id)}
+                        >
+                          Stampa
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -711,7 +987,26 @@ export function ServicesPanel() {
               >
                 <option value="">Non assegnato</option>
                 {drivers.map((driver) => (
-                  <option key={driver.id} value={driver.id}>{driver.email}</option>
+                  <option key={driver.id} value={driver.id}>{driverLabel(driver)}</option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              Veicolo (opzionale)
+              <select
+                className="form-input"
+                value={form.assignedVehicleId}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    assignedVehicleId: event.target.value ? Number(event.target.value) : ''
+                  }))
+                }
+              >
+                <option value="">Non assegnato</option>
+                {vehicles.map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id}>{vehicle.plate}</option>
                 ))}
               </select>
             </label>

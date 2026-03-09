@@ -105,7 +105,10 @@ public class ServiceController {
                 request.durationHours(),
                 request.notes(),
                 request.price(),
-                request.status()
+                request.status(),
+                request.assignedVehicleId(),
+                request.overrideVehicleDayConflict(),
+                request.overrideVehicleMaintenanceConflict()
             )
         );
     }
@@ -123,7 +126,10 @@ public class ServiceController {
                 request.durationHours(),
                 request.notes(),
                 request.price(),
-                request.status()
+                request.status(),
+                request.assignedVehicleId(),
+                request.overrideVehicleDayConflict(),
+                request.overrideVehicleMaintenanceConflict()
             )
         );
     }
@@ -178,7 +184,10 @@ public class ServiceController {
                                 Integer durationHours,
                                 String notes,
                                 BigDecimal price,
-                                @NotNull ServiceStatus status) {
+                                @NotNull ServiceStatus status,
+                                Long assignedVehicleId,
+                                Boolean overrideVehicleDayConflict,
+                                Boolean overrideVehicleMaintenanceConflict) {
     }
 
     record UpdateServiceRequest(@NotNull LocalDateTime startAt,
@@ -188,7 +197,10 @@ public class ServiceController {
                                 Integer durationHours,
                                 String notes,
                                 BigDecimal price,
-                                @NotNull ServiceStatus status) {
+                                @NotNull ServiceStatus status,
+                                Long assignedVehicleId,
+                                Boolean overrideVehicleDayConflict,
+                                Boolean overrideVehicleMaintenanceConflict) {
     }
 
     record ErrorResponse(String message) {
