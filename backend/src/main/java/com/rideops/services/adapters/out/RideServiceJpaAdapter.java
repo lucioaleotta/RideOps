@@ -4,6 +4,7 @@ import com.rideops.services.application.ServiceRepositoryPort;
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Sort;
@@ -86,6 +87,11 @@ public class RideServiceJpaAdapter implements ServiceRepositoryPort {
     @Override
     public long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status) {
         return rideServiceRepository.countByAssignedDriverIdIsNullAndStatus(status);
+    }
+
+    @Override
+    public long countByAssignedDriverIdAndStatusIn(Long driverId, Collection<ServiceStatus> statuses) {
+        return rideServiceRepository.countByAssignedDriverIdAndStatusIn(driverId, statuses);
     }
 
     @Override

@@ -55,7 +55,20 @@ public class AdminUserController {
     @ResponseStatus(HttpStatus.CREATED)
     public UserSummaryDto createUser(@Valid @RequestBody CreateUserRequest request) {
         return createUserUseCase.execute(
-            new CreateUserCommand(request.userId(), request.email(), request.password(), request.role())
+            new CreateUserCommand(
+                request.userId(),
+                request.email(),
+                request.password(),
+                request.role(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            )
         );
     }
 

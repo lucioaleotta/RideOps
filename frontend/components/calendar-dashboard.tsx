@@ -29,6 +29,8 @@ type DriverItem = {
   id: number;
   userId: string;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
   role: string;
   enabled: boolean;
   createdAt: string;
@@ -202,6 +204,10 @@ export function CalendarDashboard() {
       return `#${selectedService.assignedDriverId}`;
     }
 
+    const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(' ').trim();
+    if (fullName) {
+      return `${fullName} (${driver.userId || driver.email})`;
+    }
     return driver.userId || driver.email;
   }, [selectedService, drivers]);
 

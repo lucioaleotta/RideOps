@@ -18,4 +18,6 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     List<UserEntity> findAllByOrderByCreatedAtDesc();
 
     List<UserEntity> findAllByRoleAndEnabledTrueOrderByEmailAsc(UserRole role);
+
+    List<UserEntity> findAllByRoleOrderByCreatedAtDesc(UserRole role);
 }

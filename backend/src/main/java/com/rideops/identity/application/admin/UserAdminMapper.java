@@ -14,7 +14,15 @@ public final class UserAdminMapper {
             userEntity.getEmail(),
             userEntity.getRole().name(),
             userEntity.isEnabled(),
-            userEntity.getCreatedAt()
+            userEntity.getCreatedAt(),
+            userEntity.getFirstName(),
+            userEntity.getLastName(),
+            userEntity.getBirthDate(),
+            userEntity.getLicenseNumber(),
+            DriverProfileJson.readStringList(userEntity.getLicenseTypesJson()),
+            DriverProfileJson.readStringList(userEntity.getResidentialAddressesJson()),
+            userEntity.getMobilePhone(),
+            userEntity.getLicenseExpiryDate()
         );
     }
 }

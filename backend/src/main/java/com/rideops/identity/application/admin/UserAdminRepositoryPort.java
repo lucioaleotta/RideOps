@@ -19,4 +19,6 @@ public interface UserAdminRepositoryPort {
     List<UserEntity> findAllByOrderByCreatedAtDesc();
 
     List<UserEntity> findAllByRoleAndEnabledTrueOrderByEmailAsc(UserRole role);
+
+    List<UserEntity> findAllByRoleOrderByCreatedAtDesc(UserRole role);
 }

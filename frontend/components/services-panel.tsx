@@ -27,7 +27,10 @@ type ServiceItem = {
 
 type DriverItem = {
   id: number;
+  userId: string;
   email: string;
+  firstName?: string | null;
+  lastName?: string | null;
   role: string;
   enabled: boolean;
   createdAt: string;
@@ -72,6 +75,14 @@ const defaultFilters: ServicesFilterState = {
 };
 
 export function ServicesPanel() {
+    function driverLabel(driver: DriverItem) {
+      const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(' ').trim();
+      if (fullName) {
+        return `${fullName} (${driver.userId || driver.email})`;
+      }
+      return driver.userId || driver.email;
+    }
+
   const PAGE_SIZE = 10;
   const searchParams = useSearchParams();
   const initializedFromQuery = useRef(false);
@@ -443,7 +454,7 @@ export function ServicesPanel() {
             >
               <option value="">Tutti</option>
               {drivers.map((driver) => (
-                <option key={driver.id} value={driver.id}>{driver.email}</option>
+                <option key={driver.id} value={driver.id}>{driverLabel(driver)}</option>
               ))}
             </select>
           </label>
@@ -535,7 +546,14 @@ export function ServicesPanel() {
                     <td style={tdStyle}>{formatCurrencyEUR(service.price)}</td>
                     <td style={{ ...tdStyle, minWidth: 200 }}>
                       {service.assignedDriverId
-                        ? drivers.find((driver) => driver.id === service.assignedDriverId)?.email ?? `#${service.assignedDriverId}`
+                        ? driverLabel(drivers.find((driver) => driver.id === service.assignedDriverId) ?? {
+                          id: service.assignedDriverId,
+                          userId: '',
+                          email: `#${service.assignedDriverId}`,
+                          role: 'DRIVER',
+                          enabled: true,
+                          createdAt: ''
+                        })
                         : '—'}
                     </td>
                     <td style={tdStyle}>{statusLabel(service.status)}</td>

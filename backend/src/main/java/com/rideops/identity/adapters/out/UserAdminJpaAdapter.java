@@ -46,4 +46,9 @@ public class UserAdminJpaAdapter implements UserAdminRepositoryPort {
     public List<UserEntity> findAllByRoleAndEnabledTrueOrderByEmailAsc(UserRole role) {
         return userRepository.findAllByRoleAndEnabledTrueOrderByEmailAsc(role);
     }
+
+    @Override
+    public List<UserEntity> findAllByRoleOrderByCreatedAtDesc(UserRole role) {
+        return userRepository.findAllByRoleOrderByCreatedAtDesc(role);
+    }
 }

@@ -4,6 +4,7 @@ import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.lang.NonNull;
@@ -30,6 +31,8 @@ public interface ServiceRepositoryPort {
                                                                                                LocalDateTime fromExclusive);
 
     long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status);
+
+    long countByAssignedDriverIdAndStatusIn(Long driverId, Collection<ServiceStatus> statuses);
 
     void delete(@NonNull RideServiceEntity entity);
 }
