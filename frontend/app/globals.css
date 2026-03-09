@@ -90,6 +90,10 @@ a:hover {
   color: #1b8a3f;
 }
 
+.warning-text {
+  color: #ef6c00;
+}
+
 .app-shell {
   min-height: 100vh;
   display: grid;

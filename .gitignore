@@ -17,6 +17,7 @@ yarn-error.log*
 
 # Local auth token helper
 .rideops_token
+.rideops/
 
 # IDE
 .idea/
