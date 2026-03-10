@@ -15,6 +15,10 @@ public record ServiceDto(
     String notes,
     BigDecimal price,
     ServiceStatus status,
+    Long assignedDriverId,
+    Long assignedVehicleId,
+    Long assignedByUserId,
+    LocalDateTime assignedAt,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {

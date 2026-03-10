@@ -9,9 +9,12 @@ import org.springframework.stereotype.Service;
 public class CreateServiceUseCase {
 
     private final ServiceRepositoryPort serviceRepositoryPort;
+    private final VehicleAssignmentValidationService vehicleAssignmentValidationService;
 
-    public CreateServiceUseCase(ServiceRepositoryPort serviceRepositoryPort) {
+    public CreateServiceUseCase(ServiceRepositoryPort serviceRepositoryPort,
+                                VehicleAssignmentValidationService vehicleAssignmentValidationService) {
         this.serviceRepositoryPort = serviceRepositoryPort;
+        this.vehicleAssignmentValidationService = vehicleAssignmentValidationService;
     }
 
     public ServiceDto execute(CreateServiceCommand command) {
@@ -22,6 +25,7 @@ public class CreateServiceUseCase {
             command.pickupLocation(),
             command.destination()
         );
+        vehicleAssignmentValidationService.validateForCreate(command);
 
         ServiceStatus initialStatus = ServiceValidationSupport.sanitizeCreateStatus(command.status());
 
@@ -34,6 +38,7 @@ public class CreateServiceUseCase {
         entity.setNotes(cleanNullable(command.notes()));
         entity.setPrice(command.price());
         entity.setStatus(initialStatus);
+        entity.setAssignedVehicleId(command.assignedVehicleId());
 
         return ServiceMapper.toDto(serviceRepositoryPort.save(entity));
     }

@@ -49,6 +49,18 @@ public class RideServiceEntity {
     @Column(nullable = false, length = 20)
     private ServiceStatus status = ServiceStatus.OPEN;
 
+    @Column(name = "assigned_driver_id")
+    private Long assignedDriverId;
+
+    @Column(name = "assigned_vehicle_id")
+    private Long assignedVehicleId;
+
+    @Column(name = "assigned_by_user_id")
+    private Long assignedByUserId;
+
+    @Column(name = "assigned_at")
+    private LocalDateTime assignedAt;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -135,6 +147,38 @@ public class RideServiceEntity {
 
     public void setStatus(ServiceStatus status) {
         this.status = status;
+    }
+
+    public Long getAssignedDriverId() {
+        return assignedDriverId;
+    }
+
+    public void setAssignedDriverId(Long assignedDriverId) {
+        this.assignedDriverId = assignedDriverId;
+    }
+
+    public Long getAssignedVehicleId() {
+        return assignedVehicleId;
+    }
+
+    public void setAssignedVehicleId(Long assignedVehicleId) {
+        this.assignedVehicleId = assignedVehicleId;
+    }
+
+    public Long getAssignedByUserId() {
+        return assignedByUserId;
+    }
+
+    public void setAssignedByUserId(Long assignedByUserId) {
+        this.assignedByUserId = assignedByUserId;
+    }
+
+    public LocalDateTime getAssignedAt() {
+        return assignedAt;
+    }
+
+    public void setAssignedAt(LocalDateTime assignedAt) {
+        this.assignedAt = assignedAt;
     }
 
     public LocalDateTime getCreatedAt() {

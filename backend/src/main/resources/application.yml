@@ -34,5 +34,6 @@ security:
 rideops:
   security:
     admin:
+      user-id: ${ADMIN_USER_ID:admin}
       email: ${ADMIN_EMAIL:admin@rideops.local}
       password: ${ADMIN_PASSWORD:ChangeMe123!}

@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 export function LoginForm() {
   const router = useRouter();
-  const [email, setEmail] = useState('admin@rideops.local');
+  const [userId, setUserId] = useState('admin');
   const [password, setPassword] = useState('ChangeMe123!');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -19,7 +19,7 @@ export function LoginForm() {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ userId, password })
     });
 
     setLoading(false);
@@ -37,11 +37,11 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="form-grid">
       <label>
-        Email
+        User ID
         <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          type="text"
+          value={userId}
+          onChange={(e) => setUserId(e.target.value)}
           required
           className="form-input"
         />

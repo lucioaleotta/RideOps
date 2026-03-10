@@ -1,31 +1,21 @@
-import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { CalendarDashboard } from '../../components/calendar-dashboard';
+import { FleetDeadlinesAlerts } from '../../components/fleet-deadlines-alerts';
 
 export default function AppHomePage() {
+  const role = (cookies().get('user_role')?.value ?? '').toUpperCase();
+  const isDriver = role === 'DRIVER';
+
   return (
     <main>
-      <img src="/rideops-logo.svg" alt="RideOps logo" className="home-logo" />
-      <h1>Benvenuto in RideOps</h1>
-      <p>Seleziona un’area dal menu laterale oppure usa i collegamenti rapidi qui sotto.</p>
-
-      <section className="dashboard-grid">
-        <article className="dashboard-card">
-          <h3>Admin</h3>
-          <p>Configurazioni e controllo completo piattaforma.</p>
-          <Link href="/app/admin">Apri area</Link>
-        </article>
-
-        <article className="dashboard-card">
-          <h3>Gestionale</h3>
-          <p>Gestione operativa servizi e pianificazione.</p>
-          <Link href="/app/gestionale">Apri area</Link>
-        </article>
-
-        <article className="dashboard-card">
-          <h3>Driver</h3>
-          <p>Vista missioni e attività giornaliere.</p>
-          <Link href="/app/driver">Apri area</Link>
-        </article>
-      </section>
+      <h1>Calendar Dashboard</h1>
+      <p>
+        {isDriver
+          ? 'Vista operativa dei servizi assegnati al driver loggato, con navigazione mese / settimana / giorno.'
+          : 'Vista operativa servizi con navigazione mese / settimana / giorno.'}
+      </p>
+      {!isDriver && <FleetDeadlinesAlerts />}
+      <CalendarDashboard driverMode={isDriver} />
     </main>
   );
 }

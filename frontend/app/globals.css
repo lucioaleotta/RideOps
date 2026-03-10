@@ -76,12 +76,22 @@ a:hover {
   cursor: not-allowed;
 }
 
+.compact-button {
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
 .error-text {
   color: #d32f2f;
 }
 
 .success-text {
   color: #1b8a3f;
+}
+
+.warning-text {
+  color: #ef6c00;
 }
 
 .app-shell {
@@ -165,6 +175,7 @@ a:hover {
   display: grid;
   grid-template-rows: auto 1fr;
   gap: 14px;
+  min-width: 0;
 }
 
 .topbar {
@@ -218,6 +229,7 @@ a:hover {
   border-radius: 16px;
   box-shadow: var(--shadow);
   padding: 22px;
+  min-width: 0;
 }
 
 .home-public {

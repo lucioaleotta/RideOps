@@ -2,18 +2,22 @@ package com.rideops.services.application;
 
 import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.domain.ServiceStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UpdateServiceUseCase {
 
     private final ServiceRepositoryPort serviceRepositoryPort;
+    private final VehicleAssignmentValidationService vehicleAssignmentValidationService;
 
-    public UpdateServiceUseCase(ServiceRepositoryPort serviceRepositoryPort) {
+    public UpdateServiceUseCase(ServiceRepositoryPort serviceRepositoryPort,
+                                VehicleAssignmentValidationService vehicleAssignmentValidationService) {
         this.serviceRepositoryPort = serviceRepositoryPort;
+        this.vehicleAssignmentValidationService = vehicleAssignmentValidationService;
     }
 
-    public ServiceDto execute(Long serviceId, UpdateServiceCommand command) {
+    public ServiceDto execute(@NonNull Long serviceId, UpdateServiceCommand command) {
         RideServiceEntity entity = serviceRepositoryPort.findById(serviceId)
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
@@ -31,6 +35,7 @@ public class UpdateServiceUseCase {
             command.pickupLocation(),
             command.destination()
         );
+        vehicleAssignmentValidationService.validateForUpdate(serviceId, command);
 
         ServiceValidationSupport.validateRequestedTransition(entity.getStatus(), command.status());
 
@@ -41,6 +46,7 @@ public class UpdateServiceUseCase {
         entity.setDurationHours(command.durationHours());
         entity.setNotes(cleanNullable(command.notes()));
         entity.setPrice(command.price());
+        entity.setAssignedVehicleId(command.assignedVehicleId());
         if (command.status() != null) {
             entity.setStatus(command.status());
         }
