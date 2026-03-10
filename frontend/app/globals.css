@@ -269,6 +269,45 @@ a:hover {
   background: #f9fcff;
 }
 
+.finance-bars-row {
+  width: 100%;
+  height: 22px;
+  border-radius: 8px;
+  background: #eaf1f9;
+  overflow: hidden;
+}
+
+.finance-bar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.finance-bar.revenue {
+  background: linear-gradient(90deg, #1b8a3f, #2dbb5f);
+}
+
+.finance-bar.cost {
+  background: linear-gradient(90deg, #b23131, #ef5350);
+}
+
+.finance-bar.net-positive {
+  background: linear-gradient(90deg, #0f4c81, #1e88e5);
+}
+
+.finance-bar.net-negative {
+  background: linear-gradient(90deg, #6d1b7b, #ad2ec4);
+}
+
+.finance-bar.category {
+  background: linear-gradient(90deg, #ef6c00, #ffb300);
+}
+
 .print-page {
   min-height: 100vh;
   background: #eef3f9;

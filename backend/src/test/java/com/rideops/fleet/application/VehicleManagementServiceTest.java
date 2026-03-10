@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class VehicleManagementServiceTest {
@@ -38,11 +39,14 @@ class VehicleManagementServiceTest {
     @Mock
     private VehicleDeadlinePlanRepository planRepository;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private VehicleManagementService service;
 
     @BeforeEach
     void setUp() {
-        service = new VehicleManagementService(vehicleRepository, occurrenceRepository, planRepository);
+        service = new VehicleManagementService(vehicleRepository, occurrenceRepository, planRepository, eventPublisher);
     }
 
     @Test

@@ -4,7 +4,7 @@ import { GestionaleUnassignedBadge } from '../../../components/gestionale-unassi
 export default function GestionalePage() {
   return (
     <main>
-      <h1>Gestionale</h1>
+      <h1>Gestione Personale</h1>
       <div className="dashboard-card">
         <p>Da qui puoi gestire l'anagrafica DRIVER: creazione, modifica, disattivazione logica e ripristino.</p>
       </div>
