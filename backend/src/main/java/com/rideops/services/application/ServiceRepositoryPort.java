@@ -23,13 +23,6 @@ public interface ServiceRepositoryPort {
                                           ServiceStatus status,
                                           ServiceType type);
 
-    List<RideServiceEntity> findAllByAssignedDriverIdAndStartAtBetweenOrderByStartAtAsc(Long driverId,
-                                                                                          LocalDateTime from,
-                                                                                          LocalDateTime to);
-
-    List<RideServiceEntity> findAllByAssignedDriverIdAndStartAtGreaterThanOrderByStartAtAsc(Long driverId,
-                                                                                               LocalDateTime fromExclusive);
-
     long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status);
 
     long countByAssignedDriverIdAndStatusIn(Long driverId, Collection<ServiceStatus> statuses);

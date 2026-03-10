@@ -12,14 +12,24 @@ function parseBackendError(status: number, payload: unknown) {
   return NextResponse.json({ message: 'Request failed' }, { status });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const token = cookies().get('access_token')?.value;
   if (!token) {
     return unauthorized();
   }
 
+  const requestUrl = new URL(request.url);
   const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
-  const response = await fetch(`${backendUrl}/driver/services/upcoming`, {
+  const url = new URL(`${backendUrl}/driver/services`);
+
+  // Forward non-empty filter params (from/to/status/type) to backend unified driver services endpoint.
+  requestUrl.searchParams.forEach((value, key) => {
+    if (value) {
+      url.searchParams.set(key, value);
+    }
+  });
+
+  const response = await fetch(url.toString(), {
     headers: { Authorization: `Bearer ${token}` },
     cache: 'no-store'
   });

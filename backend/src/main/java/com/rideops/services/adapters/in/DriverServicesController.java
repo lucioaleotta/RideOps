@@ -1,14 +1,18 @@
 package com.rideops.services.adapters.in;
 
 import com.rideops.identity.application.IdentityUserDetails;
-import com.rideops.services.application.ListDriverTodayServicesUseCase;
-import com.rideops.services.application.ListDriverUpcomingServicesUseCase;
+import com.rideops.services.application.ListDriverServicesUseCase;
 import com.rideops.services.application.ServiceDto;
+import com.rideops.services.domain.ServiceStatus;
+import com.rideops.services.domain.ServiceType;
+import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,28 +22,26 @@ import org.springframework.web.server.ResponseStatusException;
 @PreAuthorize("hasAnyRole('ADMIN','DRIVER')")
 public class DriverServicesController {
 
-    private final ListDriverTodayServicesUseCase listDriverTodayServicesUseCase;
-    private final ListDriverUpcomingServicesUseCase listDriverUpcomingServicesUseCase;
+    private final ListDriverServicesUseCase listDriverServicesUseCase;
 
-    public DriverServicesController(ListDriverTodayServicesUseCase listDriverTodayServicesUseCase,
-                                    ListDriverUpcomingServicesUseCase listDriverUpcomingServicesUseCase) {
-        this.listDriverTodayServicesUseCase = listDriverTodayServicesUseCase;
-        this.listDriverUpcomingServicesUseCase = listDriverUpcomingServicesUseCase;
+    public DriverServicesController(ListDriverServicesUseCase listDriverServicesUseCase) {
+        this.listDriverServicesUseCase = listDriverServicesUseCase;
     }
 
-    @GetMapping("/today")
-    public List<ServiceDto> today(@AuthenticationPrincipal IdentityUserDetails user) {
+    @GetMapping
+    public List<ServiceDto> listFiltered(@AuthenticationPrincipal IdentityUserDetails user,
+                                         @RequestParam(required = false)
+                                         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                                         LocalDateTime from,
+                                         @RequestParam(required = false)
+                                         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                                         LocalDateTime to,
+                                         @RequestParam(required = false) ServiceStatus status,
+                                         @RequestParam(required = false) ServiceType type) {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
         }
-        return listDriverTodayServicesUseCase.execute(user.getId());
-    }
-
-    @GetMapping("/upcoming")
-    public List<ServiceDto> upcoming(@AuthenticationPrincipal IdentityUserDetails user) {
-        if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
-        }
-        return listDriverUpcomingServicesUseCase.execute(user.getId());
+        // Single entry point for driver service listing, optionally constrained by time/status/type.
+        return listDriverServicesUseCase.execute(user.getId(), from, to, status, type);
     }
 }

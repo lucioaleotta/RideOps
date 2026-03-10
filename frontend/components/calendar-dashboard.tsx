@@ -165,50 +165,33 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
       setError(null);
 
       if (driverMode) {
-        const [todayResponse, upcomingResponse] = await Promise.all([
-          fetch('/api/driver/services/today', { cache: 'no-store' }),
-          fetch('/api/driver/services/upcoming', { cache: 'no-store' })
-        ]);
-
-        const todayPayload = (await todayResponse.json().catch(() => [])) as ServiceItem[] | { message?: string };
-        const upcomingPayload = (await upcomingResponse.json().catch(() => [])) as ServiceItem[] | { message?: string };
-
-        if (!todayResponse.ok) {
-          setError((todayPayload as { message?: string }).message ?? 'Errore caricamento servizi driver');
-          setLoading(false);
-          setServices([]);
-          return;
-        }
-
-        if (!upcomingResponse.ok) {
-          setError((upcomingPayload as { message?: string }).message ?? 'Errore caricamento servizi driver');
-          setLoading(false);
-          setServices([]);
-          return;
-        }
-
-        const byId = new Map<number, ServiceItem>();
-        [...(todayPayload as ServiceItem[]), ...(upcomingPayload as ServiceItem[])].forEach((item) => {
-          byId.set(item.id, item);
+        const query = new URLSearchParams({
+          from: toLocalDateTimeParam(range.from),
+          to: toLocalDateTimeParam(range.to)
         });
 
-        const filtered = Array.from(byId.values())
-          .filter((service) => {
-            if (filters.status && service.status !== filters.status) {
-              return false;
-            }
-            if (filters.type && service.type !== filters.type) {
-              return false;
-            }
+        if (filters.status) {
+          query.set('status', filters.status);
+        }
+        if (filters.type) {
+          query.set('type', filters.type);
+        }
 
-            const at = new Date(service.startAt);
-            return at >= range.from && at < range.to;
-          })
-          .sort((left, right) => new Date(left.startAt).getTime() - new Date(right.startAt).getTime());
+        // Driver mode consumes the same filtered service API, scoped by backend to current driver.
+        const response = await fetch(`/api/driver/services?${query.toString()}`, { cache: 'no-store' });
+        const payload = (await response.json().catch(() => [])) as ServiceItem[] | { message?: string };
 
-        setServices(filtered);
+        if (!response.ok) {
+          setError((payload as { message?: string }).message ?? 'Errore caricamento servizi driver');
+          setLoading(false);
+          setServices([]);
+          return;
+        }
+
+        const nextServices = payload as ServiceItem[];
+        setServices(nextServices);
         setLoading(false);
-        setSelectedServiceId((prev) => (prev && filtered.some((item) => item.id === prev) ? prev : filtered[0]?.id ?? null));
+        setSelectedServiceId((prev) => (prev && nextServices.some((item) => item.id === prev) ? prev : nextServices[0]?.id ?? null));
         return;
       }
 
