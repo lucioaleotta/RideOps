@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,13 +21,16 @@ public class VehicleManagementService {
     private final VehicleRepository vehicleRepository;
     private final VehicleDeadlineOccurrenceRepository occurrenceRepository;
     private final VehicleDeadlinePlanRepository planRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public VehicleManagementService(VehicleRepository vehicleRepository,
                                     VehicleDeadlineOccurrenceRepository occurrenceRepository,
-                                    VehicleDeadlinePlanRepository planRepository) {
+                                    VehicleDeadlinePlanRepository planRepository,
+                                    ApplicationEventPublisher eventPublisher) {
         this.vehicleRepository = vehicleRepository;
         this.occurrenceRepository = occurrenceRepository;
         this.planRepository = planRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public VehicleDetailDto getVehicleDetail(Long vehicleId, int withinDays) {
@@ -150,6 +154,16 @@ public class VehicleManagementService {
             generateNextOccurrenceFromPlan(saved.getPlan(), saved.getDueDate());
         }
 
+        eventPublisher.publishEvent(new DeadlineOccurrencePaidEvent(
+            saved.getId(),
+            saved.getVehicle().getId(),
+            saved.getType(),
+            saved.getCostAmount(),
+            saved.getCurrency(),
+            saved.getPaymentDate(),
+            "Pagamento scadenza " + saved.getType() + " occorrenza #" + saved.getId()
+        ));
+
         return toOccurrenceDto(saved);
     }
 
@@ -171,6 +185,16 @@ public class VehicleManagementService {
         if (saved.getPlan() != null && Boolean.TRUE.equals(saved.getPlan().getActive())) {
             generateNextOccurrenceFromPlan(saved.getPlan(), saved.getDueDate());
         }
+
+        eventPublisher.publishEvent(new DeadlineOccurrenceCompletedEvent(
+            saved.getId(),
+            saved.getVehicle().getId(),
+            saved.getType(),
+            saved.getCostAmount(),
+            saved.getCurrency(),
+            saved.getExecutionDate(),
+            "Esecuzione manutenzione " + saved.getType() + " occorrenza #" + saved.getId()
+        ));
 
         return toOccurrenceDto(saved);
     }

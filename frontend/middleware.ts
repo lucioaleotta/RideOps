@@ -22,6 +22,10 @@ function roleAllowed(pathname: string, role: string | undefined) {
     return role === 'ADMIN' || role === 'GESTIONALE';
   }
 
+  if (pathname.startsWith('/app/finance')) {
+    return role === 'ADMIN' || role === 'GESTIONALE';
+  }
+
   return true;
 }
 

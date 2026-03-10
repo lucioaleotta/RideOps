@@ -1,13 +1,13 @@
-import { DriverServicesPanel } from '../../../components/driver-services-panel';
+import { DriverProfilePanel } from '../../../components/driver-profile-panel';
 
 export default function DriverPage() {
   return (
     <main>
       <h1>Driver</h1>
       <div className="dashboard-card">
-        <p>Vista operativa dei servizi assegnati al driver.</p>
+        <p>Visualizza e aggiorna i tuoi dati personali.</p>
       </div>
-      <DriverServicesPanel />
+      <DriverProfilePanel />
     </main>
   );
 }

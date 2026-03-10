@@ -72,19 +72,6 @@ public class RideServiceJpaAdapter implements ServiceRepositoryPort {
     }
 
     @Override
-    public List<RideServiceEntity> findAllByAssignedDriverIdAndStartAtBetweenOrderByStartAtAsc(Long driverId,
-                                                                                                  LocalDateTime from,
-                                                                                                  LocalDateTime to) {
-        return rideServiceRepository.findAllByAssignedDriverIdAndStartAtBetweenOrderByStartAtAsc(driverId, from, to);
-    }
-
-    @Override
-    public List<RideServiceEntity> findAllByAssignedDriverIdAndStartAtGreaterThanOrderByStartAtAsc(Long driverId,
-                                                                                                       LocalDateTime fromExclusive) {
-        return rideServiceRepository.findAllByAssignedDriverIdAndStartAtGreaterThanOrderByStartAtAsc(driverId, fromExclusive);
-    }
-
-    @Override
     public long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status) {
         return rideServiceRepository.countByAssignedDriverIdIsNullAndStatus(status);
     }

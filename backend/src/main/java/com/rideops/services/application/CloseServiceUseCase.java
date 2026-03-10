@@ -4,16 +4,21 @@ import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.domain.RideService;
 import com.rideops.services.domain.ServiceDomainException;
 import com.rideops.services.domain.ServiceStatus;
+import java.time.LocalDate;
 import org.springframework.lang.NonNull;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CloseServiceUseCase {
 
     private final ServiceRepositoryPort serviceRepositoryPort;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public CloseServiceUseCase(ServiceRepositoryPort serviceRepositoryPort) {
+    public CloseServiceUseCase(ServiceRepositoryPort serviceRepositoryPort,
+                               ApplicationEventPublisher eventPublisher) {
         this.serviceRepositoryPort = serviceRepositoryPort;
+        this.eventPublisher = eventPublisher;
     }
 
     public ServiceDto execute(@NonNull Long serviceId) {
@@ -32,6 +37,19 @@ public class CloseServiceUseCase {
         }
 
         entity.setStatus(service.getStatus());
-        return ServiceMapper.toDto(serviceRepositoryPort.save(entity));
+        RideServiceEntity saved = serviceRepositoryPort.save(entity);
+
+        eventPublisher.publishEvent(new ServiceClosedEvent(
+            saved.getId(),
+            saved.getAssignedVehicleId(),
+            saved.getAssignedDriverId(),
+            saved.getType(),
+            saved.getPrice(),
+            "EUR",
+            LocalDate.now(),
+            "Incasso servizio #" + saved.getId()
+        ));
+
+        return ServiceMapper.toDto(saved);
     }
 }

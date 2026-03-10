@@ -12,13 +12,6 @@ public interface RideServiceRepository extends JpaRepository<RideServiceEntity, 
 
     List<RideServiceEntity> findAllByOrderByStartAtDesc();
 
-    List<RideServiceEntity> findAllByAssignedDriverIdAndStartAtBetweenOrderByStartAtAsc(Long assignedDriverId,
-                                                                                           LocalDateTime from,
-                                                                                           LocalDateTime to);
-
-    List<RideServiceEntity> findAllByAssignedDriverIdAndStartAtGreaterThanOrderByStartAtAsc(Long assignedDriverId,
-                                                                                               LocalDateTime fromExclusive);
-
     long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status);
 
     long countByAssignedDriverIdAndStatusIn(Long assignedDriverId, Collection<ServiceStatus> statuses);

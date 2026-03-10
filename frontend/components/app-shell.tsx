@@ -15,8 +15,9 @@ const menuItems = [
   { href: '/app', label: 'Home', icon: '🏠', roles: ['ADMIN', 'GESTIONALE', 'DRIVER'] as Role[] },
   { href: '/app/admin', label: 'Admin', icon: '🛡️', roles: ['ADMIN'] as Role[] },
   { href: '/app/services', label: 'Services', icon: '🧾', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
+  { href: '/app/finance', label: 'Finance', icon: '💶', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/fleet', label: 'Fleet', icon: '🚙', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
-  { href: '/app/gestionale', label: 'Gestionale', icon: '📋', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
+  { href: '/app/gestionale', label: 'Gestione Personale', icon: '📋', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/driver', label: 'Driver', icon: '🚗', roles: ['ADMIN', 'DRIVER'] as Role[] }
 ];
 
@@ -214,27 +215,22 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
     async function loadServiceAlertCount() {
       if (normalizedRole === 'DRIVER') {
-        const [todayRes, upcomingRes] = await Promise.all([
-          fetch('/api/driver/services/today', { cache: 'no-store' }),
-          fetch('/api/driver/services/upcoming', { cache: 'no-store' })
-        ]);
+        const windowStart = new Date();
+        windowStart.setHours(0, 0, 0, 0);
+        const windowEnd = toIsoStartOfDay(addDays(windowStart, 3));
+        // Driver alert count uses the unified endpoint constrained to today + next 3 days.
+        const response = await fetch(`/api/driver/services?from=${encodeURIComponent(toIsoStartOfDay(windowStart))}&to=${encodeURIComponent(windowEnd)}`, {
+          cache: 'no-store'
+        });
 
-        const todayPayload = (await todayRes.json().catch(() => [])) as unknown;
-        const upcomingPayload = (await upcomingRes.json().catch(() => [])) as unknown;
+        const payload = (await response.json().catch(() => [])) as unknown;
 
-        if (!todayRes.ok || !Array.isArray(todayPayload) || !upcomingRes.ok || !Array.isArray(upcomingPayload)) {
+        if (!response.ok || !Array.isArray(payload)) {
           return;
         }
 
-        const byId = new Map<number, { id?: number; startAt?: string; status?: string }>();
-        [...(todayPayload as Array<{ id?: number; startAt?: string; status?: string }>), ...(upcomingPayload as Array<{ id?: number; startAt?: string; status?: string }>)].forEach((item) => {
-          if (typeof item.id === 'number') {
-            byId.set(item.id, item);
-          }
-        });
-
         if (isMounted) {
-          const summary = summarizeWindow(Array.from(byId.values()));
+          const summary = summarizeWindow(payload as Array<{ startAt?: string; status?: string }>);
           setServiceAlertCounts({
             ...summary,
             total: summary.upcoming + summary.overdue
