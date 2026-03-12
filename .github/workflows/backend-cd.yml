@@ -1,0 +1,147 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deploy environment'
+        required: true
+        default: 'prod'
+        type: choice
+        options:
+          - prod
+          - staging
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run tests
+        working-directory: backend
+        run: mvn -B verify
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    needs: test
+    continue-on-error: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Build backend
+        working-directory: backend
+        run: mvn -B clean package -DskipTests
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ vars.ARTIFACT_REGISTRY_REPO }}/backend:latest \
+                       -t ${{ vars.ARTIFACT_REGISTRY_REPO }}/backend:${{ github.sha }} \
+                       -f backend/Dockerfile backend/
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ vars.ARTIFACT_REGISTRY_REPO }}/backend:latest
+          docker push ${{ vars.ARTIFACT_REGISTRY_REPO }}/backend:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ vars.BACKEND_SERVICE }} \
+            --image ${{ vars.ARTIFACT_REGISTRY_REPO }}/backend:latest \
+            --platform managed \
+            --region ${{ vars.GCP_REGION }} \
+            --allow-unauthenticated \
+            --port 8080 \
+            --set-env-vars SPRING_PROFILES_ACTIVE=prod,DATABASE_URL=${{ secrets.DATABASE_URL }} \
+            --min-instances 1
+
+      - name: Verify deployment
+        run: |
+          gcloud run services describe ${{ vars.BACKEND_SERVICE }} \
+            --region ${{ vars.GCP_REGION }} \
+            --format='value(status.url)'
+
+      - name: Slack notification (success)
+        if: success()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "✅ Backend deployed successfully",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Backend Deploy Success*\n Repository: ${{ github.repository }}\n Branch: ${{ github.ref_name }}\n Commit: ${{ github.sha }}\n Workflow: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow>"
+                  }
+                }
+              ]
+            }
+
+      - name: Slack notification (failure)
+        if: failure()
+        uses: slackapi/slack-github-action@v1
+        with:
+          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+          payload: |
+            {
+              "text": "❌ Backend deployment failed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Backend Deploy Failed*\n Repository: ${{ github.repository }}\n Branch: ${{ github.ref_name }}\n Commit: ${{ github.sha }}\n Workflow: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow>"
+                  }
+                }
+              ]
+            }

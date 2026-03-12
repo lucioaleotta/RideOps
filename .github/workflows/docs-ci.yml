@@ -1,0 +1,91 @@
+name: Docs CI
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "docs/**"
+      - ".github/workflows/docs-ci.yml"
+      - "BRANCHING_STRATEGY.md"
+      - "README.md"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "docs/**"
+      - ".github/workflows/docs-ci.yml"
+      - "BRANCHING_STRATEGY.md"
+      - "README.md"
+
+jobs:
+  validate-markdown:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (for markdown tools)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install markdown linter
+        run: npm install -g markdownlint-cli
+
+      - name: Lint Markdown files
+        run: |
+          echo "📝 Checking Markdown files..."
+          markdownlint "docs/**/*.md" "BRANCHING_STRATEGY.md" "README.md" || true
+
+  check-links:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check markdown links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          file-path: './docs/*.md'
+
+  build-summary:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Count documentation files
+        run: |
+          echo "📊 Documentation Summary"
+          echo "- Docs files: $(find docs -name '*.md' | wc -l)"
+          echo "- Root docs: $(ls -1 *.md 2>/dev/null | wc -l)"
+
+      - name: List recent docs
+        run: |
+          echo "📄 Documentation files:"
+          ls -1 docs/*.md | head -5
+
+      - name: Comment PR with summary
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const docsCount = require('child_process')
+              .execSync('find docs -name "*.md" | wc -l')
+              .toString()
+              .trim();
+            
+            const comment = `✅ Documentation validated\n\n**Stats:**\n- 📄 Markdown files: ${docsCount}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
