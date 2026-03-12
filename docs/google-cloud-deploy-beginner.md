@@ -25,10 +25,14 @@ docker --version
 
 ## 1. Configurazione base progetto
 
-Sostituisci `YOUR_PROJECT_ID` con il tuo progetto.
+Per RideOps useremo direttamente questo project ID Google Cloud:
+
+- `rideops-489909`
+
+Se in futuro userai un altro progetto, sostituisci solo questo valore.
 
 ```bash
-export PROJECT_ID="YOUR_PROJECT_ID"
+export PROJECT_ID="rideops-489909"
 export REGION="europe-west1"
 export REPO="rideops"
 export BACKEND_SERVICE="rideops-backend"
