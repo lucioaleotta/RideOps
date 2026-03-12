@@ -3,9 +3,10 @@ package com.rideops.services.integration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.rideops.services.domain.RideService;
-import com.rideops.services.domain.RideServiceRepository;
+import com.rideops.services.adapters.out.RideServiceEntity;
+import com.rideops.services.adapters.out.RideServiceRepository;
 import com.rideops.services.domain.ServiceStatus;
+import com.rideops.services.domain.ServiceType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -15,6 +16,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 /**
  * Integration test for RideService entity using Testcontainers.
  * 
@@ -39,38 +42,46 @@ class RideServiceRepositoryIntegrationTest {
   @Test
   void testCreateAndFindService() {
     // Arrange
-    RideService service = new RideService();
-    service.setDescription("Test Service");
-    service.setAmount(100.0);
+    RideServiceEntity service = new RideServiceEntity();
+    service.setPickupLocation("Downtown Station");
+    service.setDestination("Airport Terminal");
+    service.setNotes("Test Service");
+    service.setPrice(new BigDecimal("100.00"));
     service.setStatus(ServiceStatus.OPEN);
+    service.setStartAt(LocalDateTime.now().plusHours(2));
+    service.setType(ServiceType.TRANSFER);
 
     // Act
-    RideService saved = repository.save(service);
+    RideServiceEntity saved = repository.save(service);
     entityManager.flush();
 
-    RideService found = repository.findById(saved.getId()).orElse(null);
+  RideServiceEntity found = repository.findById(saved.getId()).orElse(null);
 
     // Assert
     assertNotNull(found);
-    assertThat(found.getDescription()).isEqualTo("Test Service");
-    assertThat(found.getAmount()).isEqualTo(100.0);
+    assertThat(found.getNotes()).isEqualTo("Test Service");
+    assertThat(found.getPrice()).isEqualTo(new BigDecimal("100.00"));
     assertThat(found.getStatus()).isEqualTo(ServiceStatus.OPEN);
   }
 
   @Test
   void testUpdateServiceStatus() {
     // Arrange
-    RideService service = new RideService();
-    service.setDescription("Test Service");
+    RideServiceEntity service = new RideServiceEntity();
+    service.setPickupLocation("Downtown Station");
+    service.setDestination("Airport Terminal");
+    service.setNotes("Test Service");
     service.setStatus(ServiceStatus.OPEN);
-    RideService saved = repository.save(service);
+    service.setStartAt(LocalDateTime.now().plusHours(2));
+    service.setType(ServiceType.TRANSFER);
+    RideServiceEntity saved = repository.save(service);
 
     // Act
     saved.setStatus(ServiceStatus.ASSIGNED);
     repository.save(saved);
     entityManager.flush();
 
-    RideService updated = repository.findById(saved.getId()).orElse(null);
+  RideServiceEntity updated = repository.findById(saved.getId()).orElse(null);
 
     // Assert
     assertThat(updated.getStatus()).isEqualTo(ServiceStatus.ASSIGNED);
@@ -79,12 +90,20 @@ class RideServiceRepositoryIntegrationTest {
   @Test
   void testFindAllServices() {
     // Arrange
-    RideService service1 = new RideService();
-    service1.setDescription("Service 1");
+    RideServiceEntity service1 = new RideServiceEntity();
+    service1.setPickupLocation("Location 1");
+    service1.setDestination("Destination 1");
+    service1.setNotes("Service 1");
+    service1.setStartAt(LocalDateTime.now().plusHours(1));
+    service1.setType(ServiceType.TRANSFER);
     service1.setStatus(ServiceStatus.OPEN);
 
-    RideService service2 = new RideService();
-    service2.setDescription("Service 2");
+  RideServiceEntity service2 = new RideServiceEntity();
+  service2.setPickupLocation("Location 2");
+  service2.setDestination("Destination 2");
+  service2.setNotes("Service 2");
+  service2.setStartAt(LocalDateTime.now().plusHours(3));
+  service2.setType(ServiceType.TRANSFER);
     service2.setStatus(ServiceStatus.CLOSED);
 
     repository.save(service1);
@@ -101,9 +120,13 @@ class RideServiceRepositoryIntegrationTest {
   @Test
   void testDeleteService() {
     // Arrange
-    RideService service = new RideService();
-    service.setDescription("Test Service");
-    RideService saved = repository.save(service);
+    RideServiceEntity service = new RideServiceEntity();
+    service.setPickupLocation("Downtown Station");
+    service.setDestination("Airport Terminal");
+    service.setNotes("Test Service");
+    service.setStartAt(LocalDateTime.now().plusHours(2));
+    service.setType(ServiceType.TRANSFER);
+    RideServiceEntity saved = repository.save(service);
     entityManager.flush();
 
     // Act
