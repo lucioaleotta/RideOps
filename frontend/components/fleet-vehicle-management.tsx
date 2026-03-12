@@ -764,7 +764,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
       </article>
 
       {!selectedVehicleId ? (
-        <article className="dashboard-card"><p>Nessun veicolo selezionato. Usa il pulsante "Seleziona" nella lista veicoli.</p></article>
+        <article className="dashboard-card"><p>Nessun veicolo selezionato. Usa il pulsante &quot;Seleziona&quot; nella lista veicoli.</p></article>
       ) : loading ? (
         <article className="dashboard-card"><p>Caricamento dettaglio veicolo...</p></article>
       ) : !detail ? (
