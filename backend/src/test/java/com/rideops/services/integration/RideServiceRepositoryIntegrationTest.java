@@ -54,8 +54,7 @@ class RideServiceRepositoryIntegrationTest {
     // Act
     RideServiceEntity saved = repository.save(service);
     entityManager.flush();
-
-  RideServiceEntity found = repository.findById(saved.getId()).orElse(null);
+    RideServiceEntity found = repository.findById(saved.getId()).orElse(null);
 
     // Assert
     assertNotNull(found);
@@ -80,8 +79,7 @@ class RideServiceRepositoryIntegrationTest {
     saved.setStatus(ServiceStatus.ASSIGNED);
     repository.save(saved);
     entityManager.flush();
-
-  RideServiceEntity updated = repository.findById(saved.getId()).orElse(null);
+    RideServiceEntity updated = repository.findById(saved.getId()).orElse(null);
 
     // Assert
     assertThat(updated.getStatus()).isEqualTo(ServiceStatus.ASSIGNED);
@@ -97,13 +95,12 @@ class RideServiceRepositoryIntegrationTest {
     service1.setStartAt(LocalDateTime.now().plusHours(1));
     service1.setType(ServiceType.TRANSFER);
     service1.setStatus(ServiceStatus.OPEN);
-
-  RideServiceEntity service2 = new RideServiceEntity();
-  service2.setPickupLocation("Location 2");
-  service2.setDestination("Destination 2");
-  service2.setNotes("Service 2");
-  service2.setStartAt(LocalDateTime.now().plusHours(3));
-  service2.setType(ServiceType.TRANSFER);
+    RideServiceEntity service2 = new RideServiceEntity();
+    service2.setPickupLocation("Location 2");
+    service2.setDestination("Destination 2");
+    service2.setNotes("Service 2");
+    service2.setStartAt(LocalDateTime.now().plusHours(3));
+    service2.setType(ServiceType.TRANSFER);
     service2.setStatus(ServiceStatus.CLOSED);
 
     repository.save(service1);
