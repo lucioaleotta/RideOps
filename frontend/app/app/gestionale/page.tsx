@@ -6,7 +6,7 @@ export default function GestionalePage() {
     <main>
       <h1>Gestione Personale</h1>
       <div className="dashboard-card">
-        <p>Da qui puoi gestire l'anagrafica DRIVER: creazione, modifica, disattivazione logica e ripristino.</p>
+        <p>Da qui puoi gestire l&apos;anagrafica DRIVER: creazione, modifica, disattivazione logica e ripristino.</p>
       </div>
       <GestionaleUnassignedBadge />
       <GestionaleDriversPanel />
