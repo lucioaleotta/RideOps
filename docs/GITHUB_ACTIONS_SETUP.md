@@ -6,7 +6,7 @@ Guida completa per abilitare CI/CD automatico con GitHub Actions integrato a Goo
 
 - [ ] Repository GitHub: `lucioaleotta/RideOps` ✅
 - [ ] GCP Project: `rideops-489909` ✅
-- [ ] Workload Identity Federation configurato (vedi `GITHUB_OIDC_SETUP.md`)
+- [x] Workload Identity Federation configurato in GCP (pool `github`, provider `github-provider`, service account `github-actions@rideops-489909.iam.gserviceaccount.com`)
 - [ ] Dockerfile presenti: `backend/Dockerfile`, `frontend/Dockerfile` ✅
 - [ ] Maven POM configurato: `backend/pom.xml` ✅
 - [ ] Next.js package.json: `frontend/package.json` ✅
@@ -48,7 +48,7 @@ Vai a: **Repository → Settings → Secrets and variables → Variables**
 
 | Variable | Valore | Descrizione |
 |----------|--------|-------------|
-| `WIF_PROVIDER` | `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github/providers/github-provider` | Workload Identity Provider |
+| `WIF_PROVIDER` | `projects/9867177203/locations/global/workloadIdentityPools/github/providers/github-provider` | Workload Identity Provider |
 | `WIF_SERVICE_ACCOUNT` | `github-actions@rideops-489909.iam.gserviceaccount.com` | Service Account per CI/CD |
 | `PROJECT_ID` | `rideops-489909` | GCP Project ID |
 | `GCP_REGION` | `europe-west1` | GCP Region |
@@ -59,8 +59,8 @@ Vai a: **Repository → Settings → Secrets and variables → Variables**
 **Dove trovarli:**
 
 ```bash
-# WIF_PROVIDER - verrà dato dall'output di GITHUB_OIDC_SETUP.md
-echo "projects/$(gcloud projects describe rideops-489909 --format='value(projectNumber)')/locations/global/workloadIdentityPools/github/providers/github-provider"
+# WIF_PROVIDER - già risolto per il progetto RideOps
+echo "projects/9867177203/locations/global/workloadIdentityPools/github/providers/github-provider"
 
 # Tutti gli altri sono litterali (copia i valori sopra)
 ```
@@ -131,6 +131,16 @@ Clicca: **Run workflow**
 gcloud iam service-accounts get-iam-policy \
   github-actions@rideops-489909.iam.gserviceaccount.com \
   --project=rideops-489909
+
+# Verifica pool/provider attivi
+gcloud iam workload-identity-pools describe github \
+  --project=rideops-489909 \
+  --location=global
+
+gcloud iam workload-identity-pools providers describe github-provider \
+  --project=rideops-489909 \
+  --location=global \
+  --workload-identity-pool=github
 ```
 
 ### "Docker image push failed: 403 Forbidden"

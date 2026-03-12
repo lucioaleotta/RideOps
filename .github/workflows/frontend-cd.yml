@@ -29,7 +29,6 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout
@@ -132,39 +131,19 @@ jobs:
           curl -f -s "$FRONTEND_URL/login" > /dev/null && echo "✅ Frontend is healthy" || exit 1
 
       - name: Slack notification (success)
-        if: success()
-        uses: slackapi/slack-github-action@v1
-        with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
-          payload: |
-            {
-              "text": "✅ Frontend deployed successfully",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Frontend Deploy Success*\n Repository: ${{ github.repository }}\n Branch: ${{ github.ref_name }}\n Commit: ${{ github.sha }}\n Workflow: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow>"
-                  }
-                }
-              ]
-            }
+        if: success() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"✅ Frontend deployed successfully - repo: ${{ github.repository }}, branch: ${{ github.ref_name }}, commit: ${{ github.sha }}, workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
+            "$SLACK_WEBHOOK"
 
       - name: Slack notification (failure)
-        if: failure()
-        uses: slackapi/slack-github-action@v1
-        with:
-          webhook-url: ${{ secrets.SLACK_WEBHOOK }}
-          payload: |
-            {
-              "text": "❌ Frontend deployment failed",
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Frontend Deploy Failed*\n Repository: ${{ github.repository }}\n Branch: ${{ github.ref_name }}\n Commit: ${{ github.sha }}\n Workflow: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Workflow>"
-                  }
-                }
-              ]
-            }
+        if: failure() && env.SLACK_WEBHOOK != ''
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+            --data '{"text":"❌ Frontend deployment failed - repo: ${{ github.repository }}, branch: ${{ github.ref_name }}, commit: ${{ github.sha }}, workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
+            "$SLACK_WEBHOOK"

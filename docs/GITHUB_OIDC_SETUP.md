@@ -44,15 +44,15 @@ gcloud iam workload-identity-pools providers create-oidc "github-provider" \
   --location="global" \
   --workload-identity-pool="github" \
   --display-name="GitHub Provider" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.environment=assertion.environment" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.actor=assertion.actor,attribute.repository=assertion.repository,attribute.repository_owner=assertion.repository_owner,attribute.ref=assertion.ref" \
   --issuer-uri="https://token.actions.githubusercontent.com" \
-  --attribute-condition="assertion.aud=='lucioaleotta/RideOps' || assertion.aud=='rideops-489909'"
+  --attribute-condition="assertion.repository=='lucioaleotta/RideOps'"
 ```
 
 Questo configura il provider a:
 - ✅ Accettare token da GitHub Actions
-- ✅ Mappare subject, actor, environment da JWT
-- ✅ Verificare l'audience (repository)
+- ✅ Mappare subject, actor, repository, owner e ref da JWT
+- ✅ Limitare l'accesso al solo repository `lucioaleotta/RideOps`
 
 ## Step 4: Creare Service Account per CI/CD
 
