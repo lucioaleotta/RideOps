@@ -181,7 +181,18 @@ jobs:
             --format='value(status.url)')
 
           echo "Testing backend health at: $BACKEND_URL/actuator/health"
-          curl -f -s "$BACKEND_URL/actuator/health" > /dev/null && echo "Backend is healthy" || exit 1
+          for attempt in 1 2 3 4 5; do
+            if curl -f -s "$BACKEND_URL/actuator/health" > /dev/null; then
+              echo "Backend is healthy"
+              exit 0
+            fi
+
+            echo "Health check attempt $attempt failed, retrying in 10s..."
+            sleep 10
+          done
+
+          echo "Backend smoke test failed after retries"
+          exit 1
 
       - name: Slack notification (success)
         if: success() && env.SLACK_WEBHOOK != ''
