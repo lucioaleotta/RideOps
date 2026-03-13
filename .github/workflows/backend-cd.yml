@@ -79,6 +79,21 @@ jobs:
         run: |
           gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
 
+      - name: Resolve database host
+        run: |
+          DB_HOST=$(gcloud sql instances describe rideops-postgres \
+            --format='value(ipAddresses[0].ipAddress)')
+
+          if [ -z "$DB_HOST" ]; then
+            echo "Unable to resolve Cloud SQL host for rideops-postgres"
+            exit 1
+          fi
+
+          echo "DB_HOST=$DB_HOST" >> "$GITHUB_ENV"
+          echo "DB_PORT=5432" >> "$GITHUB_ENV"
+          echo "DB_NAME=rideops" >> "$GITHUB_ENV"
+          echo "DB_USER=rideops" >> "$GITHUB_ENV"
+
       - name: Build Docker image
         run: |
           docker build -t ${{ vars.ARTIFACT_REGISTRY_REPO }}/backend:latest \
@@ -98,7 +113,7 @@ jobs:
             --region ${{ vars.GCP_REGION }} \
             --allow-unauthenticated \
             --port 8080 \
-            --set-env-vars SPRING_PROFILES_ACTIVE=prod \
+            --set-env-vars SPRING_PROFILES_ACTIVE=prod,DB_HOST=${DB_HOST},DB_PORT=${DB_PORT},DB_NAME=${DB_NAME},DB_USER=${DB_USER} \
             --min-instances 1
 
       - name: Verify deployment
