@@ -595,11 +595,11 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
   }
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
+    <section className="responsive-panel fleet-management-panel" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
           <h2>Gestione Veicoli e Scadenze</h2>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="panel-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {isAdmin && (
               <button
                 type="button"
@@ -676,12 +676,12 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
       </article>
 
       <article className="dashboard-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <h3>1) Lista veicoli</h3>
             </div>
 
-            <div style={{ overflowX: 'auto', marginTop: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Targa</th>
@@ -710,7 +710,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{vehicleTypeLabel(vehicle.type)}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{vehicle.notes ?? '-'}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button type="button" className="primary-button compact-button" onClick={() => editVehicle(vehicle)}>
                               Modifica
                             </button>
@@ -755,7 +755,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                   Note
                   <input className="form-input" value={vehicleForm.notes} onChange={(e) => setVehicleForm((p) => ({ ...p, notes: e.target.value }))} />
                 </label>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8 }}>
                   <button type="submit" className="primary-button compact-button">Salva dati veicolo</button>
                   <button type="button" className="logout-button" onClick={() => setShowVehicleForm(false)}>Annulla</button>
                 </div>
@@ -772,7 +772,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
       ) : (
         <>
           <article className="dashboard-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <h3>2) Storico scadenze</h3>
               <button
                 type="button"
@@ -859,8 +859,8 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
               </form>
             )}
 
-            <div style={{ overflowX: 'auto', marginTop: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Tipo</th>
@@ -891,7 +891,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                         </td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.cost} {item.currency}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button type="button" className="primary-button compact-button" onClick={() => {
                               setEditingOccurrenceId(item.id);
                               setShowOccurrenceForm(true);
@@ -925,7 +925,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
           </article>
 
           <article className="dashboard-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <h3>3) Piani ricorrenti</h3>
               <button type="button" className="primary-button compact-button" onClick={() => {
                 setShowPlanForm((prev) => !prev);
@@ -978,8 +978,8 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
               </form>
             )}
 
-            <div style={{ overflowX: 'auto', marginTop: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Tipo</th>
@@ -999,7 +999,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                       <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.active ? 'Sì' : 'No'}</td>
                       <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.standardCost} {item.currency}</td>
                       <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           <button type="button" className="primary-button compact-button" onClick={() => {
                             setEditingPlanId(item.id);
                             setShowPlanForm(true);
@@ -1031,7 +1031,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
           </article>
 
           <article className="dashboard-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <h3>4) Manutenzioni e indisponibilità</h3>
               <button
                 type="button"
@@ -1083,8 +1083,8 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
               </form>
             )}
 
-            <div style={{ overflowX: 'auto', marginTop: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Inizio</th>
@@ -1107,7 +1107,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.endDate}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.reason}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button
                               type="button"
                               className="primary-button compact-button"

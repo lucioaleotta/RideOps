@@ -250,9 +250,9 @@ export function FleetDeadlinesPanel() {
   }, [vehicles]);
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
+    <section className="responsive-panel fleet-deadlines-panel" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <h3>Scadenze e interventi</h3>
           <button
             type="button"
@@ -269,7 +269,7 @@ export function FleetDeadlinesPanel() {
           </button>
         </div>
 
-        <div style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginTop: 8 }}>
+        <div className="responsive-filters-grid" style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginTop: 8 }}>
           <label>
             Vista
             <select className="form-input" value={viewMode} onChange={(event) => setViewMode(event.target.value as ViewMode)}>
@@ -373,7 +373,7 @@ export function FleetDeadlinesPanel() {
               <input className="form-input" value={form.notes} onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))} />
             </label>
 
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
                 {submitting ? 'Salvataggio...' : editingId ? 'Aggiorna voce' : 'Crea voce'}
               </button>
@@ -393,8 +393,8 @@ export function FleetDeadlinesPanel() {
         ) : deadlines.length === 0 ? (
           <p>Nessuna voce disponibile.</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
+          <div className="table-scroll" style={{ overflowX: 'auto' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
               <thead>
                 <tr>
                   <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Veicolo</th>
@@ -418,7 +418,7 @@ export function FleetDeadlinesPanel() {
                     <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.status}</td>
                     <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.cost} {item.currency}</td>
                     <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div className="table-actions" style={{ display: 'flex', gap: 8 }}>
                         <button type="button" className="primary-button compact-button" onClick={() => onEdit(item)}>Modifica</button>
                         <button type="button" className="logout-button" onClick={() => onDelete(item.id)}>Elimina</button>
                       </div>

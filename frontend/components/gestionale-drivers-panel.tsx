@@ -306,11 +306,11 @@ export function GestionaleDriversPanel() {
   }
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
+    <section className="responsive-panel gestionale-panel" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <h3>Driver</h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="panel-actions" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
               <input
                 type="checkbox"
@@ -335,8 +335,8 @@ export function GestionaleDriversPanel() {
           </div>
         </div>
 
-        <div style={{ overflowX: 'auto', marginTop: 10 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+        <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 10 }}>
+          <table className="responsive-table driver-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
             <thead>
               <tr>
                 <th style={{ textAlign: 'left', padding: '0 10px 10px 0', borderBottom: '1px solid #dce8f5' }}>Nome</th>
@@ -373,7 +373,7 @@ export function GestionaleDriversPanel() {
                       {isExpirySoon && <small className="warning-text">Scade tra {daysLeft} gg</small>}
                     </td>
                     <td style={{ padding: '10px 0 10px 0', borderBottom: '1px solid #eaf1f9' }}>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button type="button" className="primary-button compact-button" onClick={() => onSelectDriver(driver)}>
                           Seleziona
                         </button>
@@ -434,7 +434,7 @@ export function GestionaleDriversPanel() {
             {!editingDriverId && (
               <div className="dashboard-card" style={{ background: '#eef6ff' }}>
                 <strong>Credenziali iniziali</strong>
-                <div style={{ display: 'grid', gap: 12, marginTop: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
+                <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, marginTop: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
                   <label>
                     User ID driver
                     <input
@@ -469,7 +469,7 @@ export function GestionaleDriversPanel() {
               </div>
             )}
 
-            <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+            <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
               <label>
                 Nome
                 <input
@@ -545,13 +545,13 @@ export function GestionaleDriversPanel() {
             </div>
 
             <div className="dashboard-card" style={{ background: '#f4f9ff' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <strong>Indirizzi di residenza</strong>
                 <button type="button" className="primary-button compact-button" onClick={addAddress}>Aggiungi indirizzo</button>
               </div>
               <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
                 {form.residentialAddresses.map((address, index) => (
-                  <div key={`address-${index}`} style={{ display: 'flex', gap: 8 }}>
+                  <div key={`address-${index}`} className="address-row" style={{ display: 'flex', gap: 8 }}>
                     <input
                       className="form-input"
                       value={address}
@@ -573,7 +573,7 @@ export function GestionaleDriversPanel() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
                 {submitting ? 'Salvataggio...' : editingDriverId ? 'Aggiorna driver' : 'Crea driver'}
               </button>

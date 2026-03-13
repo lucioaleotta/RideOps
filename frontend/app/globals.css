@@ -19,6 +19,12 @@ body {
   color: var(--text);
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 a {
   color: var(--primary-dark);
   text-decoration: none;
@@ -107,6 +113,9 @@ a:hover {
   padding: 16px 12px;
   box-shadow: var(--shadow);
   transition: width 0.2s ease;
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
 }
 
 .sidebar.collapsed {
@@ -121,6 +130,23 @@ a:hover {
   width: 34px;
   height: 34px;
   cursor: pointer;
+}
+
+.mobile-menu-button {
+  display: none;
+  border: 1px solid #c8d7ea;
+  color: var(--primary-dark);
+  background: #f2f8ff;
+  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.app-shell-backdrop {
+  display: none;
 }
 
 .brand-link {
@@ -188,6 +214,14 @@ a:hover {
   justify-content: space-between;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .user-info {
   display: flex;
   align-items: center;
@@ -230,6 +264,75 @@ a:hover {
   box-shadow: var(--shadow);
   padding: 22px;
   min-width: 0;
+}
+
+.content-panel > * {
+  min-width: 0;
+}
+
+.content-panel table {
+  min-width: 100%;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.panel-end-action {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.responsive-filters-grid,
+.responsive-form-grid {
+  width: 100%;
+}
+
+.inline-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-actions,
+.table-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+}
+
+.calendar-grid-weekdays,
+.calendar-grid-month,
+.calendar-grid-week {
+  min-width: 740px;
 }
 
 .home-public {
@@ -329,6 +432,233 @@ a:hover {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .main-area {
+    padding: 14px;
+  }
+
+  .content-panel {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 960px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(82vw, 290px);
+    z-index: 30;
+    transform: translateX(-105%);
+    transition: transform 0.22s ease;
+    overflow-y: auto;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .sidebar.collapsed {
+    width: min(82vw, 290px);
+  }
+
+  .sidebar.collapsed .brand-text,
+  .sidebar.collapsed .menu-link span:last-child {
+    display: inline;
+  }
+
+  .sidebar .collapse-button {
+    display: none;
+  }
+
+  .app-shell-backdrop.visible {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 22, 40, 0.42);
+    z-index: 20;
+  }
+
+  .mobile-menu-button {
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .main-area {
+    padding: 12px;
+    grid-template-rows: auto 1fr;
+    gap: 10px;
+  }
+
+  .topbar {
+    padding: 10px 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .user-info {
+    order: 1;
+  }
+
+  .topbar-actions {
+    order: 2;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .logout-button {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .responsive-panel .compact-button,
+  .responsive-panel .logout-button,
+  .responsive-panel .primary-button {
+    min-height: 38px;
+  }
+
+  .responsive-panel .form-input {
+    min-height: 40px;
+    font-size: 15px;
+  }
+
+  .panel-end-action {
+    justify-content: flex-start;
+  }
+
+  .calendar-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-main {
+    order: 1;
+  }
+
+  .calendar-detail {
+    order: 2;
+  }
+
+  .calendar-grid-weekdays,
+  .calendar-grid-month,
+  .calendar-grid-week {
+    min-width: 680px;
+  }
+
+  .services-table {
+    min-width: 720px !important;
+  }
+
+  .driver-table {
+    min-width: 680px !important;
+  }
+
+  .content-panel {
+    padding: 14px;
+  }
+
+  .dashboard-card {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-page,
+  .home-public,
+  .print-page {
+    padding: 14px;
+  }
+
+  .auth-card,
+  .home-card,
+  .content-panel {
+    border-radius: 12px;
+  }
+
+  .home-card {
+    padding: 18px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-name {
+    font-size: 14px;
+  }
+
+  .user-role {
+    font-size: 12px;
+  }
+
+  .panel-header {
+    align-items: flex-start;
+  }
+
+  .panel-actions,
+  .form-actions {
+    width: 100%;
+  }
+
+  .panel-actions > *,
+  .form-actions > * {
+    flex: 1 1 auto;
+  }
+
+  .table-actions > .primary-button,
+  .table-actions > .logout-button {
+    min-height: 36px;
+  }
+
+  .form-actions.sticky-mobile {
+    position: sticky;
+    bottom: 0;
+    background: #f9fcff;
+    padding-top: 8px;
+    padding-bottom: 6px;
+    border-top: 1px solid #dce8f5;
+    z-index: 2;
+  }
+
+  .fleet-management-panel .form-grid > button[type='submit'],
+  .fleet-deadlines-panel .form-grid > button[type='submit'] {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+  }
+
+  .responsive-filters-grid,
+  .responsive-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .address-row {
+    flex-direction: column;
+  }
+
+  .calendar-grid-weekdays,
+  .calendar-grid-month,
+  .calendar-grid-week {
+    min-width: 620px;
+  }
+
+  .services-table th:nth-child(4),
+  .services-table td:nth-child(4),
+  .services-table th:nth-child(8),
+  .services-table td:nth-child(8) {
+    display: none;
+  }
+
+  .driver-table th:nth-child(3),
+  .driver-table td:nth-child(3) {
+    display: none;
+  }
 }
 
 @page {
