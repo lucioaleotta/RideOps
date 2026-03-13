@@ -33,7 +33,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -115,22 +115,24 @@ jobs:
           DB_NAME_VAR: ${{ vars.DB_NAME }}
           DB_USER_SECRET: ${{ secrets.DB_USER }}
           DB_USER_VAR: ${{ vars.DB_USER }}
-          DB_PASSWORD_SECRET: ${{ secrets.DB_PASSWORD }}
-          JWT_SECRET_SECRET: ${{ secrets.JWT_SECRET }}
+          DB_PASSWORD_SECRET_REF_VAR: ${{ vars.DB_PASSWORD_SECRET_REF }}
+          JWT_SECRET_REF_VAR: ${{ vars.JWT_SECRET_REF }}
           ADMIN_PASSWORD_SECRET: ${{ secrets.ADMIN_PASSWORD }}
         run: |
           DB_HOST_VALUE="${DB_HOST_SECRET:-$DB_HOST_VAR}"
           DB_PORT_VALUE="${DB_PORT_SECRET:-$DB_PORT_VAR}"
           DB_NAME_VALUE="${DB_NAME_SECRET:-$DB_NAME_VAR}"
           DB_USER_VALUE="${DB_USER_SECRET:-$DB_USER_VAR}"
+          DB_PASSWORD_SECRET_REF_VALUE="${DB_PASSWORD_SECRET_REF_VAR:-rideops-db-password:latest}"
+          JWT_SECRET_REF_VALUE="${JWT_SECRET_REF_VAR:-rideops-jwt-secret:latest}"
 
           missing=0
           if [ -z "$DB_HOST_VALUE" ]; then echo "Missing DB_HOST (secret DB_HOST or variable DB_HOST)" >&2; missing=1; fi
           if [ -z "$DB_PORT_VALUE" ]; then echo "Missing DB_PORT (secret DB_PORT or variable DB_PORT)" >&2; missing=1; fi
           if [ -z "$DB_NAME_VALUE" ]; then echo "Missing DB_NAME (secret DB_NAME or variable DB_NAME)" >&2; missing=1; fi
           if [ -z "$DB_USER_VALUE" ]; then echo "Missing DB_USER (secret DB_USER or variable DB_USER)" >&2; missing=1; fi
-          if [ -z "$DB_PASSWORD_SECRET" ]; then echo "Missing DB_PASSWORD secret" >&2; missing=1; fi
-          if [ -z "$JWT_SECRET_SECRET" ]; then echo "Missing JWT_SECRET secret" >&2; missing=1; fi
+          if [ -z "$DB_PASSWORD_SECRET_REF_VALUE" ]; then echo "Missing DB_PASSWORD_SECRET_REF variable" >&2; missing=1; fi
+          if [ -z "$JWT_SECRET_REF_VALUE" ]; then echo "Missing JWT_SECRET_REF variable" >&2; missing=1; fi
           if [ -z "$ADMIN_PASSWORD_SECRET" ]; then echo "Missing ADMIN_PASSWORD secret" >&2; missing=1; fi
 
           if [ "$missing" -ne 0 ]; then
@@ -142,8 +144,8 @@ jobs:
           echo "DB_PORT=$DB_PORT_VALUE" >> "$GITHUB_ENV"
           echo "DB_NAME=$DB_NAME_VALUE" >> "$GITHUB_ENV"
           echo "DB_USER=$DB_USER_VALUE" >> "$GITHUB_ENV"
-          echo "DB_PASSWORD=$DB_PASSWORD_SECRET" >> "$GITHUB_ENV"
-          echo "JWT_SECRET=$JWT_SECRET_SECRET" >> "$GITHUB_ENV"
+          echo "DB_PASSWORD_SECRET_REF=$DB_PASSWORD_SECRET_REF_VALUE" >> "$GITHUB_ENV"
+          echo "JWT_SECRET_REF=$JWT_SECRET_REF_VALUE" >> "$GITHUB_ENV"
           echo "ADMIN_PASSWORD=$ADMIN_PASSWORD_SECRET" >> "$GITHUB_ENV"
 
       - name: Build Docker image
@@ -165,7 +167,8 @@ jobs:
             --region ${{ vars.GCP_REGION }} \
             --allow-unauthenticated \
             --port 8080 \
-            --set-env-vars SPRING_PROFILES_ACTIVE=${SPRING_PROFILE},DB_HOST=${DB_HOST},DB_PORT=${DB_PORT},DB_NAME=${DB_NAME},DB_USER=${DB_USER},DB_PASSWORD=${DB_PASSWORD},JWT_SECRET=${JWT_SECRET},ADMIN_PASSWORD=${ADMIN_PASSWORD} \
+            --set-env-vars SPRING_PROFILES_ACTIVE=${SPRING_PROFILE},DB_HOST=${DB_HOST},DB_PORT=${DB_PORT},DB_NAME=${DB_NAME},DB_USER=${DB_USER},ADMIN_PASSWORD=${ADMIN_PASSWORD} \
+            --set-secrets DB_PASSWORD=${DB_PASSWORD_SECRET_REF},JWT_SECRET=${JWT_SECRET_REF} \
             --min-instances 1
 
       - name: Verify deployment
