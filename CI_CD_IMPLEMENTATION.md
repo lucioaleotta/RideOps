@@ -104,12 +104,6 @@ gcloud iam service-accounts add-iam-policy-binding "${SERVICE_ACCOUNT}" \
 Crea questi secrets con i valori:
 
 ```
-DB_PASSWORD
-  Valore: password dell'utente PostgreSQL usato dal backend
-
-JWT_SECRET
-  Valore: secret JWT robusto (almeno 32 caratteri)
-
 ADMIN_PASSWORD
   Valore: password admin bootstrap per produzione
 
@@ -167,6 +161,12 @@ DB_NAME
 
 DB_USER
   rideops
+
+DB_PASSWORD_SECRET_REF
+  rideops-db-password:latest
+
+JWT_SECRET_REF
+  rideops-jwt-secret:latest
 ```
 
 **Tempo:** 2-3 minuti

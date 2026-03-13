@@ -21,16 +21,12 @@ Vai a: **Repository → Settings → Secrets and variables → Secrets**
 
 | Secret | Valore | Descrizione |
 |--------|--------|-------------|
-| `DB_PASSWORD` | `<db-password>` | Password utente PostgreSQL backend |
-| `JWT_SECRET` | `<jwt-secret-robusto>` | Secret JWT backend |
 | `ADMIN_PASSWORD` | `<password-admin-prod>` | Password admin bootstrap backend |
 | `SLACK_WEBHOOK` | `https://hooks.slack.com/...` | Webhook Slack (opzionale, per notifiche) |
 
 **Dove trovarli:**
 
 ```bash
-# DB_PASSWORD: password dell'utente DB usato dal backend
-# JWT_SECRET: valore forte (almeno 32 caratteri casuali)
 # ADMIN_PASSWORD: password admin iniziale in produzione
 
 # SLACK_WEBHOOK (crea su Slack App, sezione Incoming Webhooks)
@@ -59,6 +55,8 @@ Vai a: **Repository → Settings → Secrets and variables → Variables**
 | `DB_PORT` | `5432` | Porta PostgreSQL backend |
 | `DB_NAME` | `rideops` | Nome database backend |
 | `DB_USER` | `rideops` | Utente database backend |
+| `DB_PASSWORD_SECRET_REF` | `rideops-db-password:latest` | Secret Manager ref per `DB_PASSWORD` |
+| `JWT_SECRET_REF` | `rideops-jwt-secret:latest` | Secret Manager ref per `JWT_SECRET` |
 
 **Dove trovarli:**
 
