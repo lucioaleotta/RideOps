@@ -21,18 +21,17 @@ Vai a: **Repository → Settings → Secrets and variables → Secrets**
 
 | Secret | Valore | Descrizione |
 |--------|--------|-------------|
-| `DATABASE_URL` | `<your-cloud-sql-url>` | Connection string Cloud SQL |
-| `BACKEND_URL` | `https://rideops-backend-fgnnhhq3va-ew.a.run.app` | Backend Cloud Run URL |
+| `DB_PASSWORD` | `<db-password>` | Password utente PostgreSQL backend |
+| `JWT_SECRET` | `<jwt-secret-robusto>` | Secret JWT backend |
+| `ADMIN_PASSWORD` | `<password-admin-prod>` | Password admin bootstrap backend |
 | `SLACK_WEBHOOK` | `https://hooks.slack.com/...` | Webhook Slack (opzionale, per notifiche) |
 
 **Dove trovarli:**
 
 ```bash
-# DATABASE_URL (formato Cloud SQL)
-gcloud sql connect rideops-postgres --region europe-west1 --database rideops
-
-# BACKEND_URL (già fornito)
-gcloud run services describe rideops-backend --region europe-west1 --format='value(status.url)'
+# DB_PASSWORD: password dell'utente DB usato dal backend
+# JWT_SECRET: valore forte (almeno 32 caratteri casuali)
+# ADMIN_PASSWORD: password admin iniziale in produzione
 
 # SLACK_WEBHOOK (crea su Slack App, sezione Incoming Webhooks)
 # https://api.slack.com/messaging/webhooks
@@ -53,8 +52,13 @@ Vai a: **Repository → Settings → Secrets and variables → Variables**
 | `PROJECT_ID` | `rideops-489909` | GCP Project ID |
 | `GCP_REGION` | `europe-west1` | GCP Region |
 | `BACKEND_SERVICE` | `rideops-backend` | Cloud Run service name (backend) |
+| `BACKEND_SERVICE_STAGING` | `rideops-backend-staging` | Service staging (opzionale, usato da `workflow_dispatch`) |
 | `FRONTEND_SERVICE` | `rideops-frontend` | Cloud Run service name (frontend) |
 | `ARTIFACT_REGISTRY_REPO` | `europe-west1-docker.pkg.dev/rideops-489909/rideops` | Artifact Registry path |
+| `DB_HOST` | `<cloud-sql-ip-o-hostname>` | Host PostgreSQL backend |
+| `DB_PORT` | `5432` | Porta PostgreSQL backend |
+| `DB_NAME` | `rideops` | Nome database backend |
+| `DB_USER` | `rideops` | Utente database backend |
 
 **Dove trovarli:**
 

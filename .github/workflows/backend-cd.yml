@@ -26,6 +26,10 @@ permissions:
   contents: read
   id-token: write
 
+concurrency:
+  group: backend-cd-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -50,6 +54,10 @@ jobs:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     needs: test
     continue-on-error: false
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'prod' }}
+    env:
+      NOTIFICATION_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'prod' }}
+      SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
 
     steps:
       - name: Checkout
@@ -73,26 +81,70 @@ jobs:
           service_account: ${{ vars.WIF_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker for Artifact Registry
         run: |
           gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev
 
-      - name: Resolve database host
+      - name: Resolve deploy target
         run: |
-          DB_HOST=$(gcloud sql instances describe rideops-postgres \
-            --format='value(ipAddresses[0].ipAddress)')
+          DEPLOY_ENV="prod"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            DEPLOY_ENV="${{ inputs.environment }}"
+          fi
 
-          if [ -z "$DB_HOST" ]; then
-            echo "Unable to resolve Cloud SQL host for rideops-postgres"
+          TARGET_SERVICE="${{ vars.BACKEND_SERVICE }}"
+          SPRING_PROFILE="prod"
+          if [ "$DEPLOY_ENV" = "staging" ]; then
+            TARGET_SERVICE="${{ vars.BACKEND_SERVICE_STAGING || vars.BACKEND_SERVICE }}"
+            SPRING_PROFILE="staging"
+          fi
+
+          echo "DEPLOY_ENV=$DEPLOY_ENV" >> "$GITHUB_ENV"
+          echo "TARGET_SERVICE=$TARGET_SERVICE" >> "$GITHUB_ENV"
+          echo "SPRING_PROFILE=$SPRING_PROFILE" >> "$GITHUB_ENV"
+
+      - name: Resolve backend runtime variables
+        env:
+          DB_HOST_SECRET: ${{ secrets.DB_HOST }}
+          DB_HOST_VAR: ${{ vars.DB_HOST }}
+          DB_PORT_SECRET: ${{ secrets.DB_PORT }}
+          DB_PORT_VAR: ${{ vars.DB_PORT }}
+          DB_NAME_SECRET: ${{ secrets.DB_NAME }}
+          DB_NAME_VAR: ${{ vars.DB_NAME }}
+          DB_USER_SECRET: ${{ secrets.DB_USER }}
+          DB_USER_VAR: ${{ vars.DB_USER }}
+          DB_PASSWORD_SECRET: ${{ secrets.DB_PASSWORD }}
+          JWT_SECRET_SECRET: ${{ secrets.JWT_SECRET }}
+          ADMIN_PASSWORD_SECRET: ${{ secrets.ADMIN_PASSWORD }}
+        run: |
+          DB_HOST_VALUE="${DB_HOST_SECRET:-$DB_HOST_VAR}"
+          DB_PORT_VALUE="${DB_PORT_SECRET:-$DB_PORT_VAR}"
+          DB_NAME_VALUE="${DB_NAME_SECRET:-$DB_NAME_VAR}"
+          DB_USER_VALUE="${DB_USER_SECRET:-$DB_USER_VAR}"
+
+          missing=0
+          if [ -z "$DB_HOST_VALUE" ]; then echo "Missing DB_HOST (secret DB_HOST or variable DB_HOST)" >&2; missing=1; fi
+          if [ -z "$DB_PORT_VALUE" ]; then echo "Missing DB_PORT (secret DB_PORT or variable DB_PORT)" >&2; missing=1; fi
+          if [ -z "$DB_NAME_VALUE" ]; then echo "Missing DB_NAME (secret DB_NAME or variable DB_NAME)" >&2; missing=1; fi
+          if [ -z "$DB_USER_VALUE" ]; then echo "Missing DB_USER (secret DB_USER or variable DB_USER)" >&2; missing=1; fi
+          if [ -z "$DB_PASSWORD_SECRET" ]; then echo "Missing DB_PASSWORD secret" >&2; missing=1; fi
+          if [ -z "$JWT_SECRET_SECRET" ]; then echo "Missing JWT_SECRET secret" >&2; missing=1; fi
+          if [ -z "$ADMIN_PASSWORD_SECRET" ]; then echo "Missing ADMIN_PASSWORD secret" >&2; missing=1; fi
+
+          if [ "$missing" -ne 0 ]; then
+            echo "Populate required GitHub secrets/variables before deploying backend." >&2
             exit 1
           fi
 
-          echo "DB_HOST=$DB_HOST" >> "$GITHUB_ENV"
-          echo "DB_PORT=5432" >> "$GITHUB_ENV"
-          echo "DB_NAME=rideops" >> "$GITHUB_ENV"
-          echo "DB_USER=rideops" >> "$GITHUB_ENV"
+          echo "DB_HOST=$DB_HOST_VALUE" >> "$GITHUB_ENV"
+          echo "DB_PORT=$DB_PORT_VALUE" >> "$GITHUB_ENV"
+          echo "DB_NAME=$DB_NAME_VALUE" >> "$GITHUB_ENV"
+          echo "DB_USER=$DB_USER_VALUE" >> "$GITHUB_ENV"
+          echo "DB_PASSWORD=$DB_PASSWORD_SECRET" >> "$GITHUB_ENV"
+          echo "JWT_SECRET=$JWT_SECRET_SECRET" >> "$GITHUB_ENV"
+          echo "ADMIN_PASSWORD=$ADMIN_PASSWORD_SECRET" >> "$GITHUB_ENV"
 
       - name: Build Docker image
         run: |
@@ -107,35 +159,40 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy ${{ vars.BACKEND_SERVICE }} \
+          gcloud run deploy "$TARGET_SERVICE" \
             --image ${{ vars.ARTIFACT_REGISTRY_REPO }}/backend:latest \
             --platform managed \
             --region ${{ vars.GCP_REGION }} \
             --allow-unauthenticated \
             --port 8080 \
-            --set-env-vars SPRING_PROFILES_ACTIVE=prod,DB_HOST=${DB_HOST},DB_PORT=${DB_PORT},DB_NAME=${DB_NAME},DB_USER=${DB_USER} \
+            --set-env-vars SPRING_PROFILES_ACTIVE=${SPRING_PROFILE},DB_HOST=${DB_HOST},DB_PORT=${DB_PORT},DB_NAME=${DB_NAME},DB_USER=${DB_USER},DB_PASSWORD=${DB_PASSWORD},JWT_SECRET=${JWT_SECRET},ADMIN_PASSWORD=${ADMIN_PASSWORD} \
             --min-instances 1
 
       - name: Verify deployment
         run: |
-          gcloud run services describe ${{ vars.BACKEND_SERVICE }} \
+          gcloud run services describe "$TARGET_SERVICE" \
             --region ${{ vars.GCP_REGION }} \
             --format='value(status.url)'
 
+      - name: Run smoke test
+        run: |
+          BACKEND_URL=$(gcloud run services describe "$TARGET_SERVICE" \
+            --region ${{ vars.GCP_REGION }} \
+            --format='value(status.url)')
+
+          echo "Testing backend health at: $BACKEND_URL/actuator/health"
+          curl -f -s "$BACKEND_URL/actuator/health" > /dev/null && echo "Backend is healthy" || exit 1
+
       - name: Slack notification (success)
         if: success() && env.SLACK_WEBHOOK != ''
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
-            --data '{"text":"✅ Backend deployed successfully - repo: ${{ github.repository }}, branch: ${{ github.ref_name }}, commit: ${{ github.sha }}, workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
+            --data "{\"text\":\"Backend deployed successfully - repo: ${{ github.repository }}, env: ${NOTIFICATION_ENV}, branch: ${{ github.ref_name }}, commit: ${{ github.sha }}, workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
             "$SLACK_WEBHOOK"
 
       - name: Slack notification (failure)
         if: failure() && env.SLACK_WEBHOOK != ''
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
         run: |
           curl -X POST -H 'Content-type: application/json' \
-            --data '{"text":"❌ Backend deployment failed - repo: ${{ github.repository }}, branch: ${{ github.ref_name }}, commit: ${{ github.sha }}, workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}' \
+            --data "{\"text\":\"Backend deployment failed - repo: ${{ github.repository }}, env: ${NOTIFICATION_ENV}, branch: ${{ github.ref_name }}, commit: ${{ github.sha }}, workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
             "$SLACK_WEBHOOK"

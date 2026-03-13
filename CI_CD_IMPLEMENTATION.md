@@ -104,13 +104,14 @@ gcloud iam service-accounts add-iam-policy-binding "${SERVICE_ACCOUNT}" \
 Crea questi secrets con i valori:
 
 ```
-DATABASE_URL
-  Valore: La connection string di Cloud SQL
-  Dove trovarla: gcloud sql instances describe rideops-postgres --region europe-west1
+DB_PASSWORD
+  Valore: password dell'utente PostgreSQL usato dal backend
 
-BACKEND_URL
-  Valore: https://rideops-backend-fgnnhhq3va-ew.a.run.app
-  (già disponibile)
+JWT_SECRET
+  Valore: secret JWT robusto (almeno 32 caratteri)
+
+ADMIN_PASSWORD
+  Valore: password admin bootstrap per produzione
 
 SLACK_WEBHOOK (opzionale)
   Valore: La tua webhook Slack
@@ -146,11 +147,26 @@ GCP_REGION
 BACKEND_SERVICE
   rideops-backend
 
+BACKEND_SERVICE_STAGING (opzionale)
+  rideops-backend-staging
+
 FRONTEND_SERVICE
   rideops-frontend
 
 ARTIFACT_REGISTRY_REPO
   europe-west1-docker.pkg.dev/rideops-489909/rideops
+
+DB_HOST
+  Host PostgreSQL (IP Cloud SQL o hostname privato)
+
+DB_PORT
+  5432
+
+DB_NAME
+  rideops
+
+DB_USER
+  rideops
 ```
 
 **Tempo:** 2-3 minuti
