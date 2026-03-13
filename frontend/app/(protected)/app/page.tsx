@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
-import { CalendarDashboard } from '../../components/calendar-dashboard';
-import { FleetDeadlinesAlerts } from '../../components/fleet-deadlines-alerts';
+import { CalendarDashboard } from '../../../components/calendar-dashboard';
+import { FleetDeadlinesAlerts } from '../../../components/fleet-deadlines-alerts';
 
 export default function AppHomePage() {
   const role = (cookies().get('user_role')?.value ?? '').toUpperCase();

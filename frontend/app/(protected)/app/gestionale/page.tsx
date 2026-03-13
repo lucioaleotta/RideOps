@@ -1,5 +1,5 @@
-import { GestionaleDriversPanel } from '../../../components/gestionale-drivers-panel';
-import { GestionaleUnassignedBadge } from '../../../components/gestionale-unassigned-badge';
+import { GestionaleDriversPanel } from '../../../../components/gestionale-drivers-panel';
+import { GestionaleUnassignedBadge } from '../../../../components/gestionale-unassigned-badge';
 
 export default function GestionalePage() {
   return (

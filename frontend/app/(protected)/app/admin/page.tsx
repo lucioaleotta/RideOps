@@ -1,4 +1,4 @@
-import { AdminUsersPanel } from '../../../components/admin-users-panel';
+import { AdminUsersPanel } from '../../../../components/admin-users-panel';
 
 export default function AdminPage() {
   return (

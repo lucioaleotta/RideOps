@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { FleetVehicleManagement } from '../../../components/fleet-vehicle-management';
+import { FleetVehicleManagement } from '../../../../components/fleet-vehicle-management';
 
 type MePayload = {
   id: number;

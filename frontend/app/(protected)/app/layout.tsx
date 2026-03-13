@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { AppShell } from '../../components/app-shell';
+import { AppShell } from '../../../components/app-shell';
 
 type MePayload = {
   id: number;

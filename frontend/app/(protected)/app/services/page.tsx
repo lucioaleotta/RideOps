@@ -1,4 +1,4 @@
-import { ServicesPanel } from '../../../components/services-panel';
+import { ServicesPanel } from '../../../../components/services-panel';
 
 export default function ServicesPage() {
   return (

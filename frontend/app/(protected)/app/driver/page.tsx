@@ -1,4 +1,4 @@
-import { DriverProfilePanel } from '../../../components/driver-profile-panel';
+import { DriverProfilePanel } from '../../../../components/driver-profile-panel';
 
 export default function DriverPage() {
   return (
