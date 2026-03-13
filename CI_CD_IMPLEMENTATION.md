@@ -23,11 +23,13 @@ Implementazione completa di CI/CD con GitHub Actions + Google Cloud.
 ### 3. Features Implementate
 
 ✅ **OIDC Authentication** (zero secrets in GitHub!)  
-✅ **Auto-Deploy su merge a main**  
-✅ **Manual Deploy via Workflow Dispatch**  
+✅ **Auto-Deploy su merge a main** → produzione  
+✅ **Manual Deploy via Workflow Dispatch** → staging o produzione  
+✅ **Ambienti separati** (staging + produzione su Cloud Run distinti)  
+✅ **Secret Manager** (DB_PASSWORD e JWT_SECRET da Secret Manager, non in chiaro)  
 ✅ **Slack Notifications** (su success/failure)  
 ✅ **Docker Tagging** (con commit SHA)  
-✅ **Smoke Tests** (verifica frontend health dopo deploy)  
+✅ **Smoke Tests** (health check con retry 5×10s dopo deploy)  
 ✅ **Workspace Setup** (ambiente isolato per ogni job)  
 
 ---
@@ -263,23 +265,30 @@ Se vuoi notifiche su Slack:
 ## 📊 Architettura Finale
 
 ```
-GitHub PR
-    ├─ Backend CI (test)
-    ├─ Frontend CI (build + lint)
-    └─ Docs CI (validate)
-         ↓
-    [Review + Approve]
-         ↓
-    Merge to main
-         ↓
-    GitHub Actions (CD)
-    ├─ Backend: build + push image + deploy Cloud Run
-    ├─ Frontend: build + push image + deploy Cloud Run
-    └─ Slack notification: ✅/❌
-         ↓
-    [Smoke tests]
-         ↓
-    Production ✅
+feature branch
+    │
+    ├─ [PR aperta]
+    │      ├─ Backend CI (mvn verify)
+    │      ├─ Frontend CI (build + lint)
+    │      └─ Docs CI (validate)
+    │
+    ├─ [workflow_dispatch → staging]
+    │      └─ deploy su rideops-backend-staging
+    │             └─ smoke test /actuator/health ✅
+    │
+    └─ [Merge a main]
+           └─ GitHub Actions (CD)
+                  ├─ Backend: build → push image → deploy rideops-backend (prod)
+                  ├─ Frontend: build → push image → deploy rideops-frontend (prod)
+                  └─ Slack notification: ✅/❌
+
+Cloud Run (europe-west1)
+    ├─ rideops-backend          ← produzione  (Spring profile: prod)
+    └─ rideops-backend-staging  ← staging     (Spring profile: staging)
+
+Secret Manager
+    ├─ rideops-db-password   → DB_PASSWORD  (entrambi gli ambienti)
+    └─ rideops-jwt-secret    → JWT_SECRET   (entrambi gli ambienti)
 ```
 
 ---

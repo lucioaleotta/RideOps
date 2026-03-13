@@ -121,6 +121,69 @@ Clicca: **Run workflow**
 
 ---
 
+## 🌐 Ambienti: Staging vs Produzione
+
+Il backend è deployato su **due servizi Cloud Run distinti** nella stessa region `europe-west1`.
+
+### Servizi attivi
+
+| Ambiente | Cloud Run Service | Spring Profile | Trigger |
+|----------|-------------------|----------------|---------|
+| **Produzione** | `rideops-backend` | `prod` | Push a `main` (automatico) |
+| **Staging** | `rideops-backend-staging` | `staging` | `workflow_dispatch` manuale |
+
+### URL degli endpoint
+
+```bash
+# Produzione
+curl https://rideops-backend-fgnnhhq3va-ew.a.run.app/actuator/health
+
+# Staging
+curl https://rideops-backend-staging-fgnnhhq3va-ew.a.run.app/actuator/health
+```
+
+### Flusso consigliato
+
+```
+feature branch
+      │
+      ▼
+  [PR + test CI]
+      │
+      ▼
+  workflow_dispatch  →  deploy su rideops-backend-staging
+      │                 (verifica manuale / smoke test)
+      │
+      ▼
+  merge a main  →  deploy automatico su rideops-backend (prod)
+```
+
+### Come deployare su staging manualmente
+
+```bash
+# Da CLI
+gh workflow run backend-cd.yml --ref main -f environment=staging
+
+# Monitora il run
+gh run list --workflow=backend-cd.yml --branch main --limit 3
+
+# Verifica health staging
+curl -s https://rideops-backend-staging-fgnnhhq3va-ew.a.run.app/actuator/health | jq
+```
+
+### Variabili GitHub collegate agli ambienti
+
+| Variabile | Valore | Usata da |
+|-----------|--------|----------|
+| `BACKEND_SERVICE` | `rideops-backend` | deploy prod |
+| `BACKEND_SERVICE_STAGING` | `rideops-backend-staging` | deploy staging |
+| `DB_PASSWORD_SECRET_REF` | `rideops-db-password:latest` | entrambi |
+| `JWT_SECRET_REF` | `rideops-jwt-secret:latest` | entrambi |
+
+> **Nota sicurezza:** Entrambi gli ambienti leggono `DB_PASSWORD` e `JWT_SECRET` da **Secret Manager** (non come variabili d'ambiente in chiaro). Il workflow usa `--set-secrets` nella fase di deploy Cloud Run.
+
+---
+
 ## 🐛 Troubleshooting
 
 ### "Error: OIDC token exchange failed"
