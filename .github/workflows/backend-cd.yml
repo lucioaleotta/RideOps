@@ -98,7 +98,7 @@ jobs:
             --region ${{ vars.GCP_REGION }} \
             --allow-unauthenticated \
             --port 8080 \
-            --set-env-vars SPRING_PROFILES_ACTIVE=prod,DATABASE_URL=${{ secrets.DATABASE_URL }} \
+            --set-env-vars SPRING_PROFILES_ACTIVE=prod \
             --min-instances 1
 
       - name: Verify deployment
