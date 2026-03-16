@@ -83,7 +83,7 @@ public class ServiceController {
                                  @RequestParam(required = false) ServiceStatus status,
                                  @RequestParam(required = false) ServiceType type) {
         if (from != null && to != null && !from.isBefore(to)) {
-            throw new ServiceValidationException("Invalid range: 'from' must be before 'to'");
+            throw new ServiceValidationException("Intervallo non valido: 'from' deve essere precedente a 'to'");
         }
         return listServicesUseCase.execute(from, to, driverId, status, type);
     }
@@ -150,7 +150,7 @@ public class ServiceController {
                              @Valid @RequestBody AssignRequest request,
                              @AuthenticationPrincipal IdentityUserDetails user) {
         if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non autorizzato");
         }
         return assignServiceUseCase.execute(serviceId, request.driverId(), user.getId());
     }

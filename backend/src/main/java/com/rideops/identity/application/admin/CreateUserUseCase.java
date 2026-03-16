@@ -45,11 +45,11 @@ public class CreateUserUseCase {
         DriverProfile profile = validateAndBuildProfile(command);
 
         if (userAdminRepositoryPort.existsByUserIdIgnoreCase(userId)) {
-            throw new UserAdminValidationException("User ID already exists");
+            throw new UserAdminValidationException("Lo user ID esiste gia`");
         }
 
         if (userAdminRepositoryPort.existsByEmailIgnoreCase(email)) {
-            throw new UserAdminValidationException("Email already exists");
+            throw new UserAdminValidationException("L'email esiste gia`");
         }
 
         UserEntity userEntity = new UserEntity();
@@ -95,27 +95,27 @@ public class CreateUserUseCase {
                                                 List<String> residentialAddressesRaw,
                                                 String mobilePhoneRaw,
                                                 LocalDate licenseExpiryDateRaw) {
-        String firstName = normalizeRequiredText(firstNameRaw, "First name is required");
-        String lastName = normalizeRequiredText(lastNameRaw, "Last name is required");
-        String licenseNumber = normalizeRequiredText(licenseNumberRaw, "License number is required");
-        String mobilePhone = normalizeRequiredText(mobilePhoneRaw, "Mobile phone is required");
-        LocalDate birthDate = requireDate(birthDateRaw, "Birth date is required");
-        LocalDate licenseExpiryDate = requireDate(licenseExpiryDateRaw, "License expiry date is required");
+        String firstName = normalizeRequiredText(firstNameRaw, "Il nome e` obbligatorio");
+        String lastName = normalizeRequiredText(lastNameRaw, "Il cognome e` obbligatorio");
+        String licenseNumber = normalizeRequiredText(licenseNumberRaw, "Il numero patente e` obbligatorio");
+        String mobilePhone = normalizeRequiredText(mobilePhoneRaw, "Il cellulare e` obbligatorio");
+        LocalDate birthDate = requireDate(birthDateRaw, "La data di nascita e` obbligatoria");
+        LocalDate licenseExpiryDate = requireDate(licenseExpiryDateRaw, "La data di scadenza patente e` obbligatoria");
 
         if (birthDate.isAfter(LocalDate.now())) {
-            throw new UserAdminValidationException("Birth date cannot be in the future");
+            throw new UserAdminValidationException("La data di nascita non puo` essere nel futuro");
         }
 
         if (licenseExpiryDate.isBefore(LocalDate.now().minusYears(20))) {
-            throw new UserAdminValidationException("License expiry date is not valid");
+            throw new UserAdminValidationException("La data di scadenza patente non e` valida");
         }
 
         if (!MOBILE_PHONE_PATTERN.matcher(mobilePhone).matches()) {
-            throw new UserAdminValidationException("Invalid mobile phone format");
+            throw new UserAdminValidationException("Formato cellulare non valido");
         }
 
-        List<String> normalizedLicenseTypes = normalizeNonEmptyList(licenseTypesRaw, "At least one license type is required");
-        List<String> normalizedAddresses = normalizeNonEmptyList(residentialAddressesRaw, "At least one residential address is required");
+        List<String> normalizedLicenseTypes = normalizeNonEmptyList(licenseTypesRaw, "E` obbligatorio almeno un tipo patente");
+        List<String> normalizedAddresses = normalizeNonEmptyList(residentialAddressesRaw, "E` obbligatorio almeno un indirizzo di residenza");
 
         return new DriverProfile(
             firstName,
@@ -146,28 +146,28 @@ public class CreateUserUseCase {
     private void validateUserId(String userId) {
         if (!USER_ID_PATTERN.matcher(userId).matches()) {
             throw new UserAdminValidationException(
-                "User ID must be 3-40 chars and contain only letters, numbers, dot, underscore or dash"
+                "Lo user ID deve essere lungo 3-40 caratteri e contenere solo lettere, numeri, punto, underscore o trattino"
             );
         }
     }
 
     private void validateEmail(String email) {
         if (!EMAIL_PATTERN.matcher(email).matches()) {
-            throw new UserAdminValidationException("Invalid email format");
+            throw new UserAdminValidationException("Formato email non valido");
         }
     }
 
     private void validatePassword(String rawPassword) {
         if (rawPassword == null || !PASSWORD_PATTERN.matcher(rawPassword).matches()) {
             throw new UserAdminValidationException(
-                "Password must be at least 8 chars with upper, lower, digit and special char"
+                "La password deve avere almeno 8 caratteri con maiuscola, minuscola, numero e carattere speciale"
             );
         }
     }
 
     private void validateRole(UserRole role) {
         if (role == null) {
-            throw new UserAdminValidationException("Role is required");
+            throw new UserAdminValidationException("Il ruolo e` obbligatorio");
         }
     }
 

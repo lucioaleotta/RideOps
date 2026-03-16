@@ -45,7 +45,7 @@ public class CreateServiceUseCase {
 
     private void validateStartAt(LocalDateTime startAt) {
         if (startAt == null) {
-            throw new ServiceValidationException("Start date/time is required");
+            throw new ServiceValidationException("La data/ora di inizio e` obbligatoria");
         }
     }
 

@@ -111,9 +111,9 @@ export function AdminUsersPanel() {
   );
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
+    <section className="responsive-panel admin-users-panel" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <h3>Crea utente</h3>
           <button
             type="button"
@@ -168,9 +168,11 @@ export function AdminUsersPanel() {
             </select>
           </label>
 
-          <button type="submit" className="primary-button compact-button" disabled={submitting}>
-            {submitting ? 'Creazione...' : 'Crea utente'}
-          </button>
+          <div className="form-actions sticky-mobile">
+            <button type="submit" className="primary-button compact-button" disabled={submitting}>
+              {submitting ? 'Creazione...' : 'Crea utente'}
+            </button>
+          </div>
         </form>
         )}
       </article>
@@ -181,8 +183,8 @@ export function AdminUsersPanel() {
         {loading ? (
           <p>Caricamento utenti...</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div className="table-scroll" style={{ overflowX: 'auto' }}>
+            <table className="responsive-table admin-users-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
               <thead>
                 <tr>
                   <th align="left">User ID</th>
@@ -212,13 +214,15 @@ export function AdminUsersPanel() {
                     <td>{user.enabled ? 'ATTIVO' : 'DISABILITATO'}</td>
                     <td>{new Date(user.createdAt).toLocaleString('it-IT')}</td>
                     <td>
-                      <button
-                        className="logout-button"
-                        type="button"
-                        onClick={() => onEnabledChange(user.id, !user.enabled)}
-                      >
-                        {user.enabled ? 'Disabilita' : 'Abilita'}
-                      </button>
+                      <div className="table-actions">
+                        <button
+                          className="logout-button"
+                          type="button"
+                          onClick={() => onEnabledChange(user.id, !user.enabled)}
+                        >
+                          {user.enabled ? 'Disabilita' : 'Abilita'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

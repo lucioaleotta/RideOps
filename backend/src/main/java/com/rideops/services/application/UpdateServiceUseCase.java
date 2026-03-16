@@ -22,11 +22,11 @@ public class UpdateServiceUseCase {
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
         if (entity.getStatus() == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Closed service cannot be updated");
+            throw new ServiceValidationException("Un servizio chiuso non puo` essere aggiornato");
         }
 
         if (command.startAt() == null) {
-            throw new ServiceValidationException("Start date/time is required");
+            throw new ServiceValidationException("La data/ora di inizio e` obbligatoria");
         }
 
         ServiceValidationSupport.validateBusinessFields(

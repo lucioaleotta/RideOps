@@ -27,16 +27,16 @@ public class AssignServiceUseCase {
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
         if (service.getStatus() == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Cannot assign a CLOSED service");
+            throw new ServiceValidationException("Non e` possibile assegnare un servizio CLOSED");
         }
 
-        Long safeDriverId = Objects.requireNonNull(driverId, "driverId is required");
+        Long safeDriverId = Objects.requireNonNull(driverId, "driverId obbligatorio");
 
         UserEntity driver = userAdminRepositoryPort.findById(safeDriverId)
-            .orElseThrow(() -> new ServiceValidationException("Driver not found"));
+            .orElseThrow(() -> new ServiceValidationException("Driver non trovato"));
 
         if (driver.getRole() != UserRole.DRIVER || !driver.isEnabled()) {
-            throw new ServiceValidationException("Target user is not an active DRIVER");
+            throw new ServiceValidationException("L'utente selezionato non e` un DRIVER attivo");
         }
 
         service.setAssignedDriverId(safeDriverId);

@@ -22,7 +22,7 @@ public class UpdateFinancialTransactionUseCase {
             .orElseThrow(() -> new FinancialTransactionNotFoundException(id));
 
         if (entity.isVoided()) {
-            throw new FinancialValidationException("Voided transaction cannot be updated");
+            throw new FinancialValidationException("Una transazione annullata non puo` essere aggiornata");
         }
 
         validation.applyOnEntity(entity, command);

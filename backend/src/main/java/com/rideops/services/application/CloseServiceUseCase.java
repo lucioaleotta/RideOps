@@ -26,14 +26,14 @@ public class CloseServiceUseCase {
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
         if (entity.getStatus() != ServiceStatus.ASSIGNED) {
-            throw new ServiceValidationException("Service can be closed only when ASSIGNED");
+            throw new ServiceValidationException("Il servizio puo` essere chiuso solo quando e` ASSIGNED");
         }
 
         RideService service = new RideService(entity.getStatus());
         try {
             service.close();
         } catch (ServiceDomainException exception) {
-            throw new ServiceValidationException("Invalid status transition");
+            throw new ServiceValidationException("Transizione di stato non valida");
         }
 
         entity.setStatus(service.getStatus());

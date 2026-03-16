@@ -13,7 +13,7 @@ public class SetUserEnabledUseCase {
 
     public UserSummaryDto execute(Long userId, boolean enabled) {
         var user = userAdminRepositoryPort.findById(userId)
-            .orElseThrow(() -> new UserAdminNotFoundException("User not found"));
+            .orElseThrow(() -> new UserAdminNotFoundException("Utente non trovato"));
 
         user.setEnabled(enabled);
         return UserAdminMapper.toDto(userAdminRepositoryPort.save(user));

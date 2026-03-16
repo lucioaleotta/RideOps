@@ -29,19 +29,19 @@ public class UpdateOwnDriverProfileUseCase {
                                   List<String> residentialAddresses,
                                   String mobilePhone,
                                   LocalDate licenseExpiryDate) {
-        Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+        Long safeUserId = Objects.requireNonNull(userId, "userId obbligatorio");
         var user = userAdminRepositoryPort.findById(safeUserId)
-            .orElseThrow(() -> new UserAdminNotFoundException("Driver not found"));
+            .orElseThrow(() -> new UserAdminNotFoundException("Driver non trovato"));
 
         if (user.getRole() != UserRole.DRIVER) {
-            throw new UserAdminValidationException("User is not a driver");
+            throw new UserAdminValidationException("L'utente non e` un driver");
         }
 
         String normalizedEmail = normalizeEmail(email);
         validateEmail(normalizedEmail);
         if (!normalizedEmail.equalsIgnoreCase(user.getEmail())
             && userAdminRepositoryPort.existsByEmailIgnoreCase(normalizedEmail)) {
-            throw new UserAdminValidationException("Email already exists");
+            throw new UserAdminValidationException("L'email esiste gia`");
         }
 
         var profile = createUserUseCase.validateAndBuildDriverProfile(
@@ -73,7 +73,7 @@ public class UpdateOwnDriverProfileUseCase {
 
     private void validateEmail(String email) {
         if (!EMAIL_PATTERN.matcher(email).matches()) {
-            throw new UserAdminValidationException("Invalid email format");
+            throw new UserAdminValidationException("Formato email non valido");
         }
     }
 }

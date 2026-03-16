@@ -46,7 +46,7 @@ const defaultForm: DeadlineFormState = {
   title: '',
   description: '',
   dueDate: '',
-  status: 'DA_ESEGUIRE',
+  status: 'IN_SCADENZA',
   cost: '0',
   currency: 'EUR',
   notes: '',
@@ -62,6 +62,27 @@ function typeLabel(type: DeadlineType) {
   if (type === 'REVISIONE') return 'Revisione';
   if (type === 'TAGLIANDO') return 'Tagliando';
   return 'Altro';
+}
+
+const STATUS_OPTIONS: { value: DeadlineStatus; label: string }[] = [
+  { value: 'DA_ESEGUIRE', label: 'Da eseguire' },
+  { value: 'IN_SCADENZA', label: 'In scadenza' },
+  { value: 'SCADUTA', label: 'Scaduta' },
+  { value: 'PAGATA', label: 'Pagata' },
+  { value: 'ESEGUITA', label: 'Eseguita' },
+  { value: 'ANNULLATA', label: 'Annullata' },
+];
+
+function allowedStatusesForType(type: DeadlineType): { value: DeadlineStatus; label: string }[] {
+  const isPayable = type === 'BOLLO' || type === 'ASSICURAZIONE';
+  return STATUS_OPTIONS.filter((s) =>
+    isPayable ? s.value !== 'ESEGUITA' && s.value !== 'DA_ESEGUIRE' : s.value !== 'PAGATA'
+  );
+}
+
+function sanitizeStatusForType(status: DeadlineStatus, type: DeadlineType): DeadlineStatus {
+  const allowed = allowedStatusesForType(type);
+  return allowed.some((s) => s.value === status) ? status : allowed[0].value;
 }
 
 export function FleetDeadlinesPanel() {
@@ -312,7 +333,14 @@ export function FleetDeadlinesPanel() {
           <form className="form-grid" onSubmit={onSubmit} style={{ marginTop: 10 }}>
             <label>
               Tipo
-              <select className="form-input" value={form.type} onChange={(event) => setForm((prev) => ({ ...prev, type: event.target.value as DeadlineType }))}>
+              <select className="form-input" value={form.type} onChange={(event) => {
+                const newType = event.target.value as DeadlineType;
+                setForm((prev) => ({
+                  ...prev,
+                  type: newType,
+                  status: sanitizeStatusForType(prev.status, newType)
+                }));
+              }}>
                 <option value="BOLLO">Bollo</option>
                 <option value="ASSICURAZIONE">Assicurazione</option>
                 <option value="REVISIONE">Revisione</option>
@@ -339,12 +367,9 @@ export function FleetDeadlinesPanel() {
             <label>
               Stato
               <select className="form-input" value={form.status} onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value as DeadlineStatus }))}>
-                <option value="DA_ESEGUIRE">Da eseguire</option>
-                <option value="IN_SCADENZA">In scadenza</option>
-                <option value="SCADUTA">Scaduta</option>
-                <option value="PAGATA">Pagata</option>
-                <option value="ESEGUITA">Eseguita</option>
-                <option value="ANNULLATA">Annullata</option>
+                {allowedStatusesForType(form.type).map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
               </select>
             </label>
 

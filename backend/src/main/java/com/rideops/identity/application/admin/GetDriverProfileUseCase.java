@@ -14,12 +14,12 @@ public class GetDriverProfileUseCase {
     }
 
     public UserSummaryDto execute(Long userId) {
-        Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+        Long safeUserId = Objects.requireNonNull(userId, "userId obbligatorio");
         var user = userAdminRepositoryPort.findById(safeUserId)
-            .orElseThrow(() -> new UserAdminNotFoundException("Driver not found"));
+            .orElseThrow(() -> new UserAdminNotFoundException("Driver non trovato"));
 
         if (user.getRole() != UserRole.DRIVER) {
-            throw new UserAdminValidationException("User is not a driver");
+            throw new UserAdminValidationException("L'utente non e` un driver");
         }
 
         return UserAdminMapper.toDto(user);

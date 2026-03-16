@@ -171,7 +171,7 @@ export function DriverProfilePanel() {
   }
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
+    <section className="responsive-panel driver-profile-panel" style={{ display: 'grid', gap: 16 }}>
       {error && <p className="error-text">{error}</p>}
       {success && <p className="success-text">{success}</p>}
 
@@ -189,7 +189,7 @@ export function DriverProfilePanel() {
         <p><strong>Tipi patente:</strong> {profile.licenseTypes?.length ? profile.licenseTypes.join(', ') : '-'}</p>
 
         {!isEditing && (
-          <div style={{ marginTop: 12 }}>
+          <div className="form-actions" style={{ marginTop: 12 }}>
             <button type="button" className="primary-button" onClick={onStartEditing}>
               Modifica
             </button>
@@ -247,7 +247,7 @@ export function DriverProfilePanel() {
 
             <div>
               <strong>Tipi patente</strong>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
+              <div className="panel-actions" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
                 {licenseTypeOptions.map((type) => (
                   <label key={type} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                     <input
@@ -261,7 +261,7 @@ export function DriverProfilePanel() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="submit" className="primary-button" disabled={submitting}>
                 {submitting ? 'Salvataggio...' : 'Salva'}
               </button>
