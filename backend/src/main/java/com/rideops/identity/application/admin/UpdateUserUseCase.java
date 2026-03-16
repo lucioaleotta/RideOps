@@ -1,6 +1,10 @@
 package com.rideops.identity.application.admin;
 
+import com.rideops.identity.adapters.out.UserAdminAuditLogEntity;
 import com.rideops.identity.adapters.out.UserEntity;
+import com.rideops.identity.domain.UserRole;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,15 +23,18 @@ public class UpdateUserUseCase {
         Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$");
 
     private final UserAdminRepositoryPort userAdminRepositoryPort;
+    private final UserAdminAuditLogPort userAdminAuditLogPort;
     private final PasswordEncoder passwordEncoder;
 
     public UpdateUserUseCase(UserAdminRepositoryPort userAdminRepositoryPort,
+                             UserAdminAuditLogPort userAdminAuditLogPort,
                              PasswordEncoder passwordEncoder) {
         this.userAdminRepositoryPort = userAdminRepositoryPort;
+        this.userAdminAuditLogPort = userAdminAuditLogPort;
         this.passwordEncoder = passwordEncoder;
     }
 
-    public UserSummaryDto execute(Long id, UpdateUserCommand command) {
+    public UserSummaryDto execute(Long id, UpdateUserCommand command, String adminUserId, Long adminUserDbId) {
         if (id == null) {
             throw new UserAdminValidationException("Id utente mancante");
         }
@@ -37,6 +44,11 @@ public class UpdateUserUseCase {
 
         UserEntity user = userAdminRepositoryPort.findById(id)
             .orElseThrow(() -> new UserAdminNotFoundException("Utente non trovato"));
+
+        String previousUserId = user.getUserId();
+        String previousEmail = user.getEmail();
+        UserRole previousRole = user.getRole();
+        boolean previousEnabled = user.isEnabled();
 
         String normalizedEmail = normalizeEmail(command.email());
         String normalizedUserId = normalizeUserId(command.userId());
@@ -69,12 +81,42 @@ public class UpdateUserUseCase {
         user.setEnabled(command.enabled());
 
         String password = command.newPassword() == null ? "" : command.newPassword().trim();
+        boolean passwordChanged = false;
         if (!password.isEmpty()) {
             validatePassword(password);
             user.setPasswordHash(passwordEncoder.encode(password));
+            passwordChanged = true;
         }
 
-        return UserAdminMapper.toDto(userAdminRepositoryPort.save(user));
+        UserEntity saved = userAdminRepositoryPort.save(user);
+
+        List<String> changedFields = new ArrayList<>();
+        if (!previousUserId.equals(saved.getUserId())) {
+            changedFields.add("userId");
+        }
+        if (!previousEmail.equals(saved.getEmail())) {
+            changedFields.add("email");
+        }
+        if (previousRole != saved.getRole()) {
+            changedFields.add("role");
+        }
+        if (previousEnabled != saved.isEnabled()) {
+            changedFields.add("enabled");
+        }
+        if (passwordChanged) {
+            changedFields.add("password");
+        }
+
+        UserAdminAuditLogEntity audit = new UserAdminAuditLogEntity();
+        audit.setTargetUserId(saved.getId());
+        audit.setTargetUserIdValue(saved.getUserId());
+        audit.setAdminUserId(adminUserDbId);
+        audit.setAdminUserIdValue((adminUserId == null || adminUserId.isBlank()) ? "unknown" : adminUserId);
+        audit.setAction("UPDATE_USER");
+        audit.setChangedFields(changedFields.isEmpty() ? "none" : String.join(",", changedFields));
+        userAdminAuditLogPort.save(audit);
+
+        return UserAdminMapper.toDto(saved);
     }
 
     private String normalizeEmail(String email) {

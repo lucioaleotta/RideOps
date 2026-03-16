@@ -1,7 +1,9 @@
 package com.rideops.identity.adapters.in;
 
+import com.rideops.identity.application.IdentityUserDetails;
 import com.rideops.identity.application.admin.CreateUserCommand;
 import com.rideops.identity.application.admin.CreateUserUseCase;
+import com.rideops.identity.application.admin.ListUserAdminAuditLogUseCase;
 import com.rideops.identity.application.admin.ListUsersUseCase;
 import com.rideops.identity.application.admin.SetTemporaryPasswordUseCase;
 import com.rideops.identity.application.admin.SetUserEnabledUseCase;
@@ -10,15 +12,18 @@ import com.rideops.identity.application.admin.UpdateUserUseCase;
 import com.rideops.identity.application.admin.UpdateUserRoleUseCase;
 import com.rideops.identity.application.admin.UserAdminNotFoundException;
 import com.rideops.identity.application.admin.UserAdminValidationException;
+import com.rideops.identity.application.admin.UserAdminAuditLogDto;
 import com.rideops.identity.application.admin.UserSummaryDto;
 import com.rideops.identity.domain.UserRole;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -40,19 +45,22 @@ public class AdminUserController {
     private final SetUserEnabledUseCase setUserEnabledUseCase;
     private final SetTemporaryPasswordUseCase setTemporaryPasswordUseCase;
     private final UpdateUserUseCase updateUserUseCase;
+    private final ListUserAdminAuditLogUseCase listUserAdminAuditLogUseCase;
 
     public AdminUserController(CreateUserUseCase createUserUseCase,
                                ListUsersUseCase listUsersUseCase,
                                UpdateUserRoleUseCase updateUserRoleUseCase,
                                SetUserEnabledUseCase setUserEnabledUseCase,
                                SetTemporaryPasswordUseCase setTemporaryPasswordUseCase,
-                               UpdateUserUseCase updateUserUseCase) {
+                               UpdateUserUseCase updateUserUseCase,
+                               ListUserAdminAuditLogUseCase listUserAdminAuditLogUseCase) {
         this.createUserUseCase = createUserUseCase;
         this.listUsersUseCase = listUsersUseCase;
         this.updateUserRoleUseCase = updateUserRoleUseCase;
         this.setUserEnabledUseCase = setUserEnabledUseCase;
         this.setTemporaryPasswordUseCase = setTemporaryPasswordUseCase;
         this.updateUserUseCase = updateUserUseCase;
+        this.listUserAdminAuditLogUseCase = listUserAdminAuditLogUseCase;
     }
 
     @GetMapping
@@ -101,7 +109,8 @@ public class AdminUserController {
 
     @PatchMapping("/{userId}")
     public UserSummaryDto updateUser(@PathVariable Long userId,
-                                     @Valid @RequestBody UpdateUserRequest request) {
+                                     @Valid @RequestBody UpdateUserRequest request,
+                                     @AuthenticationPrincipal IdentityUserDetails principal) {
         return updateUserUseCase.execute(
             userId,
             new UpdateUserCommand(
@@ -110,8 +119,19 @@ public class AdminUserController {
                 request.role(),
                 request.enabled(),
                 request.newPassword()
-            )
+            ),
+            principal == null ? "unknown" : principal.getUserId(),
+            principal == null ? null : principal.getId()
         );
+    }
+
+    @GetMapping("/journal")
+    public List<UserAdminAuditLogDto> listJournal(String date, String adminUserId) {
+        LocalDate dateFilter = null;
+        if (date != null && !date.isBlank()) {
+            dateFilter = LocalDate.parse(date.trim());
+        }
+        return listUserAdminAuditLogUseCase.execute(dateFilter, adminUserId);
     }
 
     @ExceptionHandler(UserAdminValidationException.class)

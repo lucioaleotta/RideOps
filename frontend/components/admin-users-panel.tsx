@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 type UserRole = 'ADMIN' | 'GESTIONALE' | 'DRIVER';
 
@@ -22,6 +22,15 @@ type EditFormState = {
   newPassword: string;
 };
 
+type JournalItem = {
+  id: number;
+  adminUserId: string;
+  targetUserId: string;
+  action: string;
+  changedFields: string;
+  createdAt: string;
+};
+
 const roles: UserRole[] = ['ADMIN', 'GESTIONALE', 'DRIVER'];
 
 export function AdminUsersPanel() {
@@ -31,6 +40,37 @@ export function AdminUsersPanel() {
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [editing, setEditing] = useState<EditFormState | null>(null);
+  const [journalOpen, setJournalOpen] = useState(false);
+  const [journalLoading, setJournalLoading] = useState(false);
+  const [journalError, setJournalError] = useState<string | null>(null);
+  const [journalEntries, setJournalEntries] = useState<JournalItem[]>([]);
+  const [journalDateFilter, setJournalDateFilter] = useState('');
+  const [journalAdminFilter, setJournalAdminFilter] = useState('');
+
+  const loadJournal = useCallback(async () => {
+    setJournalLoading(true);
+    setJournalError(null);
+
+    const params = new URLSearchParams();
+    if (journalDateFilter.trim()) {
+      params.set('date', journalDateFilter.trim());
+    }
+    if (journalAdminFilter.trim()) {
+      params.set('adminUserId', journalAdminFilter.trim());
+    }
+
+    const response = await fetch(`/api/admin/users/journal?${params.toString()}`, { cache: 'no-store' });
+    const payload = (await response.json().catch(() => [])) as JournalItem[] | { message?: string };
+
+    if (!response.ok) {
+      setJournalError((payload as { message?: string }).message ?? 'Errore caricamento journal');
+      setJournalLoading(false);
+      return;
+    }
+
+    setJournalEntries(payload as JournalItem[]);
+    setJournalLoading(false);
+  }, [journalAdminFilter, journalDateFilter]);
 
   async function loadUsers() {
     setLoading(true);
@@ -52,6 +92,12 @@ export function AdminUsersPanel() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  useEffect(() => {
+    if (journalOpen) {
+      loadJournal();
+    }
+  }, [journalOpen, loadJournal]);
 
   function openEdit(user: UserItem) {
     setError(null);
@@ -92,7 +138,7 @@ export function AdminUsersPanel() {
       })
     });
 
-    const payload = (await response.json().catch(() => ({}))) as { message?: string };
+    const payload = (await response.json().catch(() => ({}))) as { message?: string; userId?: string };
     setSubmitting(false);
 
     if (!response.ok) {
@@ -100,9 +146,12 @@ export function AdminUsersPanel() {
       return;
     }
 
-    setSuccess('Utente aggiornato correttamente');
+    setSuccess(`Utente ${payload.userId ?? editing.userId} aggiornato correttamente`);
     setEditing(null);
     await loadUsers();
+    if (journalOpen) {
+      await loadJournal();
+    }
   }
 
   const orderedUsers = useMemo(
@@ -228,6 +277,101 @@ export function AdminUsersPanel() {
           </form>
         </article>
       )}
+
+      <article className="dashboard-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <h3>Journal modifiche amministrative</h3>
+          <button
+            type="button"
+            className="logout-button"
+            onClick={() => setJournalOpen((prev) => !prev)}
+          >
+            {journalOpen ? 'Nascondi' : 'Mostra'}
+          </button>
+        </div>
+
+        {journalOpen && (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 12 }}>
+              <label>
+                Data modifica
+                <input
+                  className="form-input"
+                  type="date"
+                  value={journalDateFilter}
+                  onChange={(event) => setJournalDateFilter(event.target.value)}
+                />
+              </label>
+
+              <label>
+                UserID amministrativo
+                <input
+                  className="form-input"
+                  value={journalAdminFilter}
+                  onChange={(event) => setJournalAdminFilter(event.target.value)}
+                  placeholder="es. admin01"
+                />
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <button type="button" className="primary-button" onClick={loadJournal} disabled={journalLoading}>
+                {journalLoading ? 'Caricamento...' : 'Applica filtri'}
+              </button>
+              <button
+                type="button"
+                className="logout-button"
+                onClick={() => {
+                  setJournalDateFilter('');
+                  setJournalAdminFilter('');
+                  setTimeout(() => {
+                    loadJournal();
+                  }, 0);
+                }}
+              >
+                Reset filtri
+              </button>
+            </div>
+
+            {journalError && <p className="error-text">{journalError}</p>}
+
+            {journalLoading ? (
+              <p>Caricamento journal...</p>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>
+                      <th align="left">Quando</th>
+                      <th align="left">Admin UserID</th>
+                      <th align="left">Utente modificato</th>
+                      <th align="left">Azione</th>
+                      <th align="left">Campi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {journalEntries.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ padding: '8px 0' }}>Nessuna modifica trovata.</td>
+                      </tr>
+                    ) : (
+                      journalEntries.map((entry) => (
+                        <tr key={entry.id}>
+                          <td style={{ padding: '8px 0' }}>{new Date(entry.createdAt).toLocaleString('it-IT')}</td>
+                          <td style={{ padding: '8px 0' }}>{entry.adminUserId}</td>
+                          <td style={{ padding: '8px 0' }}>{entry.targetUserId}</td>
+                          <td style={{ padding: '8px 0' }}>{entry.action}</td>
+                          <td style={{ padding: '8px 0' }}>{entry.changedFields}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </article>
     </section>
   );
 }
