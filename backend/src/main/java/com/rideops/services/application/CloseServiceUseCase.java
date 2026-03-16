@@ -5,6 +5,8 @@ import com.rideops.services.domain.RideService;
 import com.rideops.services.domain.ServiceDomainException;
 import com.rideops.services.domain.ServiceStatus;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Objects;
 import org.springframework.lang.NonNull;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -25,10 +27,36 @@ public class CloseServiceUseCase {
         RideServiceEntity entity = serviceRepositoryPort.findById(serviceId)
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
+        validateCloseableStatus(entity);
+
+        return closeEntity(entity);
+    }
+
+    public ServiceDto executeByDriver(Long serviceId, Long driverUserId) {
+        Long safeServiceId = Objects.requireNonNull(serviceId, "serviceId obbligatorio");
+        RideServiceEntity entity = serviceRepositoryPort.findById(safeServiceId)
+            .orElseThrow(() -> new ServiceNotFoundException(serviceId));
+
+        Long safeDriverUserId = Objects.requireNonNull(driverUserId, "driverUserId obbligatorio");
+        if (!safeDriverUserId.equals(entity.getAssignedDriverId())) {
+            throw new ServiceValidationException("Puoi chiudere solo servizi assegnati a te");
+        }
+        if (entity.getStartAt() == null || entity.getStartAt().isAfter(LocalDateTime.now())) {
+            throw new ServiceValidationException("Puoi chiudere solo servizi con data/ora di inizio gia` raggiunta");
+        }
+
+        validateCloseableStatus(entity);
+
+        return closeEntity(entity);
+    }
+
+    private void validateCloseableStatus(RideServiceEntity entity) {
         if (entity.getStatus() != ServiceStatus.ASSIGNED) {
             throw new ServiceValidationException("Il servizio puo` essere chiuso solo quando e` ASSIGNED");
         }
+    }
 
+    private ServiceDto closeEntity(RideServiceEntity entity) {
         RideService service = new RideService(entity.getStatus());
         try {
             service.close();
