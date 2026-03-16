@@ -67,6 +67,46 @@ a:hover {
   margin-top: 6px;
 }
 
+.password-input-wrap {
+  position: relative;
+  margin-top: 6px;
+}
+
+.password-input-wrap .form-input {
+  margin-top: 0;
+  padding-right: 40px;
+}
+
+.password-toggle-button {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.password-toggle-button:hover {
+  color: var(--primary-dark);
+}
+
+.password-toggle-button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.password-toggle-button svg {
+  width: 18px;
+  height: 18px;
+}
+
 .primary-button {
   background: var(--primary);
   color: white;

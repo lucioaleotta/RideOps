@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { PasswordInput } from './password-input';
 
 type UserRole = 'ADMIN' | 'GESTIONALE' | 'DRIVER';
 
@@ -258,13 +259,13 @@ export function AdminUsersPanel() {
 
             <label>
               Nuova password (opzionale)
-              <input
+              <PasswordInput
                 className="form-input"
-                type="password"
                 value={editing.newPassword}
                 onChange={(event) => setEditing((prev) => prev ? { ...prev, newPassword: event.target.value } : prev)}
                 placeholder="Lascia vuoto per non cambiare"
                 minLength={8}
+                autoComplete="new-password"
               />
             </label>
 
