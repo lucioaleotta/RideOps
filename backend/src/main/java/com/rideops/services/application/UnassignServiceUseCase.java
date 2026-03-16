@@ -19,7 +19,7 @@ public class UnassignServiceUseCase {
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
         if (service.getStatus() == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Cannot unassign a CLOSED service");
+            throw new ServiceValidationException("Non e` possibile rimuovere l'assegnazione da un servizio CLOSED");
         }
 
         service.setAssignedDriverId(null);

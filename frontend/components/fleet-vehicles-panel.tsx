@@ -243,9 +243,9 @@ export function FleetVehiclesPanel() {
   }
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
+    <section className="responsive-panel fleet-vehicles-panel" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
           <h3>Parco veicoli</h3>
           <button
             type="button"
@@ -312,7 +312,7 @@ export function FleetVehiclesPanel() {
 
             {!editingId && (
               <div className="dashboard-card" style={{ marginTop: 4 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                   <strong>Scadenze iniziali</strong>
                   <button
                     type="button"
@@ -437,7 +437,7 @@ export function FleetVehiclesPanel() {
                         </label>
                       </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                      <div className="panel-actions" style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
                         <button
                           type="button"
                           className="logout-button"
@@ -459,7 +459,7 @@ export function FleetVehiclesPanel() {
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
                 {submitting ? 'Salvataggio...' : editingId ? 'Aggiorna veicolo' : 'Crea veicolo'}
               </button>
@@ -481,8 +481,8 @@ export function FleetVehiclesPanel() {
         ) : vehicles.length === 0 ? (
           <p>Nessun veicolo presente.</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8 }}>
+          <div className="table-scroll" style={{ overflowX: 'auto' }}>
+            <table className="responsive-table fleet-vehicles-table" style={{ width: '100%', borderCollapse: 'collapse', marginTop: 8, minWidth: 700 }}>
               <thead>
                 <tr>
                   <th style={thStyle}>Targa</th>
@@ -500,7 +500,7 @@ export function FleetVehiclesPanel() {
                     <td style={tdStyle}>{vehicleTypeLabel(vehicle.type)}</td>
                     <td style={tdStyle}>{vehicle.notes ?? '-'}</td>
                     <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <div className="table-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <button
                           type="button"
                           className="primary-button compact-button"

@@ -39,7 +39,7 @@ public class DriverServicesController {
                                          @RequestParam(required = false) ServiceStatus status,
                                          @RequestParam(required = false) ServiceType type) {
         if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non autorizzato");
         }
         // Single entry point for driver service listing, optionally constrained by time/status/type.
         return listDriverServicesUseCase.execute(user.getId(), from, to, status, type);

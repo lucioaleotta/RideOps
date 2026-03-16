@@ -22,7 +22,7 @@ public class RideService {
 
     public void transitionTo(ServiceStatus targetStatus) {
         if (!status.canTransitionTo(targetStatus)) {
-            throw new ServiceDomainException("Invalid transition: " + status + " -> " + targetStatus);
+            throw new ServiceDomainException("Transizione non valida: " + status + " -> " + targetStatus);
         }
         status = targetStatus;
     }

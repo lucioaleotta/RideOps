@@ -38,7 +38,7 @@ public class DriverProfileController {
     @GetMapping
     public UserSummaryDto getProfile(@AuthenticationPrincipal IdentityUserDetails user) {
         if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non autorizzato");
         }
         return getDriverProfileUseCase.execute(user.getId());
     }
@@ -47,7 +47,7 @@ public class DriverProfileController {
     public UserSummaryDto updateProfile(@AuthenticationPrincipal IdentityUserDetails user,
                                         @Valid @RequestBody UpdateDriverProfileRequest request) {
         if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non autorizzato");
         }
 
         return updateOwnDriverProfileUseCase.execute(

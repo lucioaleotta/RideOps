@@ -46,14 +46,14 @@ public class AuthController {
             String token = jwtService.generateToken(principal);
             return new LoginResponse(token, "Bearer", jwtService.getExpirationSeconds());
         } catch (BadCredentialsException exception) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenziali non valide");
         }
     }
 
     @GetMapping("/me")
     public MeResponse me(@AuthenticationPrincipal IdentityUserDetails user) {
         if (user == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unauthorized");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non autorizzato");
         }
         return new MeResponse(user.getId(), user.getUserId(), user.getEmail(), user.getRole().name());
     }
@@ -62,7 +62,7 @@ public class AuthController {
     @ResponseStatus(HttpStatus.OK)
     public GenericMessageResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         passwordResetService.requestReset(request.email());
-        return new GenericMessageResponse("If your email exists, you will receive reset instructions.");
+        return new GenericMessageResponse("Se l'email esiste, riceverai le istruzioni per il reset.");
     }
 
     @PostMapping("/reset-password")
@@ -71,15 +71,15 @@ public class AuthController {
         validatePassword(request.newPassword());
         try {
             passwordResetService.resetPassword(request.token(), request.newPassword());
-            return new GenericMessageResponse("Password updated.");
+            return new GenericMessageResponse("Password aggiornata.");
         } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid or expired token");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token non valido o scaduto");
         }
     }
 
     private void validatePassword(String password) {
         if (password.length() < 8) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password must be at least 8 characters");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La password deve contenere almeno 8 caratteri");
         }
     }
 

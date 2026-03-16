@@ -12,28 +12,28 @@ public class FinancialTransactionValidation {
 
     public void validate(FinancialTransactionCommand command) {
         if (command.transactionType() == null) {
-            throw new FinancialValidationException("Transaction type is required");
+            throw new FinancialValidationException("Il tipo transazione e` obbligatorio");
         }
         if (command.category() == null) {
-            throw new FinancialValidationException("Category is required");
+            throw new FinancialValidationException("La categoria e` obbligatoria");
         }
         if (!FinancialTransactionCategory.isCompatible(command.transactionType(), command.category())) {
-            throw new FinancialValidationException("Category is not compatible with transaction type");
+            throw new FinancialValidationException("La categoria non e` compatibile con il tipo transazione");
         }
         if (command.description() == null || command.description().trim().isEmpty()) {
-            throw new FinancialValidationException("Description is required");
+            throw new FinancialValidationException("La descrizione e` obbligatoria");
         }
         if (command.amount() == null || command.amount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new FinancialValidationException("Amount must be greater than zero");
+            throw new FinancialValidationException("L'importo deve essere maggiore di zero");
         }
         if (command.currency() == null || command.currency().trim().length() != 3) {
-            throw new FinancialValidationException("Currency must be a 3-letter code");
+            throw new FinancialValidationException("La valuta deve essere un codice di 3 lettere");
         }
         if (command.transactionDate() == null) {
-            throw new FinancialValidationException("Transaction date is required");
+            throw new FinancialValidationException("La data transazione e` obbligatoria");
         }
         if (command.transactionDate().isAfter(LocalDate.now().plusDays(1))) {
-            throw new FinancialValidationException("Transaction date cannot be in the future");
+            throw new FinancialValidationException("La data transazione non puo` essere nel futuro");
         }
     }
 

@@ -13,7 +13,7 @@ final class ServiceValidationSupport {
     static ServiceStatus sanitizeCreateStatus(ServiceStatus status) {
         ServiceStatus safeStatus = status == null ? ServiceStatus.OPEN : status;
         if (safeStatus == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Service cannot be created as CLOSED");
+            throw new ServiceValidationException("Il servizio non puo` essere creato con stato CLOSED");
         }
         return safeStatus;
     }
@@ -23,19 +23,19 @@ final class ServiceValidationSupport {
                                        String pickupLocation,
                                        String destination) {
         if (type == null) {
-            throw new ServiceValidationException("Type is required");
+            throw new ServiceValidationException("Il tipo e` obbligatorio");
         }
         if (pickupLocation == null || pickupLocation.isBlank()) {
-            throw new ServiceValidationException("Pickup location is required");
+            throw new ServiceValidationException("Il luogo di partenza e` obbligatorio");
         }
         if (destination == null || destination.isBlank()) {
-            throw new ServiceValidationException("Destination is required");
+            throw new ServiceValidationException("La destinazione e` obbligatoria");
         }
         if (type == ServiceType.TOUR && (durationHours == null || durationHours <= 0)) {
-            throw new ServiceValidationException("Duration hours is required for TOUR");
+            throw new ServiceValidationException("Per TOUR la durata in ore e` obbligatoria");
         }
         if (type == ServiceType.TRANSFER && durationHours != null && durationHours <= 0) {
-            throw new ServiceValidationException("Duration hours must be positive when provided");
+            throw new ServiceValidationException("La durata in ore deve essere positiva quando valorizzata");
         }
     }
 
@@ -44,13 +44,13 @@ final class ServiceValidationSupport {
             return;
         }
         if (targetStatus == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Use close endpoint to close a service");
+            throw new ServiceValidationException("Usa l'endpoint di chiusura per chiudere un servizio");
         }
         RideService service = new RideService(currentStatus);
         try {
             service.transitionTo(targetStatus);
         } catch (ServiceDomainException exception) {
-            throw new ServiceValidationException("Invalid status transition");
+            throw new ServiceValidationException("Transizione di stato non valida");
         }
     }
 }

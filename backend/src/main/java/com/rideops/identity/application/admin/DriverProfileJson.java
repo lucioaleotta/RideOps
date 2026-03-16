@@ -19,7 +19,7 @@ final class DriverProfileJson {
         try {
             return OBJECT_MAPPER.writeValueAsString(values);
         } catch (JsonProcessingException exception) {
-            throw new UserAdminValidationException("Invalid driver list format");
+            throw new UserAdminValidationException("Formato elenco driver non valido");
         }
     }
 

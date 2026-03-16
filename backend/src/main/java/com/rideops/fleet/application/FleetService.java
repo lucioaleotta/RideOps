@@ -41,7 +41,7 @@ public class FleetService {
         validateVehicle(normalizedPlate, seats, type);
 
         if (vehicleRepository.existsByPlateIgnoreCase(normalizedPlate)) {
-            throw new FleetValidationException("Plate already exists");
+            throw new FleetValidationException("La targa esiste gia`");
         }
 
         VehicleEntity entity = new VehicleEntity();
@@ -59,7 +59,7 @@ public class FleetService {
         validateVehicle(normalizedPlate, seats, type);
 
         if (vehicleRepository.existsByPlateIgnoreCaseAndIdNot(normalizedPlate, vehicleId)) {
-            throw new FleetValidationException("Plate already exists");
+            throw new FleetValidationException("La targa esiste gia`");
         }
 
         entity.setPlate(normalizedPlate);
@@ -188,7 +188,7 @@ public class FleetService {
 
         if (vehicleUnavailabilityRepository.existsByVehicleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
             vehicleId, endDate, startDate)) {
-            throw new FleetValidationException("Overlapping unavailability for this vehicle");
+            throw new FleetValidationException("Esiste gia` un periodo di indisponibilita` sovrapposto per questo veicolo");
         }
 
         VehicleUnavailabilityEntity entity = new VehicleUnavailabilityEntity();
@@ -213,7 +213,7 @@ public class FleetService {
         Long vehicleId = entity.getVehicle().getId();
         if (vehicleUnavailabilityRepository.existsByVehicleIdAndIdNotAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
             vehicleId, unavailabilityId, endDate, startDate)) {
-            throw new FleetValidationException("Overlapping unavailability for this vehicle");
+            throw new FleetValidationException("Esiste gia` un periodo di indisponibilita` sovrapposto per questo veicolo");
         }
 
         entity.setStartDate(startDate);
@@ -236,13 +236,13 @@ public class FleetService {
 
     private void validateVehicle(String plate, Integer seats, VehicleType type) {
         if (plate.isBlank()) {
-            throw new FleetValidationException("Plate is required");
+            throw new FleetValidationException("La targa e` obbligatoria");
         }
         if (seats == null || seats < 1) {
-            throw new FleetValidationException("Seats must be greater than zero");
+            throw new FleetValidationException("I posti devono essere maggiori di zero");
         }
         if (type == null) {
-            throw new FleetValidationException("Vehicle type is required");
+            throw new FleetValidationException("Il tipo veicolo e` obbligatorio");
         }
     }
 
@@ -255,31 +255,31 @@ public class FleetService {
                                   LocalDate paymentDate,
                                   LocalDate executionDate) {
         if (type == null) {
-            throw new FleetValidationException("Deadline type is required");
+            throw new FleetValidationException("Il tipo scadenza e` obbligatorio");
         }
         if (title == null || title.trim().isEmpty()) {
-            throw new FleetValidationException("Deadline title is required");
+            throw new FleetValidationException("Il titolo scadenza e` obbligatorio");
         }
         if (dueDate == null) {
-            throw new FleetValidationException("Due date is required");
+            throw new FleetValidationException("La data di scadenza e` obbligatoria");
         }
         if (status == null) {
-            throw new FleetValidationException("Deadline status is required");
+            throw new FleetValidationException("Lo stato scadenza e` obbligatorio");
         }
         if (cost == null || cost.compareTo(BigDecimal.ZERO) < 0) {
-            throw new FleetValidationException("Cost must be zero or positive");
+            throw new FleetValidationException("Il costo deve essere maggiore o uguale a zero");
         }
         if (currency == null || currency.trim().isEmpty() || currency.trim().length() != 3) {
-            throw new FleetValidationException("Currency must be a 3-letter code");
+            throw new FleetValidationException("La valuta deve essere un codice di 3 lettere");
         }
 
         if (status == DeadlineStatus.PAGATA) {
             boolean payableType = type == DeadlineType.BOLLO || type == DeadlineType.ASSICURAZIONE;
             if (!payableType) {
-                throw new FleetValidationException("Only BOLLO and ASSICURAZIONE can be closed as PAGATA");
+                throw new FleetValidationException("Solo i tipi BOLLO e ASSICURAZIONE possono essere impostati su PAGATA");
             }
             if (paymentDate == null) {
-                throw new FleetValidationException("Payment date is required when status is PAGATA");
+                throw new FleetValidationException("La data di pagamento e` obbligatoria quando lo stato e` PAGATA");
             }
         }
 
@@ -288,26 +288,26 @@ public class FleetService {
                 || type == DeadlineType.TAGLIANDO
                 || type == DeadlineType.ALTRO;
             if (!executableType) {
-                throw new FleetValidationException("Only REVISIONE, TAGLIANDO and ALTRO can be closed as ESEGUITA");
+                throw new FleetValidationException("Solo i tipi REVISIONE, TAGLIANDO e ALTRO possono essere impostati su ESEGUITA");
             }
             if (executionDate == null) {
-                throw new FleetValidationException("Execution date is required when status is ESEGUITA");
+                throw new FleetValidationException("La data di esecuzione e` obbligatoria quando lo stato e` ESEGUITA");
             }
         }
     }
 
     private void validateUnavailabilityDates(LocalDate startDate, LocalDate endDate) {
         if (startDate == null || endDate == null) {
-            throw new FleetValidationException("Start date and end date are required");
+            throw new FleetValidationException("Le date di inizio e fine sono obbligatorie");
         }
         if (endDate.isBefore(startDate)) {
-            throw new FleetValidationException("End date must be on or after start date");
+            throw new FleetValidationException("La data di fine deve essere uguale o successiva alla data di inizio");
         }
     }
 
     private void validateReason(String reason) {
         if (reason == null || reason.trim().isEmpty()) {
-            throw new FleetValidationException("Reason is required");
+            throw new FleetValidationException("La motivazione e` obbligatoria");
         }
     }
 

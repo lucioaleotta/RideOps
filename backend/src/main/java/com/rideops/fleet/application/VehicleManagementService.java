@@ -87,7 +87,7 @@ public class VehicleManagementService {
         VehicleDeadlinePlanEntity plan = planId == null ? null : findPlan(planId);
 
         if (plan != null && !plan.getVehicle().getId().equals(vehicleId)) {
-            throw new FleetValidationException("Plan does not belong to selected vehicle");
+            throw new FleetValidationException("Il piano non appartiene al veicolo selezionato");
         }
 
         validateOccurrence(type, title, dueDate, status, cost, currency, paymentDate, executionDate);
@@ -140,10 +140,10 @@ public class VehicleManagementService {
     public VehicleDeadlineOccurrenceDto markOccurrencePaid(Long occurrenceId, LocalDate paymentDate) {
         VehicleDeadlineOccurrenceEntity entity = findOccurrence(occurrenceId);
         if (!(entity.getType() == DeadlineType.BOLLO || entity.getType() == DeadlineType.ASSICURAZIONE)) {
-            throw new FleetValidationException("Only BOLLO and ASSICURAZIONE can be marked as PAGATA");
+            throw new FleetValidationException("Solo i tipi BOLLO e ASSICURAZIONE possono essere impostati su PAGATA");
         }
         if (entity.getStatus() == DeadlineStatus.PAGATA) {
-            throw new FleetValidationException("Occurrence already marked as PAGATA");
+            throw new FleetValidationException("Occorrenza gia` impostata su PAGATA");
         }
 
         entity.setStatus(DeadlineStatus.PAGATA);
@@ -172,10 +172,10 @@ public class VehicleManagementService {
         if (!(entity.getType() == DeadlineType.REVISIONE
             || entity.getType() == DeadlineType.TAGLIANDO
             || entity.getType() == DeadlineType.ALTRO)) {
-            throw new FleetValidationException("Only REVISIONE, TAGLIANDO and ALTRO can be marked as ESEGUITA");
+            throw new FleetValidationException("Solo i tipi REVISIONE, TAGLIANDO e ALTRO possono essere impostati su ESEGUITA");
         }
         if (entity.getStatus() == DeadlineStatus.ESEGUITA) {
-            throw new FleetValidationException("Occurrence already marked as ESEGUITA");
+            throw new FleetValidationException("Occorrenza gia` impostata su ESEGUITA");
         }
 
         entity.setStatus(DeadlineStatus.ESEGUITA);
@@ -354,39 +354,39 @@ public class VehicleManagementService {
                                     LocalDate paymentDate,
                                     LocalDate executionDate) {
         if (type == null) {
-            throw new FleetValidationException("Occurrence type is required");
+            throw new FleetValidationException("Il tipo occorrenza e` obbligatorio");
         }
         if (title == null || title.trim().isEmpty()) {
-            throw new FleetValidationException("Occurrence title is required");
+            throw new FleetValidationException("Il titolo occorrenza e` obbligatorio");
         }
         if (dueDate == null) {
-            throw new FleetValidationException("Due date is required");
+            throw new FleetValidationException("La data di scadenza e` obbligatoria");
         }
         if (status == null) {
-            throw new FleetValidationException("Occurrence status is required");
+            throw new FleetValidationException("Lo stato occorrenza e` obbligatorio");
         }
         if (cost == null || cost.compareTo(BigDecimal.ZERO) < 0) {
-            throw new FleetValidationException("Cost must be zero or positive");
+            throw new FleetValidationException("Il costo deve essere maggiore o uguale a zero");
         }
         if (currency == null || currency.trim().length() != 3) {
-            throw new FleetValidationException("Currency must be a 3-letter code");
+            throw new FleetValidationException("La valuta deve essere un codice di 3 lettere");
         }
 
         if (status == DeadlineStatus.PAGATA) {
             if (!(type == DeadlineType.BOLLO || type == DeadlineType.ASSICURAZIONE)) {
-                throw new FleetValidationException("Only BOLLO and ASSICURAZIONE can be PAGATA");
+                throw new FleetValidationException("Solo i tipi BOLLO e ASSICURAZIONE possono essere impostati su PAGATA");
             }
             if (paymentDate == null) {
-                throw new FleetValidationException("Payment date is required for PAGATA");
+                throw new FleetValidationException("La data di pagamento e` obbligatoria per PAGATA");
             }
         }
 
         if (status == DeadlineStatus.ESEGUITA) {
             if (!(type == DeadlineType.REVISIONE || type == DeadlineType.TAGLIANDO || type == DeadlineType.ALTRO)) {
-                throw new FleetValidationException("Only REVISIONE, TAGLIANDO and ALTRO can be ESEGUITA");
+                throw new FleetValidationException("Solo i tipi REVISIONE, TAGLIANDO e ALTRO possono essere impostati su ESEGUITA");
             }
             if (executionDate == null) {
-                throw new FleetValidationException("Execution date is required for ESEGUITA");
+                throw new FleetValidationException("La data di esecuzione e` obbligatoria per ESEGUITA");
             }
         }
     }
@@ -398,22 +398,22 @@ public class VehicleManagementService {
                               BigDecimal standardCost,
                               String currency) {
         if (type == null) {
-            throw new FleetValidationException("Plan type is required");
+            throw new FleetValidationException("Il tipo piano e` obbligatorio");
         }
         if (title == null || title.trim().isEmpty()) {
-            throw new FleetValidationException("Plan title is required");
+            throw new FleetValidationException("Il titolo piano e` obbligatorio");
         }
         if (recurrenceMonths == null || recurrenceMonths < 1 || recurrenceMonths > 60) {
-            throw new FleetValidationException("Recurrence months must be between 1 and 60");
+            throw new FleetValidationException("I mesi di ricorrenza devono essere compresi tra 1 e 60");
         }
         if (nextDueDate == null) {
-            throw new FleetValidationException("Next due date is required");
+            throw new FleetValidationException("La prossima data di scadenza e` obbligatoria");
         }
         if (standardCost == null || standardCost.compareTo(BigDecimal.ZERO) < 0) {
-            throw new FleetValidationException("Standard cost must be zero or positive");
+            throw new FleetValidationException("Il costo standard deve essere maggiore o uguale a zero");
         }
         if (currency == null || currency.trim().length() != 3) {
-            throw new FleetValidationException("Currency must be a 3-letter code");
+            throw new FleetValidationException("La valuta deve essere un codice di 3 lettere");
         }
     }
 

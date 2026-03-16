@@ -48,10 +48,10 @@ public class PasswordResetService {
     public void resetPassword(String rawToken, String newPassword) {
         String tokenHash = hash(rawToken);
         PasswordResetTokenEntity token = tokenRepository.findByTokenHash(tokenHash)
-            .orElseThrow(() -> new IllegalArgumentException("Invalid token"));
+            .orElseThrow(() -> new IllegalArgumentException("Token non valido"));
 
         if (token.getUsedAt() != null || token.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Invalid token");
+            throw new IllegalArgumentException("Token non valido");
         }
 
         UserEntity user = token.getUser();
@@ -78,11 +78,11 @@ public class PasswordResetService {
         tokenRepository.save(token);
 
         String resetPath = "/reset-password?token=" + rawToken;
-        String body = "Reset password link (MVP email stub): " + resetPath;
+        String body = "Link reset password (stub email MVP): " + resetPath;
 
         EmailOutboxEntity outbox = new EmailOutboxEntity();
         outbox.setRecipient(user.getEmail());
-        outbox.setSubject("RideOps password reset");
+        outbox.setSubject("RideOps reimpostazione password");
         outbox.setBody(body);
         outboxRepository.save(outbox);
 
@@ -95,7 +95,7 @@ public class PasswordResetService {
             byte[] digest = messageDigest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);
         } catch (Exception exception) {
-            throw new IllegalStateException("Cannot hash reset token", exception);
+            throw new IllegalStateException("Impossibile calcolare hash token reset", exception);
         }
     }
 }

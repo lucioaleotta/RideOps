@@ -560,9 +560,9 @@ export function ServicesPanel() {
     && paginatedServices.every((service) => selectedForPrintIds.includes(service.id));
 
   return (
-    <section style={{ display: 'grid', gap: 16, maxWidth: '100%' }}>
+    <section className="responsive-panel services-panel" style={{ display: 'grid', gap: 16, maxWidth: '100%' }}>
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <h3>Lista servizi</h3>
           <button
             type="button"
@@ -578,7 +578,7 @@ export function ServicesPanel() {
             {isFormOpen && !editingId ? 'Chiudi form' : 'Nuovo servizio'}
           </button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginTop: 8 }}>
+        <div className="responsive-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginTop: 8 }}>
           <label>
             Stato
             <select
@@ -639,7 +639,7 @@ export function ServicesPanel() {
             />
           </label>
 
-          <label style={{ display: 'flex', alignItems: 'end', gap: 8, paddingBottom: 4 }}>
+          <label className="inline-checkbox" style={{ display: 'flex', alignItems: 'end', gap: 8, paddingBottom: 4 }}>
             <input
               type="checkbox"
               checked={filters.onlyUnassigned}
@@ -654,7 +654,7 @@ export function ServicesPanel() {
             Solo non assegnati
           </label>
 
-          <div style={{ display: 'flex', alignItems: 'end', justifyContent: 'flex-end' }}>
+          <div className="panel-end-action" style={{ display: 'flex', alignItems: 'end', justifyContent: 'flex-end' }}>
             <button
               type="button"
               className="logout-button compact-button"
@@ -705,7 +705,7 @@ export function ServicesPanel() {
                     <strong>Note:</strong> {selectedService.notes}
                   </p>
                 )}
-                <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <div className="table-actions" style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button type="button" className="primary-button compact-button" onClick={() => onEdit(selectedService)}>
                     Modifica
                   </button>
@@ -740,11 +740,11 @@ export function ServicesPanel() {
                 </div>
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
               <small style={{ color: 'var(--muted)' }}>
                 Selezionati per stampa: {selectedForPrintIds.length}
               </small>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="panel-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   className="primary-button compact-button"
@@ -762,8 +762,8 @@ export function ServicesPanel() {
                 </button>
               </div>
             </div>
-            <div style={{ overflowX: 'auto', marginTop: 8, maxWidth: '100%' }}>
-            <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
+            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8, maxWidth: '100%' }}>
+            <table className="responsive-table services-table" style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   <th style={thStyle}>
@@ -839,7 +839,7 @@ export function ServicesPanel() {
                       </span>
                     </td>
                     <td style={{ ...tdStyle, minWidth: 180 }}>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                         <button
                           type="button"
                           className="primary-button compact-button"
@@ -861,11 +861,11 @@ export function ServicesPanel() {
               </tbody>
             </table>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+            <div className="panel-header panel-pagination" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
               <span>
                 Pagina {currentPage} di {totalPages}
               </span>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="panel-actions" style={{ display: 'flex', gap: 8 }}>
                 <button
                   type="button"
                   className="logout-button"
@@ -894,7 +894,7 @@ export function ServicesPanel() {
 
       {isFormOpen && (
         <article className="dashboard-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <h3>{editingId ? `Modifica servizio #${editingId}` : 'Nuovo servizio'}</h3>
             <button type="button" className="logout-button" onClick={closeForm}>
               Chiudi
@@ -1021,7 +1021,7 @@ export function ServicesPanel() {
               />
             </label>
 
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
                 {submitting ? 'Salvataggio...' : editingId ? 'Aggiorna servizio' : 'Crea servizio'}
               </button>

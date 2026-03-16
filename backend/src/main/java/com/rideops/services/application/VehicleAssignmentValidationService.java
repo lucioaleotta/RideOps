@@ -36,7 +36,7 @@ public class VehicleAssignmentValidationService {
             return;
         }
 
-        LocalDateTime startAt = Objects.requireNonNull(command.startAt(), "startAt is required");
+        LocalDateTime startAt = Objects.requireNonNull(command.startAt(), "startAt obbligatorio");
         validateVehicleExists(vehicleId);
         validateVehicleDayConflictForCreate(vehicleId, startAt, Boolean.TRUE.equals(command.overrideVehicleDayConflict()));
         validateVehicleMaintenance(vehicleId, startAt.toLocalDate(), Boolean.TRUE.equals(command.overrideVehicleMaintenanceConflict()));
@@ -48,16 +48,16 @@ public class VehicleAssignmentValidationService {
             return;
         }
 
-        LocalDateTime startAt = Objects.requireNonNull(command.startAt(), "startAt is required");
+        LocalDateTime startAt = Objects.requireNonNull(command.startAt(), "startAt obbligatorio");
         validateVehicleExists(vehicleId);
         validateVehicleDayConflictForUpdate(serviceId, vehicleId, startAt, Boolean.TRUE.equals(command.overrideVehicleDayConflict()));
         validateVehicleMaintenance(vehicleId, startAt.toLocalDate(), Boolean.TRUE.equals(command.overrideVehicleMaintenanceConflict()));
     }
 
     private void validateVehicleExists(Long vehicleId) {
-        Long safeVehicleId = Objects.requireNonNull(vehicleId, "vehicleId is required");
+        Long safeVehicleId = Objects.requireNonNull(vehicleId, "vehicleId obbligatorio");
         if (!vehicleRepository.existsById(safeVehicleId)) {
-            throw new ServiceValidationException("Vehicle not found");
+            throw new ServiceValidationException("Veicolo non trovato");
         }
     }
 

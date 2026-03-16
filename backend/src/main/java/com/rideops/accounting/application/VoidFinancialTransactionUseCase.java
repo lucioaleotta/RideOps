@@ -21,7 +21,7 @@ public class VoidFinancialTransactionUseCase {
         }
 
         if (reason == null || reason.trim().isEmpty()) {
-            throw new FinancialValidationException("Void reason is required");
+            throw new FinancialValidationException("La motivazione di annullamento e` obbligatoria");
         }
 
         entity.setVoided(true);

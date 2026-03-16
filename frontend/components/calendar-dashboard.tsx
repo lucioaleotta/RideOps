@@ -359,14 +359,14 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
   function renderMonthView() {
     return (
       <div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, marginBottom: 6 }}>
+        <div className="calendar-grid-weekdays" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6, marginBottom: 6 }}>
           {WEEKDAY_LABELS.map((label) => (
             <div key={label} style={{ fontWeight: 700, color: 'var(--muted)', padding: '0 4px' }}>
               {label}
             </div>
           ))}
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6 }}>
+        <div className="calendar-grid-month" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 6 }}>
           {monthGridDays.map((day) => {
             const outOfMonth = day.getMonth() !== cursorDate.getMonth();
             const dayServices = getServicesForDate(day);
@@ -395,7 +395,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
 
   function renderWeekView() {
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
+      <div className="calendar-grid-week" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gap: 8 }}>
         {weekDays.map((day, index) => {
           const dayServices = getServicesForDate(day);
           return (
@@ -430,24 +430,24 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
   }
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
+    <section className="responsive-panel calendar-dashboard" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+          <div className="panel-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <button type="button" className="logout-button" onClick={() => moveRange(-1)}>←</button>
             <button type="button" className="logout-button" onClick={gotoToday}>Oggi</button>
             <button type="button" className="logout-button" onClick={() => moveRange(1)}>→</button>
             <strong style={{ marginLeft: 4 }}>{viewTitle()}</strong>
           </div>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <div className="panel-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button type="button" className={view === 'month' ? 'primary-button' : 'logout-button'} onClick={() => setView('month')}>Mese</button>
             <button type="button" className={view === 'week' ? 'primary-button' : 'logout-button'} onClick={() => setView('week')}>Settimana</button>
             <button type="button" className={view === 'day' ? 'primary-button' : 'logout-button'} onClick={() => setView('day')}>Giorno</button>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
+        <div className="responsive-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
           {!driverMode && (
             <label>
               Driver
@@ -497,14 +497,14 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
       {loading && <p>Caricamento calendario...</p>}
 
       {!loading && !error && (
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-          <article className="dashboard-card" style={{ overflowX: 'auto' }}>
+        <div className="calendar-layout" style={{ display: 'grid', gap: 12 }}>
+          <article className="dashboard-card calendar-main" style={{ overflowX: 'auto' }}>
             {view === 'month' && renderMonthView()}
             {view === 'week' && renderWeekView()}
             {view === 'day' && renderDayView()}
           </article>
 
-          <article className="dashboard-card">
+          <article className="dashboard-card calendar-detail">
             <h3 style={{ marginTop: 0 }}>Dettaglio servizio</h3>
             {!selectedService && <p>Seleziona un servizio dal calendario.</p>}
             {selectedService && (

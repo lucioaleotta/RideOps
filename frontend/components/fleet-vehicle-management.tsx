@@ -105,7 +105,7 @@ const defaultOccurrenceForm: OccurrenceFormState = {
   title: '',
   description: '',
   dueDate: '',
-  status: 'DA_ESEGUIRE',
+  status: 'IN_SCADENZA',
   cost: '0',
   currency: 'EUR',
   notes: '',
@@ -171,6 +171,41 @@ function isDueSoonStatus(status: DeadlineStatus, dueDate: string) {
   return diffDays >= 0 && diffDays <= 7;
 }
 
+function canMarkOccurrenceAsPaid(item: OccurrenceItem) {
+  const payableType = item.type === 'BOLLO' || item.type === 'ASSICURAZIONE';
+  return payableType && item.status !== 'PAGATA' && item.status !== 'ANNULLATA';
+}
+
+function canMarkOccurrenceAsCompleted(item: OccurrenceItem) {
+  const executableType = item.type === 'REVISIONE' || item.type === 'TAGLIANDO' || item.type === 'ALTRO';
+  return executableType && item.status !== 'ESEGUITA' && item.status !== 'ANNULLATA';
+}
+
+function canCancelOccurrence(item: OccurrenceItem) {
+  return item.status !== 'ANNULLATA';
+}
+
+const STATUS_OPTIONS: { value: DeadlineStatus; label: string }[] = [
+  { value: 'DA_ESEGUIRE', label: 'Da eseguire' },
+  { value: 'IN_SCADENZA', label: 'In scadenza' },
+  { value: 'SCADUTA', label: 'Scaduta' },
+  { value: 'PAGATA', label: 'Pagata' },
+  { value: 'ESEGUITA', label: 'Eseguita' },
+  { value: 'ANNULLATA', label: 'Annullata' },
+];
+
+function allowedStatusesForType(type: DeadlineType): { value: DeadlineStatus; label: string }[] {
+  const isPayable = type === 'BOLLO' || type === 'ASSICURAZIONE';
+  return STATUS_OPTIONS.filter((s) =>
+    isPayable ? s.value !== 'ESEGUITA' && s.value !== 'DA_ESEGUIRE' : s.value !== 'PAGATA'
+  );
+}
+
+function sanitizeStatusForType(status: DeadlineStatus, type: DeadlineType): DeadlineStatus {
+  const allowed = allowedStatusesForType(type);
+  return allowed.some((s) => s.value === status) ? status : allowed[0].value;
+}
+
 type FleetVehicleManagementProps = {
   userRole?: string;
 };
@@ -196,6 +231,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
   const [editingOccurrenceId, setEditingOccurrenceId] = useState<number | null>(null);
   const [editingPlanId, setEditingPlanId] = useState<number | null>(null);
   const [editingUnavailabilityId, setEditingUnavailabilityId] = useState<number | null>(null);
+  const [occurrenceActionLoadingId, setOccurrenceActionLoadingId] = useState<number | null>(null);
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -274,7 +310,6 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
 
   useEffect(() => {
     if (selectedVehicleId) {
-      setShowVehicleForm(false);
       loadVehicleDetail(selectedVehicleId);
       loadVehicleUnavailabilities(selectedVehicleId);
     } else {
@@ -459,25 +494,54 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
   }
 
   async function quickOccurrenceAction(occurrenceId: number, action: 'paid' | 'completed' | 'cancel') {
-    setError(null);
-    setSuccess(null);
-
-    const response = await fetch(`/api/fleet/occurrences/${occurrenceId}/${action}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: action === 'cancel' ? undefined : JSON.stringify({ date: new Date().toISOString().slice(0, 10) })
-    });
-
-    const payload = (await response.json().catch(() => ({}))) as { message?: string };
-    if (!response.ok) {
-      setError(payload.message ?? 'Operazione non riuscita');
+    const currentOccurrence = occurrences.find((item) => item.id === occurrenceId);
+    if (!currentOccurrence) {
       return;
     }
 
-    setSuccess('Stato scadenza aggiornato');
-    refreshFleetAlertBadge();
-    if (selectedVehicleId) {
-      await loadVehicleDetail(selectedVehicleId);
+    if (action === 'paid' && !canMarkOccurrenceAsPaid(currentOccurrence)) {
+      setError('Per questa voce non e` possibile usare "Segna pagata"');
+      return;
+    }
+
+    if (action === 'completed' && !canMarkOccurrenceAsCompleted(currentOccurrence)) {
+      setError('Per questa voce non e` possibile usare "Segna eseguita"');
+      return;
+    }
+
+    if (action === 'cancel' && !canCancelOccurrence(currentOccurrence)) {
+      setError('La voce e` gia` annullata');
+      return;
+    }
+
+    if (occurrenceActionLoadingId === occurrenceId) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+    setOccurrenceActionLoadingId(occurrenceId);
+
+    try {
+      const response = await fetch(`/api/fleet/occurrences/${occurrenceId}/${action}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: action === 'cancel' ? undefined : JSON.stringify({ date: new Date().toISOString().slice(0, 10) })
+      });
+
+      const payload = (await response.json().catch(() => ({}))) as { message?: string };
+      if (!response.ok) {
+        setError(payload.message ?? 'Operazione non riuscita');
+        return;
+      }
+
+      setSuccess('Stato scadenza aggiornato');
+      refreshFleetAlertBadge();
+    } finally {
+      if (selectedVehicleId) {
+        await loadVehicleDetail(selectedVehicleId);
+      }
+      setOccurrenceActionLoadingId((current) => (current === occurrenceId ? null : current));
     }
   }
 
@@ -595,11 +659,11 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
   }
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
+    <section className="responsive-panel fleet-management-panel" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
           <h2>Gestione Veicoli e Scadenze</h2>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="panel-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {isAdmin && (
               <button
                 type="button"
@@ -676,12 +740,12 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
       </article>
 
       <article className="dashboard-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <h3>1) Lista veicoli</h3>
             </div>
 
-            <div style={{ overflowX: 'auto', marginTop: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Targa</th>
@@ -710,7 +774,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{vehicleTypeLabel(vehicle.type)}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{vehicle.notes ?? '-'}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button type="button" className="primary-button compact-button" onClick={() => editVehicle(vehicle)}>
                               Modifica
                             </button>
@@ -755,7 +819,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                   Note
                   <input className="form-input" value={vehicleForm.notes} onChange={(e) => setVehicleForm((p) => ({ ...p, notes: e.target.value }))} />
                 </label>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8 }}>
                   <button type="submit" className="primary-button compact-button">Salva dati veicolo</button>
                   <button type="button" className="logout-button" onClick={() => setShowVehicleForm(false)}>Annulla</button>
                 </div>
@@ -772,7 +836,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
       ) : (
         <>
           <article className="dashboard-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <h3>2) Storico scadenze</h3>
               <button
                 type="button"
@@ -804,7 +868,14 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                 </label>
                 <label>
                   Tipo
-                  <select className="form-input" value={occurrenceForm.type} onChange={(e) => setOccurrenceForm((p) => ({ ...p, type: e.target.value as DeadlineType }))}>
+                  <select className="form-input" value={occurrenceForm.type} onChange={(e) => {
+                    const newType = e.target.value as DeadlineType;
+                    setOccurrenceForm((p) => ({
+                      ...p,
+                      type: newType,
+                      status: sanitizeStatusForType(p.status, newType)
+                    }));
+                  }}>
                     <option value="BOLLO">Bollo</option>
                     <option value="ASSICURAZIONE">Assicurazione</option>
                     <option value="REVISIONE">Revisione</option>
@@ -827,12 +898,9 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                 <label>
                   Stato
                   <select className="form-input" value={occurrenceForm.status} onChange={(e) => setOccurrenceForm((p) => ({ ...p, status: e.target.value as DeadlineStatus }))}>
-                    <option value="DA_ESEGUIRE">Da eseguire</option>
-                    <option value="IN_SCADENZA">In scadenza</option>
-                    <option value="SCADUTA">Scaduta</option>
-                    <option value="PAGATA">Pagata</option>
-                    <option value="ESEGUITA">Eseguita</option>
-                    <option value="ANNULLATA">Annullata</option>
+                    {allowedStatusesForType(occurrenceForm.type).map((s) => (
+                      <option key={s.value} value={s.value}>{s.label}</option>
+                    ))}
                   </select>
                 </label>
                 <label>
@@ -859,8 +927,8 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
               </form>
             )}
 
-            <div style={{ overflowX: 'auto', marginTop: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Tipo</th>
@@ -891,7 +959,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                         </td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.cost} {item.currency}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button type="button" className="primary-button compact-button" onClick={() => {
                               setEditingOccurrenceId(item.id);
                               setShowOccurrenceForm(true);
@@ -909,9 +977,33 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                                 executionDate: item.executionDate ?? ''
                               });
                             }}>Modifica</button>
-                            <button type="button" className="logout-button" onClick={() => quickOccurrenceAction(item.id, 'paid')}>Segna pagata</button>
-                            <button type="button" className="logout-button" onClick={() => quickOccurrenceAction(item.id, 'completed')}>Segna eseguita</button>
-                            <button type="button" className="logout-button" onClick={() => quickOccurrenceAction(item.id, 'cancel')}>Annulla</button>
+                            {(item.type === 'BOLLO' || item.type === 'ASSICURAZIONE') ? (
+                              <button
+                                type="button"
+                                className="logout-button"
+                                onClick={() => quickOccurrenceAction(item.id, 'paid')}
+                                disabled={!canMarkOccurrenceAsPaid(item) || occurrenceActionLoadingId === item.id}
+                              >
+                                Segna pagata
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="logout-button"
+                                onClick={() => quickOccurrenceAction(item.id, 'completed')}
+                                disabled={!canMarkOccurrenceAsCompleted(item) || occurrenceActionLoadingId === item.id}
+                              >
+                                Segna eseguita
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="logout-button"
+                              onClick={() => quickOccurrenceAction(item.id, 'cancel')}
+                              disabled={!canCancelOccurrence(item) || occurrenceActionLoadingId === item.id}
+                            >
+                              Annulla
+                            </button>
                           </div>
                         </td>
                           </>
@@ -925,7 +1017,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
           </article>
 
           <article className="dashboard-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <h3>3) Piani ricorrenti</h3>
               <button type="button" className="primary-button compact-button" onClick={() => {
                 setShowPlanForm((prev) => !prev);
@@ -978,60 +1070,70 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
               </form>
             )}
 
-            <div style={{ overflowX: 'auto', marginTop: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Tipo</th>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Titolo</th>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Ricorrenza</th>
+                    <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Prossima scadenza</th>
+                    <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Costo</th>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Attivo</th>
-                    <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Costo standard</th>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Azioni</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {plans.map((item) => (
-                    <tr key={item.id}>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{typeLabel(item.type)}</td>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.title}</td>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.recurrenceMonths} mesi</td>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.active ? 'Sì' : 'No'}</td>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.standardCost} {item.currency}</td>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          <button type="button" className="primary-button compact-button" onClick={() => {
-                            setEditingPlanId(item.id);
-                            setShowPlanForm(true);
-                            setPlanForm({
-                              type: item.type,
-                              title: item.title,
-                              description: item.description ?? '',
-                              recurrenceMonths: String(item.recurrenceMonths),
-                              nextDueDate: item.nextDueDate,
-                              standardCost: String(item.standardCost),
-                              currency: item.currency,
-                              notes: item.notes ?? ''
-                            });
-                          }}>Modifica</button>
-                          <button
-                            type="button"
-                            className="logout-button"
-                            onClick={() => togglePlan(item.id, item.active)}
-                          >
-                            {item.active ? 'Disattiva piano' : 'Riattiva piano'}
-                          </button>
-                        </div>
+                  {plans.length === 0 ? (
+                    <tr>
+                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }} colSpan={7}>
+                        Nessun piano registrato.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    plans.map((item) => (
+                      <tr key={item.id}>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{typeLabel(item.type)}</td>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.title}</td>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.recurrenceMonths} mesi</td>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.nextDueDate}</td>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.standardCost} {item.currency}</td>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.active ? 'Attivo' : 'Inattivo'}</td>
+                        <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
+                          <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            <button type="button" className="primary-button compact-button" onClick={() => {
+                              setEditingPlanId(item.id);
+                              setShowPlanForm(true);
+                              setPlanForm({
+                                type: item.type,
+                                title: item.title,
+                                description: item.description ?? '',
+                                recurrenceMonths: String(item.recurrenceMonths),
+                                nextDueDate: item.nextDueDate,
+                                standardCost: String(item.standardCost),
+                                currency: item.currency,
+                                notes: item.notes ?? ''
+                              });
+                            }}>Modifica</button>
+                            <button
+                              type="button"
+                              className="logout-button"
+                              onClick={() => togglePlan(item.id, item.active)}
+                            >
+                              {item.active ? 'Disattiva piano' : 'Riattiva piano'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
           </article>
 
           <article className="dashboard-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
               <h3>4) Manutenzioni e indisponibilità</h3>
               <button
                 type="button"
@@ -1083,8 +1185,8 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
               </form>
             )}
 
-            <div style={{ overflowX: 'auto', marginTop: 8 }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr>
                     <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Inizio</th>
@@ -1107,7 +1209,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.endDate}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.reason}</td>
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button
                               type="button"
                               className="primary-button compact-button"

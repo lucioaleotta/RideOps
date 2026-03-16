@@ -23,6 +23,8 @@ const menuItems = [
 
 export function AppShell({ userId, userRole, children }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [fleetAlertCounts, setFleetAlertCounts] = useState({ total: 0, upcoming: 0, overdue: 0 });
   const [serviceAlertCounts, setServiceAlertCounts] = useState({ total: 0, upcoming: 0, overdue: 0 });
   const normalizedRole = userRole.toUpperCase() as Role;
@@ -160,6 +162,33 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
   const serviceAlertHref = normalizedRole === 'DRIVER' ? '/app/driver' : '/app/services';
 
   useEffect(() => {
+    const handleResize = () => {
+      setIsMobileViewport(window.innerWidth <= 960);
+      if (window.innerWidth > 960) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileMenuOpen]);
+
+  const sidebarCollapsed = collapsed && !isMobileViewport;
+
+  useEffect(() => {
     const canSeeServiceAlerts = normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER';
     if (!canSeeServiceAlerts) {
       return;
@@ -270,23 +299,29 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+      <div
+        className={`app-shell-backdrop ${mobileMenuOpen ? 'visible' : ''}`}
+        onClick={() => setMobileMenuOpen(false)}
+        aria-hidden="true"
+      />
+
+      <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''} ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <button className="collapse-button" onClick={() => setCollapsed((prev) => !prev)} type="button">
-          {collapsed ? '»' : '«'}
+          {sidebarCollapsed ? '»' : '«'}
         </button>
 
         <Link href="/app" className="brand-link">
           <img src="/rideops-logo.svg" alt="RideOps" className="brand-logo" />
-          {!collapsed && <span className="brand-text">RideOps</span>}
+          {!sidebarCollapsed && <span className="brand-text">RideOps</span>}
         </Link>
 
         <nav className="menu">
           {menuItems
             .filter((item) => item.roles.includes(normalizedRole))
             .map((item) => (
-            <Link key={item.href} href={item.href} className="menu-link">
+            <Link key={item.href} href={item.href} className="menu-link" onClick={() => setMobileMenuOpen(false)}>
               <span className="menu-icon" aria-hidden="true">{item.icon}</span>
-              {!collapsed && <span>{item.label}</span>}
+              {!sidebarCollapsed && <span>{item.label}</span>}
             </Link>
             ))}
         </nav>
@@ -294,6 +329,15 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
       <section className="main-area">
         <header className="topbar">
+          <button
+            type="button"
+            className="mobile-menu-button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            aria-label="Apri menu navigazione"
+          >
+            ☰
+          </button>
+
           <div className="user-info">
             <span className="avatar">{initials}</span>
             <div>
@@ -302,7 +346,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="topbar-actions">
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE') && (
               <Link href="/app/fleet" className="logout-button" style={fleetAlertStyle}>
                 Allarme Fleet: {fleetAlertCounts.total}

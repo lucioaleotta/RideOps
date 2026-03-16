@@ -14,11 +14,11 @@ public class UpdateUserRoleUseCase {
 
     public UserSummaryDto execute(Long userId, UserRole role) {
         if (role == null) {
-            throw new UserAdminValidationException("Role is required");
+            throw new UserAdminValidationException("Il ruolo e` obbligatorio");
         }
 
         var user = userAdminRepositoryPort.findById(userId)
-            .orElseThrow(() -> new UserAdminNotFoundException("User not found"));
+            .orElseThrow(() -> new UserAdminNotFoundException("Utente non trovato"));
 
         user.setRole(role);
         return UserAdminMapper.toDto(userAdminRepositoryPort.save(user));

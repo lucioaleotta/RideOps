@@ -15,7 +15,7 @@ public class CountActiveAssignedServicesByDriverUseCase {
     }
 
     public long execute(Long driverId) {
-        Long safeDriverId = Objects.requireNonNull(driverId, "driverId is required");
+        Long safeDriverId = Objects.requireNonNull(driverId, "driverId obbligatorio");
         return serviceRepositoryPort.countByAssignedDriverIdAndStatusIn(
             safeDriverId,
             List.of(ServiceStatus.OPEN, ServiceStatus.ASSIGNED)

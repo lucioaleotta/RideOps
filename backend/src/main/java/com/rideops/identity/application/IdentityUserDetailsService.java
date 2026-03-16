@@ -19,6 +19,6 @@ public class IdentityUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUserIdIgnoreCase(username)
             .map(IdentityUserDetails::new)
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+            .orElseThrow(() -> new UsernameNotFoundException("Utente non trovato: " + username));
     }
 }
