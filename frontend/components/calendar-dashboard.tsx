@@ -118,7 +118,9 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
+  const [submittingClose, setSubmittingClose] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const range = useMemo(() => {
     if (view === 'day') {
@@ -233,6 +235,19 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
     () => services.find((service) => service.id === selectedServiceId) ?? null,
     [services, selectedServiceId]
   );
+
+  const canDriverCloseSelectedService = useMemo(() => {
+    if (!driverMode || !selectedService || selectedService.status !== 'ASSIGNED') {
+      return false;
+    }
+
+    const startAt = new Date(selectedService.startAt);
+    if (Number.isNaN(startAt.getTime())) {
+      return false;
+    }
+
+    return startAt.getTime() <= Date.now();
+  }, [driverMode, selectedService]);
 
   const selectedServiceDriverLabel = useMemo(() => {
     if (!selectedService || !selectedService.assignedDriverId) {
@@ -429,6 +444,47 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
     );
   }
 
+  async function onDriverClose(serviceId: number) {
+    setSubmittingClose(true);
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/driver/services/${serviceId}/close`, { method: 'PATCH' });
+    const payload = (await response.json().catch(() => ({}))) as { message?: string };
+
+    if (!response.ok) {
+      setError(payload.message ?? 'Chiusura servizio fallita');
+      setSubmittingClose(false);
+      return;
+    }
+
+    setSuccess('Servizio chiuso');
+
+    const query = new URLSearchParams({
+      from: toLocalDateTimeParam(range.from),
+      to: toLocalDateTimeParam(range.to)
+    });
+    if (filters.status) {
+      query.set('status', filters.status);
+    }
+    if (filters.type) {
+      query.set('type', filters.type);
+    }
+
+    const reloadResponse = await fetch(`/api/driver/services?${query.toString()}`, { cache: 'no-store' });
+    const reloadPayload = (await reloadResponse.json().catch(() => [])) as ServiceItem[] | { message?: string };
+    setSubmittingClose(false);
+
+    if (!reloadResponse.ok) {
+      setError((reloadPayload as { message?: string }).message ?? 'Errore aggiornamento servizi driver');
+      return;
+    }
+
+    const nextServices = reloadPayload as ServiceItem[];
+    setServices(nextServices);
+    setSelectedServiceId((prev) => (prev && nextServices.some((item) => item.id === prev) ? prev : nextServices[0]?.id ?? null));
+  }
+
   return (
     <section className="responsive-panel calendar-dashboard" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
@@ -494,6 +550,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
       </article>
 
       {error && <p className="error-text">{error}</p>}
+      {success && <p className="success-text">{success}</p>}
       {loading && <p>Caricamento calendario...</p>}
 
       {!loading && !error && (
@@ -525,7 +582,20 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                   )}
                 </div>
                 <div><strong>Prezzo:</strong> {formatCurrencyEUR(selectedService.price)}</div>
-                <Link className="logout-button" href={`/services/${selectedService.id}/print`} target="_blank">Apri dettaglio stampa</Link>
+                <div className="table-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <Link className="logout-button" href={`/services/${selectedService.id}/print`} target="_blank">Apri dettaglio stampa</Link>
+                  {driverMode && canDriverCloseSelectedService && (
+                    <button
+                      type="button"
+                      className="primary-button compact-button"
+                      style={{ background: '#ef6c00' }}
+                      onClick={() => onDriverClose(selectedService.id)}
+                      disabled={submittingClose}
+                    >
+                      {submittingClose ? 'Chiusura...' : 'Chiudi servizio'}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </article>

@@ -38,6 +38,16 @@ public class UserAdminJpaAdapter implements UserAdminRepositoryPort {
     }
 
     @Override
+    public Optional<UserEntity> findByEmailIgnoreCase(String email) {
+        return userRepository.findByEmailIgnoreCase(email);
+    }
+
+    @Override
+    public Optional<UserEntity> findByUserIdIgnoreCase(String userId) {
+        return userRepository.findByUserIdIgnoreCase(userId);
+    }
+
+    @Override
     public List<UserEntity> findAllByOrderByCreatedAtDesc() {
         return userRepository.findAllByOrderByCreatedAtDesc();
     }

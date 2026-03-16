@@ -16,6 +16,10 @@ public interface UserAdminRepositoryPort {
 
     Optional<UserEntity> findById(@NonNull Long id);
 
+    Optional<UserEntity> findByEmailIgnoreCase(String email);
+
+    Optional<UserEntity> findByUserIdIgnoreCase(String userId);
+
     List<UserEntity> findAllByOrderByCreatedAtDesc();
 
     List<UserEntity> findAllByRoleAndEnabledTrueOrderByEmailAsc(UserRole role);

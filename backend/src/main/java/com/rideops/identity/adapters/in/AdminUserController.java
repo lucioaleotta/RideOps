@@ -3,7 +3,10 @@ package com.rideops.identity.adapters.in;
 import com.rideops.identity.application.admin.CreateUserCommand;
 import com.rideops.identity.application.admin.CreateUserUseCase;
 import com.rideops.identity.application.admin.ListUsersUseCase;
+import com.rideops.identity.application.admin.SetTemporaryPasswordUseCase;
 import com.rideops.identity.application.admin.SetUserEnabledUseCase;
+import com.rideops.identity.application.admin.UpdateUserCommand;
+import com.rideops.identity.application.admin.UpdateUserUseCase;
 import com.rideops.identity.application.admin.UpdateUserRoleUseCase;
 import com.rideops.identity.application.admin.UserAdminNotFoundException;
 import com.rideops.identity.application.admin.UserAdminValidationException;
@@ -35,15 +38,21 @@ public class AdminUserController {
     private final ListUsersUseCase listUsersUseCase;
     private final UpdateUserRoleUseCase updateUserRoleUseCase;
     private final SetUserEnabledUseCase setUserEnabledUseCase;
+    private final SetTemporaryPasswordUseCase setTemporaryPasswordUseCase;
+    private final UpdateUserUseCase updateUserUseCase;
 
     public AdminUserController(CreateUserUseCase createUserUseCase,
                                ListUsersUseCase listUsersUseCase,
                                UpdateUserRoleUseCase updateUserRoleUseCase,
-                               SetUserEnabledUseCase setUserEnabledUseCase) {
+                               SetUserEnabledUseCase setUserEnabledUseCase,
+                               SetTemporaryPasswordUseCase setTemporaryPasswordUseCase,
+                               UpdateUserUseCase updateUserUseCase) {
         this.createUserUseCase = createUserUseCase;
         this.listUsersUseCase = listUsersUseCase;
         this.updateUserRoleUseCase = updateUserRoleUseCase;
         this.setUserEnabledUseCase = setUserEnabledUseCase;
+        this.setTemporaryPasswordUseCase = setTemporaryPasswordUseCase;
+        this.updateUserUseCase = updateUserUseCase;
     }
 
     @GetMapping
@@ -84,6 +93,27 @@ public class AdminUserController {
         return setUserEnabledUseCase.execute(userId, request.enabled());
     }
 
+    @PatchMapping("/{userId}/temporary-password")
+    public UserSummaryDto setTemporaryPassword(@PathVariable Long userId,
+                                               @Valid @RequestBody SetTemporaryPasswordRequest request) {
+        return setTemporaryPasswordUseCase.execute(userId, request.temporaryPassword());
+    }
+
+    @PatchMapping("/{userId}")
+    public UserSummaryDto updateUser(@PathVariable Long userId,
+                                     @Valid @RequestBody UpdateUserRequest request) {
+        return updateUserUseCase.execute(
+            userId,
+            new UpdateUserCommand(
+                request.userId(),
+                request.email(),
+                request.role(),
+                request.enabled(),
+                request.newPassword()
+            )
+        );
+    }
+
     @ExceptionHandler(UserAdminValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidation(UserAdminValidationException exception) {
@@ -106,6 +136,16 @@ public class AdminUserController {
     }
 
     record UpdateEnabledRequest(@NotNull Boolean enabled) {
+    }
+
+    record SetTemporaryPasswordRequest(@NotBlank String temporaryPassword) {
+    }
+
+    record UpdateUserRequest(@NotBlank String userId,
+                             @NotBlank @Email String email,
+                             @NotNull UserRole role,
+                             @NotNull Boolean enabled,
+                             String newPassword) {
     }
 
     record ErrorResponse(String message) {
