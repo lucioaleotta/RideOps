@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { PasswordInput } from './password-input';
 
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -54,13 +55,13 @@ export function ResetPasswordForm() {
 
       <label>
         Nuova password
-        <input
-          type="password"
+        <PasswordInput
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           minLength={8}
           required
           className="form-input"
+          autoComplete="new-password"
         />
       </label>
 

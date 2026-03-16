@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { PasswordInput } from './password-input';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
 
@@ -456,13 +457,13 @@ export function GestionaleDriversPanel() {
                   </label>
                   <label>
                     Password iniziale
-                    <input
+                    <PasswordInput
                       className="form-input"
-                      type="password"
                       minLength={8}
                       value={form.password}
                       onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
                       required
+                      autoComplete="new-password"
                     />
                   </label>
                 </div>

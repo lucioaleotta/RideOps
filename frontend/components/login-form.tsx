@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { PasswordInput } from './password-input';
 
 export function LoginForm() {
   const router = useRouter();
@@ -49,12 +50,12 @@ export function LoginForm() {
 
       <label>
         Password
-        <input
-          type="password"
+        <PasswordInput
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           className="form-input"
+          autoComplete="current-password"
         />
       </label>
 
