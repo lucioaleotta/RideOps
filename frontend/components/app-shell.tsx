@@ -14,11 +14,11 @@ type Role = 'ADMIN' | 'GESTIONALE' | 'DRIVER';
 const menuItems = [
   { href: '/app', label: 'Home', icon: '🏠', roles: ['ADMIN', 'GESTIONALE', 'DRIVER'] as Role[] },
   { href: '/app/admin', label: 'Admin', icon: '🛡️', roles: ['ADMIN'] as Role[] },
-  { href: '/app/services', label: 'Services', icon: '🧾', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
-  { href: '/app/finance', label: 'Finance', icon: '💶', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
-  { href: '/app/fleet', label: 'Fleet', icon: '🚙', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
+  { href: '/app/services', label: 'Servizi', icon: '🧾', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
+  { href: '/app/finance', label: 'Finanza', icon: '💶', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
+  { href: '/app/fleet', label: 'Parco mezzi', icon: '🚙', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/gestionale', label: 'Gestione Personale', icon: '📋', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
-  { href: '/app/driver', label: 'Driver', icon: '🚗', roles: ['ADMIN', 'DRIVER'] as Role[] }
+  { href: '/app/driver', label: 'Autista', icon: '🚗', roles: ['ADMIN', 'DRIVER'] as Role[] }
 ];
 
 export function AppShell({ userId, userRole, children }: AppShellProps) {
