@@ -16,6 +16,7 @@ import {
   SaveFinancialTransactionPayload
 } from '../../types/finance';
 import { FinanceCategoryDistribution, FinanceMonthlyBars, FinanceYearComparisonChart } from './components/finance-charts';
+import { FinanceSubnav } from './components/finance-subnav';
 import { FinanceTransactionForm } from './components/finance-transaction-form';
 import { FinanceTransactionsTable } from './components/finance-transactions-table';
 
@@ -59,7 +60,7 @@ type VehicleListItem = {
   plate: string;
 };
 
-export function FinanceModule() {
+export function FinanceModule({ section = 'overview' }: { section?: 'overview' | 'movements' }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -82,29 +83,42 @@ export function FinanceModule() {
   const [editing, setEditing] = useState<FinancialTransaction | null>(null);
   const [formOpen, setFormOpen] = useState(false);
 
-  async function loadAll() {
+  const showOverview = section === 'overview';
+  const showMovements = section === 'movements';
+
+  async function loadDashboard() {
     setLoading(true);
     setError(null);
 
     try {
-      const [nextDashboard, nextTransactions] = await Promise.all([
-        getFinanceDashboard(year, month),
-        listFinanceTransactions({
-          fromDate: fromDate || undefined,
-          toDate: toDate || undefined,
-          type: filterType || undefined,
-          category: filterCategory || undefined,
-          serviceId: filterServiceId || undefined,
-          vehicleId: filterVehicleId || undefined,
-          sortBy,
-          direction
-        })
-      ]);
-
+      const nextDashboard = await getFinanceDashboard(year, month);
       setDashboard(nextDashboard);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Errore caricamento dashboard finance');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadTransactions() {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const nextTransactions = await listFinanceTransactions({
+        fromDate: fromDate || undefined,
+        toDate: toDate || undefined,
+        type: filterType || undefined,
+        category: filterCategory || undefined,
+        serviceId: filterServiceId || undefined,
+        vehicleId: filterVehicleId || undefined,
+        sortBy,
+        direction
+      });
+
       setTransactions(nextTransactions);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Errore caricamento modulo finance');
+      setError(err instanceof Error ? err.message : 'Errore caricamento movimenti finance');
     } finally {
       setLoading(false);
     }
@@ -143,12 +157,21 @@ export function FinanceModule() {
   }
 
   useEffect(() => {
-    loadAll();
-  }, [year, month]);
+    if (!showOverview) {
+      return;
+    }
+
+    loadDashboard();
+  }, [year, month, showOverview]);
 
   useEffect(() => {
+    if (!showMovements) {
+      return;
+    }
+
     loadFilterOptions();
-  }, []);
+    loadTransactions();
+  }, [showMovements]);
 
   async function onSave(payload: SaveFinancialTransactionPayload) {
     setSubmitting(true);
@@ -166,7 +189,7 @@ export function FinanceModule() {
 
       setEditing(null);
       setFormOpen(false);
-      await loadAll();
+      await loadTransactions();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Salvataggio fallito');
     } finally {
@@ -186,7 +209,7 @@ export function FinanceModule() {
     try {
       await voidFinanceTransaction(item.id, reason);
       setSuccess('Movimento annullato');
-      await loadAll();
+      await loadTransactions();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Annullamento fallito');
     }
@@ -244,126 +267,34 @@ export function FinanceModule() {
       <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
         <div>
           <h1 style={{ marginBottom: 4 }}>Modulo Finanziario</h1>
-          <p style={{ margin: 0, color: '#4f6b8a' }}>Ledger unico movimenti, KPI mese/anno e confronto evolutivo.</p>
+          <p style={{ margin: 0, color: '#4f6b8a' }}>
+            {showOverview
+              ? 'KPI mese/anno e confronto evolutivo.'
+              : 'Ledger unico movimenti con filtri, ordinamento e gestione operativa.'}
+          </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <label>
-            Anno
-            <input className="form-input" type="number" value={year} onChange={(event) => setYear(Number(event.target.value))} />
-          </label>
-          <label>
-            Mese
-            <input className="form-input" type="number" min={1} max={12} value={month} onChange={(event) => setMonth(Number(event.target.value))} />
-          </label>
-        </div>
+        {showOverview && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <label>
+              Anno
+              <input className="form-input" type="number" value={year} onChange={(event) => setYear(Number(event.target.value))} />
+            </label>
+            <label>
+              Mese
+              <input className="form-input" type="number" min={1} max={12} value={month} onChange={(event) => setMonth(Number(event.target.value))} />
+            </label>
+          </div>
+        )}
       </header>
 
-      <article className="dashboard-card">
-        <h3>Filtri movimenti</h3>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-          <label>
-            Dal
-            <input type="date" className="form-input" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-          </label>
-          <label>
-            Al
-            <input type="date" className="form-input" value={toDate} onChange={(event) => setToDate(event.target.value)} />
-          </label>
-          <label>
-            Tipo
-            <select className="form-input" value={filterType} onChange={(event) => setFilterType(event.target.value as FinancialTransactionType | '')}>
-              <option value="">Tutti</option>
-              <option value="RICAVO">Ricavo</option>
-              <option value="COSTO">Costo</option>
-            </select>
-          </label>
-          <label>
-            Categoria
-            <select
-              className="form-input"
-              value={filterCategory}
-              onChange={(event) => setFilterCategory(event.target.value as FinancialTransactionCategory | '')}
-            >
-              <option value="">Tutte</option>
-              {financeCategories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Servizio
-            <select
-              className="form-input"
-              value={filterServiceId}
-              onChange={(event) => setFilterServiceId(event.target.value ? Number(event.target.value) : '')}
-            >
-              <option value="">Tutti</option>
-              {serviceOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Veicolo
-            <select
-              className="form-input"
-              value={filterVehicleId}
-              onChange={(event) => setFilterVehicleId(event.target.value ? Number(event.target.value) : '')}
-            >
-              <option value="">Tutti</option>
-              {vehicleOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Ordina per
-            <select className="form-input" value={sortBy} onChange={(event) => setSortBy(event.target.value as 'transactionDate' | 'amount' | 'category')}>
-              <option value="transactionDate">Data</option>
-              <option value="amount">Importo</option>
-              <option value="category">Categoria</option>
-            </select>
-          </label>
-          <label>
-            Direzione
-            <select className="form-input" value={direction} onChange={(event) => setDirection(event.target.value as 'asc' | 'desc')}>
-              <option value="desc">Discendente</option>
-              <option value="asc">Ascendente</option>
-            </select>
-          </label>
-          <button type="button" className="primary-button" onClick={loadAll}>Applica filtri</button>
-          <button
-            type="button"
-            className="logout-button"
-            onClick={() => {
-              setFromDate('');
-              setToDate('');
-              setFilterType('');
-              setFilterCategory('');
-              setFilterServiceId('');
-              setFilterVehicleId('');
-              setSortBy('transactionDate');
-              setDirection('desc');
-              setTimeout(() => loadAll(), 0);
-            }}
-          >
-            Reset
-          </button>
-        </div>
-      </article>
+      <FinanceSubnav active={section} />
 
       {error && <p className="error-text">{error}</p>}
       {success && <p className="success-text">{success}</p>}
       {loading && <p>Caricamento dati finanziari...</p>}
 
-      {!loading && dashboard && (
+      {!loading && showOverview && dashboard && (
         <>
           <article className="dashboard-card">
             <h3 style={{ marginTop: 0 }}>Risultato mensile {month}/{year}</h3>
@@ -384,6 +315,111 @@ export function FinanceModule() {
             <FinanceCategoryDistribution items={dashboard.categoryCosts} />
             <FinanceYearComparisonChart comparison={dashboard.comparison} />
           </div>
+
+        </>
+      )}
+
+      {!loading && showMovements && (
+        <>
+          <article className="dashboard-card">
+            <h3>Filtri movimenti</h3>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
+              <label>
+                Dal
+                <input type="date" className="form-input" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
+              </label>
+              <label>
+                Al
+                <input type="date" className="form-input" value={toDate} onChange={(event) => setToDate(event.target.value)} />
+              </label>
+              <label>
+                Tipo
+                <select className="form-input" value={filterType} onChange={(event) => setFilterType(event.target.value as FinancialTransactionType | '')}>
+                  <option value="">Tutti</option>
+                  <option value="RICAVO">Ricavo</option>
+                  <option value="COSTO">Costo</option>
+                </select>
+              </label>
+              <label>
+                Categoria
+                <select
+                  className="form-input"
+                  value={filterCategory}
+                  onChange={(event) => setFilterCategory(event.target.value as FinancialTransactionCategory | '')}
+                >
+                  <option value="">Tutte</option>
+                  {financeCategories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Servizio
+                <select
+                  className="form-input"
+                  value={filterServiceId}
+                  onChange={(event) => setFilterServiceId(event.target.value ? Number(event.target.value) : '')}
+                >
+                  <option value="">Tutti</option>
+                  {serviceOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Veicolo
+                <select
+                  className="form-input"
+                  value={filterVehicleId}
+                  onChange={(event) => setFilterVehicleId(event.target.value ? Number(event.target.value) : '')}
+                >
+                  <option value="">Tutti</option>
+                  {vehicleOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Ordina per
+                <select className="form-input" value={sortBy} onChange={(event) => setSortBy(event.target.value as 'transactionDate' | 'amount' | 'category')}>
+                  <option value="transactionDate">Data</option>
+                  <option value="amount">Importo</option>
+                  <option value="category">Categoria</option>
+                </select>
+              </label>
+              <label>
+                Direzione
+                <select className="form-input" value={direction} onChange={(event) => setDirection(event.target.value as 'asc' | 'desc')}>
+                  <option value="desc">Discendente</option>
+                  <option value="asc">Ascendente</option>
+                </select>
+              </label>
+              <button type="button" className="primary-button" onClick={loadTransactions}>Applica filtri</button>
+              <button
+                type="button"
+                className="logout-button"
+                onClick={() => {
+                  setFromDate('');
+                  setToDate('');
+                  setFilterType('');
+                  setFilterCategory('');
+                  setFilterServiceId('');
+                  setFilterVehicleId('');
+                  setSortBy('transactionDate');
+                  setDirection('desc');
+                  setTimeout(() => loadTransactions(), 0);
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          </article>
 
           <article className="dashboard-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>

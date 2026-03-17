@@ -362,6 +362,15 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.fleet-form-actions {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.fleet-form-actions > * {
+  flex: 0 0 auto !important;
+}
+
 .table-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -419,6 +428,11 @@ a:hover {
   border-radius: 12px;
   padding: 14px;
   background: #f9fcff;
+}
+
+.services-filters-label,
+.services-mobile-list {
+  display: none;
 }
 
 .finance-bars-row {
@@ -550,6 +564,9 @@ a:hover {
     gap: 10px;
     flex-wrap: wrap;
     align-items: flex-start;
+    border-radius: 18px;
+    border: 1px solid #d3e0ef;
+    background: #f8fbff;
   }
 
   .user-info {
@@ -560,11 +577,14 @@ a:hover {
     order: 2;
     width: 100%;
     justify-content: flex-start;
+    gap: 10px;
   }
 
   .logout-button {
     padding: 8px 10px;
     font-size: 13px;
+    border-radius: 13px;
+    background: #e7f0fb;
   }
 
   .responsive-panel .compact-button,
@@ -658,6 +678,275 @@ a:hover {
     align-items: flex-start;
   }
 
+  .services-panel {
+    gap: 12px !important;
+  }
+
+  .topbar {
+    padding: 12px;
+    border-radius: 20px;
+    background: #f7fbff;
+  }
+
+  .mobile-menu-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    border-color: #b8cde6;
+    background: #edf4fb;
+  }
+
+  .topbar-actions {
+    gap: 8px;
+  }
+
+  .topbar-actions form {
+    margin: 0;
+  }
+
+  .mobile-alert-chip,
+  .mobile-logout-button {
+    border-radius: 14px;
+    padding: 8px 12px;
+    font-size: 14px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 38px;
+  }
+
+  .mobile-alert-chip.mobile-alert-chip-fleet {
+    background: #e8f1fb;
+    color: #245386;
+  }
+
+  .mobile-alert-chip.mobile-alert-chip-service {
+    background: #fce9e8;
+    color: #cc3333;
+  }
+
+  .mobile-logout-button {
+    background: #e8f1fb;
+    color: #1f4f84;
+    border: none;
+  }
+
+  .services-panel > .dashboard-card {
+    background: #f3f7fc;
+    border: 1px solid #d5dfec;
+    border-radius: 16px;
+    padding: 14px;
+  }
+
+  .services-title {
+    margin: 0;
+    font-size: 30px;
+    line-height: 1.1;
+    color: #162741;
+  }
+
+  .services-header {
+    align-items: center !important;
+  }
+
+  .services-new-button {
+    border-radius: 999px;
+    margin-left: auto;
+    padding: 9px 18px;
+    font-size: 15px;
+    line-height: 1;
+    font-weight: 700;
+    min-height: 40px;
+    box-shadow: 0 7px 16px rgba(30, 136, 229, 0.24);
+  }
+
+  .services-filters-label {
+    display: block;
+    margin-top: 4px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    text-align: left;
+    color: #3f80c7;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+  }
+
+  .services-filters-grid.is-hidden-mobile {
+    display: none !important;
+  }
+
+  .services-desktop-table {
+    display: none;
+  }
+
+  .services-mobile-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .services-mobile-select-all {
+    background: #edf4fb;
+    border: 1px solid #cfdeee;
+    border-radius: 12px;
+    padding: 8px 10px;
+    font-size: 14px;
+    color: #355577;
+    font-weight: 600;
+  }
+
+  .service-mobile-card {
+    background: #ffffff;
+    border: 1px solid #c8d5e7;
+    border-radius: 18px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(15, 52, 87, 0.08);
+    display: grid;
+    gap: 9px;
+  }
+
+  .service-mobile-card.is-selected {
+    border-color: #8cb7e5;
+    box-shadow: 0 0 0 2px rgba(107, 164, 226, 0.2);
+  }
+
+  .service-mobile-card.is-closed {
+    opacity: 0.86;
+  }
+
+  .service-mobile-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .service-mobile-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .service-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .service-chip-type {
+    background: #eaf0f7;
+    color: #3c6288;
+  }
+
+  .service-chip-status.assigned {
+    background: #2ea55f;
+    color: #ffffff;
+  }
+
+  .service-chip-status.closed {
+    background: #e7edf3;
+    color: #65788f;
+  }
+
+  .service-chip-status.open {
+    background: #ffe8c9;
+    color: #aa6200;
+  }
+
+  .service-mobile-price {
+    color: #162741;
+    font-size: 17px;
+    font-weight: 800;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+
+  .service-mobile-date {
+    color: #5f7693;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 15px;
+  }
+
+  .service-mobile-icon {
+    width: 16px;
+    height: 16px;
+    display: inline-grid;
+    place-items: center;
+    color: #6e84a0;
+    flex: 0 0 auto;
+  }
+
+  .service-mobile-icon svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .service-mobile-route {
+    color: #172742;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+
+  .service-mobile-place {
+    font-weight: 500;
+  }
+
+  .service-mobile-arrow {
+    width: 15px;
+    height: 15px;
+    color: #6f89a7;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  .service-mobile-arrow svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .service-mobile-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: #607792;
+    font-size: 14px;
+  }
+
+  .service-mobile-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    border-top: 1px solid #e6edf7;
+  }
+
+  .service-mobile-actions .inline-checkbox {
+    font-size: 14px;
+    color: #4f6783;
+  }
+
+  .service-mobile-actions .primary-button,
+  .service-mobile-actions .logout-button {
+    min-height: 34px;
+    font-size: 12px;
+  }
+
   .panel-actions,
   .form-actions {
     width: 100%;
@@ -688,6 +977,27 @@ a:hover {
     position: sticky;
     bottom: 0;
     z-index: 2;
+  }
+
+  .fleet-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #f9fcff;
+    padding-top: 8px;
+    border-top: 1px solid #dce8f5;
+    justify-content: flex-end;
+  }
+
+  .fleet-form-actions > * {
+    flex: 0 0 auto !important;
+  }
+
+  .fleet-form-actions .primary-button,
+  .fleet-form-actions .logout-button {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 13px;
   }
 
   .responsive-filters-grid,

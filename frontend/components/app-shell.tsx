@@ -348,19 +348,19 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
           <div className="topbar-actions">
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE') && (
-              <Link href="/app/fleet" className="logout-button" style={fleetAlertStyle}>
+              <Link href="/app/fleet" className="logout-button mobile-alert-chip mobile-alert-chip-fleet" style={fleetAlertStyle}>
                 Allarme Fleet: {fleetAlertCounts.total}
               </Link>
             )}
 
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER') && (
-              <Link href={serviceAlertHref} className="logout-button" style={serviceAlertStyle}>
+              <Link href={serviceAlertHref} className="logout-button mobile-alert-chip mobile-alert-chip-service" style={serviceAlertStyle}>
                 Allarme Service: {serviceAlertCounts.total}
               </Link>
             )}
 
             <form action="/api/auth/logout" method="post">
-              <button type="submit" className="logout-button">Logout</button>
+              <button type="submit" className="logout-button mobile-logout-button">Logout</button>
             </form>
           </div>
         </header>

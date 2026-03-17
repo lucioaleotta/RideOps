@@ -728,7 +728,16 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                 onChange={(event) => setNewVehicleForm((prev) => ({ ...prev, notes: event.target.value }))}
               />
             </label>
-            <button type="submit" className="primary-button compact-button">Crea veicolo</button>
+            <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
+              <button type="submit" className="primary-button compact-button">Crea veicolo</button>
+              <button
+                type="button"
+                className="logout-button compact-button"
+                onClick={() => setNewVehicleForm({ plate: '', seats: '', type: 'SEDAN', notes: '' })}
+              >
+                Reset
+              </button>
+            </div>
           </form>
         )}
 
@@ -741,7 +750,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
 
       <article className="dashboard-card">
             <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <h3>1) Lista veicoli</h3>
+              <h3>Lista veicoli</h3>
             </div>
 
             <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
@@ -819,8 +828,23 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                   Note
                   <input className="form-input" value={vehicleForm.notes} onChange={(e) => setVehicleForm((p) => ({ ...p, notes: e.target.value }))} />
                 </label>
-                <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8 }}>
+                <div className="form-actions sticky-mobile fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
                   <button type="submit" className="primary-button compact-button">Salva dati veicolo</button>
+                  <button
+                    type="button"
+                    className="logout-button compact-button"
+                    onClick={() => {
+                      const selectedVehicle = vehicles.find((item) => item.id === selectedVehicleId);
+                      setVehicleForm({
+                        plate: selectedVehicle?.plate ?? '',
+                        seats: selectedVehicle ? String(selectedVehicle.seats) : '',
+                        type: selectedVehicle?.type ?? 'SEDAN',
+                        notes: selectedVehicle?.notes ?? ''
+                      });
+                    }}
+                  >
+                    Reset
+                  </button>
                   <button type="button" className="logout-button" onClick={() => setShowVehicleForm(false)}>Annulla</button>
                 </div>
               </form>
@@ -837,7 +861,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
         <>
           <article className="dashboard-card">
             <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <h3>2) Storico scadenze</h3>
+              <h3>Storico scadenze</h3>
               <button
                 type="button"
                 className="primary-button compact-button"
@@ -847,7 +871,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                   setOccurrenceForm(defaultOccurrenceForm);
                 }}
               >
-                Aggiungi scadenza
+                {showOccurrenceForm ? 'Chiudi' : 'Aggiungi scadenza'}
               </button>
             </div>
 
@@ -923,7 +947,19 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                   Note
                   <input className="form-input" value={occurrenceForm.notes} onChange={(e) => setOccurrenceForm((p) => ({ ...p, notes: e.target.value }))} />
                 </label>
-                <button type="submit" className="primary-button compact-button">{editingOccurrenceId ? 'Aggiorna scadenza' : 'Crea scadenza'}</button>
+                <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
+                  <button type="submit" className="primary-button compact-button">{editingOccurrenceId ? 'Aggiorna scadenza' : 'Crea scadenza'}</button>
+                  <button
+                    type="button"
+                    className="logout-button compact-button"
+                    onClick={() => {
+                      setEditingOccurrenceId(null);
+                      setOccurrenceForm(defaultOccurrenceForm);
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
               </form>
             )}
 
@@ -1018,12 +1054,12 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
 
           <article className="dashboard-card">
             <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <h3>3) Piani ricorrenti</h3>
+              <h3>Piani ricorrenti</h3>
               <button type="button" className="primary-button compact-button" onClick={() => {
                 setShowPlanForm((prev) => !prev);
                 setEditingPlanId(null);
                 setPlanForm(defaultPlanForm);
-              }}>Aggiungi piano ricorrente</button>
+              }}>{showPlanForm ? 'Chiudi' : 'Aggiungi piano ricorrente'}</button>
             </div>
 
             {showPlanForm && (
@@ -1066,7 +1102,19 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                   Note
                   <input className="form-input" value={planForm.notes} onChange={(e) => setPlanForm((p) => ({ ...p, notes: e.target.value }))} />
                 </label>
-                <button type="submit" className="primary-button compact-button">{editingPlanId ? 'Aggiorna piano' : 'Crea piano'}</button>
+                <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
+                  <button type="submit" className="primary-button compact-button">{editingPlanId ? 'Aggiorna piano' : 'Crea piano'}</button>
+                  <button
+                    type="button"
+                    className="logout-button compact-button"
+                    onClick={() => {
+                      setEditingPlanId(null);
+                      setPlanForm(defaultPlanForm);
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
               </form>
             )}
 
@@ -1134,7 +1182,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
 
           <article className="dashboard-card">
             <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <h3>4) Manutenzioni e indisponibilità</h3>
+              <h3>Manutenzioni e indisponibilità</h3>
               <button
                 type="button"
                 className="primary-button compact-button"
@@ -1144,7 +1192,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                   setUnavailabilityForm(defaultUnavailabilityForm);
                 }}
               >
-                {showUnavailabilityForm ? 'Chiudi manutenzione' : 'Nuova manutenzione'}
+                {showUnavailabilityForm ? 'Chiudi' : 'Nuova manutenzione'}
               </button>
             </div>
 
@@ -1179,9 +1227,21 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                     required
                   />
                 </label>
-                <button type="submit" className="primary-button compact-button">
-                  {editingUnavailabilityId ? 'Aggiorna manutenzione' : 'Salva manutenzione'}
-                </button>
+                <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
+                  <button type="submit" className="primary-button compact-button">
+                    {editingUnavailabilityId ? 'Aggiorna manutenzione' : 'Salva manutenzione'}
+                  </button>
+                  <button
+                    type="button"
+                    className="logout-button compact-button"
+                    onClick={() => {
+                      setEditingUnavailabilityId(null);
+                      setUnavailabilityForm(defaultUnavailabilityForm);
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
               </form>
             )}
 
