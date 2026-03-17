@@ -87,6 +87,39 @@ const defaultFilters: ServicesFilterState = {
   onlyUnassigned: false
 };
 
+function MobileClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M12 7.5v5l3.3 2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function MobilePinIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        d="M12 21s6-5.7 6-10a6 6 0 1 0-12 0c0 4.3 6 10 6 10Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="11" r="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function MobileArrowRightIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M5 12h13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="m13 7 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function ServicesPanel() {
   function driverLabel(driver: DriverItem) {
     const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(' ').trim();
@@ -114,6 +147,7 @@ export function ServicesPanel() {
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [selectedForPrintIds, setSelectedForPrintIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
 
@@ -138,6 +172,16 @@ export function ServicesPanel() {
       return 'Assegnato';
     }
     return 'Chiuso';
+  }
+
+  function statusClass(status: ServiceStatus) {
+    if (status === 'ASSIGNED') {
+      return 'assigned';
+    }
+    if (status === 'CLOSED') {
+      return 'closed';
+    }
+    return 'open';
   }
 
   function typeLabel(type: ServiceType) {
@@ -562,11 +606,11 @@ export function ServicesPanel() {
   return (
     <section className="responsive-panel services-panel" style={{ display: 'grid', gap: 16, maxWidth: '100%' }}>
       <article className="dashboard-card">
-        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <h3>Lista servizi</h3>
+        <div className="panel-header services-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <h3 className="services-title">Lista servizi</h3>
           <button
             type="button"
-            className="primary-button compact-button"
+            className="primary-button compact-button services-new-button"
             onClick={() => {
               if (isFormOpen && !editingId) {
                 closeForm();
@@ -578,7 +622,20 @@ export function ServicesPanel() {
             {isFormOpen && !editingId ? 'Chiudi form' : 'Nuovo servizio'}
           </button>
         </div>
-        <div className="responsive-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginTop: 8 }}>
+        <button
+          type="button"
+          className="services-filters-label"
+          onClick={() => setMobileFiltersOpen((prev) => !prev)}
+          aria-expanded={mobileFiltersOpen}
+          aria-controls="services-filters-grid"
+        >
+          {mobileFiltersOpen ? 'Nascondi filtri ▲' : 'Mostra filtri ▼'}
+        </button>
+        <div
+          id="services-filters-grid"
+          className={`responsive-filters-grid services-filters-grid ${mobileFiltersOpen ? '' : 'is-hidden-mobile'}`}
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginTop: 8 }}
+        >
           <label>
             Stato
             <select
@@ -762,7 +819,7 @@ export function ServicesPanel() {
                 </button>
               </div>
             </div>
-            <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8, maxWidth: '100%' }}>
+            <div className="table-scroll services-desktop-table" style={{ overflowX: 'auto', marginTop: 8, maxWidth: '100%' }}>
             <table className="responsive-table services-table" style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
@@ -860,6 +917,80 @@ export function ServicesPanel() {
                 ))}
               </tbody>
             </table>
+            </div>
+            <div className="services-mobile-list" style={{ marginTop: 8 }}>
+              <label className="inline-checkbox services-mobile-select-all">
+                <input
+                  type="checkbox"
+                  checked={allCurrentPageSelected}
+                  onChange={(event) => toggleSelectAllOnPage(event.target.checked)}
+                  aria-label="Seleziona tutti i servizi in pagina per la stampa"
+                />
+                Seleziona tutti in pagina
+              </label>
+              {paginatedServices.map((service) => {
+                const isSelected = selectedServiceId === service.id;
+                const isChecked = selectedForPrintIds.includes(service.id);
+
+                return (
+                  <article
+                    key={service.id}
+                    className={`service-mobile-card ${isSelected ? 'is-selected' : ''} ${service.status === 'CLOSED' ? 'is-closed' : ''}`}
+                  >
+                    <div className="service-mobile-card-top">
+                      <div className="service-mobile-badges">
+                        <span className="service-chip service-chip-type">{typeLabel(service.type)}</span>
+                        <span className={`service-chip service-chip-status ${statusClass(service.status)}`}>
+                          {statusLabel(service.status)}
+                        </span>
+                      </div>
+                      <strong className="service-mobile-price">{formatCurrencyEUR(service.price)}</strong>
+                    </div>
+
+                    <div className="service-mobile-date">
+                      <span className="service-mobile-icon"><MobileClockIcon /></span>
+                      <span>{new Date(service.startAt).toLocaleString('it-IT')}</span>
+                    </div>
+                    <div className="service-mobile-route">
+                      <span className="service-mobile-icon"><MobilePinIcon /></span>
+                      <span className="service-mobile-place">{service.pickupLocation}</span>
+                      <span className="service-mobile-arrow"><MobileArrowRightIcon /></span>
+                      <span className="service-mobile-place">{service.destination}</span>
+                    </div>
+
+                    <div className="service-mobile-meta">
+                      <span>{assignedDriverLabel(service)}</span>
+                      <span>{assignedVehicleLabel(service)}</span>
+                    </div>
+
+                    <div className="service-mobile-actions">
+                      <label className="inline-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => togglePrintSelection(service.id)}
+                          aria-label={`Seleziona servizio ${service.id} per stampa multipla`}
+                        />
+                        Stampa
+                      </label>
+                      <button
+                        type="button"
+                        className="primary-button compact-button"
+                        onClick={() => setSelectedServiceId(service.id)}
+                      >
+                        Seleziona
+                      </button>
+                      <button
+                        type="button"
+                        className="logout-button compact-button"
+                        onClick={() => openPrint(service.id)}
+                      >
+                        Apri
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
             <div className="panel-header panel-pagination" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
               <span>
