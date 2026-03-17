@@ -398,9 +398,19 @@ export function FleetDeadlinesPanel() {
               <input className="form-input" value={form.notes} onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))} />
             </label>
 
-            <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
+            <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
                 {submitting ? 'Salvataggio...' : editingId ? 'Aggiorna voce' : 'Crea voce'}
+              </button>
+              <button
+                type="button"
+                className="logout-button compact-button"
+                onClick={() => {
+                  setEditingId(null);
+                  setForm(defaultForm);
+                }}
+              >
+                Reset
               </button>
               <button type="button" className="logout-button" onClick={closeForm}>Annulla</button>
             </div>

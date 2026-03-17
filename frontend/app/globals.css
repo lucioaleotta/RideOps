@@ -362,6 +362,15 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.fleet-form-actions {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.fleet-form-actions > * {
+  flex: 0 0 auto !important;
+}
+
 .table-scroll {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -968,6 +977,27 @@ a:hover {
     position: sticky;
     bottom: 0;
     z-index: 2;
+  }
+
+  .fleet-form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #f9fcff;
+    padding-top: 8px;
+    border-top: 1px solid #dce8f5;
+    justify-content: flex-end;
+  }
+
+  .fleet-form-actions > * {
+    flex: 0 0 auto !important;
+  }
+
+  .fleet-form-actions .primary-button,
+  .fleet-form-actions .logout-button {
+    min-height: 34px;
+    padding: 6px 10px;
+    font-size: 13px;
   }
 
   .responsive-filters-grid,
