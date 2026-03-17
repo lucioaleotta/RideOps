@@ -329,20 +329,25 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
       <section className="main-area">
         <header className="topbar">
-          <button
-            type="button"
-            className="mobile-menu-button"
-            onClick={() => setMobileMenuOpen((prev) => !prev)}
-            aria-label="Apri menu navigazione"
-          >
-            ☰
-          </button>
+          <div className="topbar-identity">
+            <button
+              type="button"
+              className="mobile-menu-button"
+              onClick={() => setMobileMenuOpen((prev) => !prev)}
+              aria-label="Apri menu navigazione"
+            >
+              ☰
+            </button>
 
-          <div className="user-info">
-            <span className="avatar">{initials}</span>
-            <div>
-              <div className="user-name">{userName}</div>
-              <div className="user-role">{userRole}</div>
+            <div className="user-info">
+              <span className="avatar">{initials}</span>
+              <div className="user-meta">
+                <div className="user-name">{userName}</div>
+                <div className="user-role">{userRole}</div>
+                <form action="/api/auth/logout" method="post" className="topbar-inline-logout-form">
+                  <button type="submit" className="topbar-inline-logout">Logout</button>
+                </form>
+              </div>
             </div>
           </div>
 
@@ -358,10 +363,6 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
                 Allarme Service: {serviceAlertCounts.total}
               </Link>
             )}
-
-            <form action="/api/auth/logout" method="post">
-              <button type="submit" className="logout-button mobile-logout-button">Logout</button>
-            </form>
           </div>
         </header>
 

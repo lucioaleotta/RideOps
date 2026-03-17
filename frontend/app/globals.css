@@ -254,18 +254,29 @@ a:hover {
   justify-content: space-between;
 }
 
+.topbar-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .topbar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .user-info {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.user-meta {
+  display: grid;
+  gap: 2px;
 }
 
 .avatar {
@@ -287,6 +298,25 @@ a:hover {
 .user-role {
   color: var(--muted);
   font-size: 13px;
+}
+
+.topbar-inline-logout-form {
+  margin: 0;
+}
+
+.topbar-inline-logout {
+  border: none;
+  background: #e8f1fb;
+  color: #1f4f84;
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.topbar-inline-logout:hover {
+  background: #dceaf9;
 }
 
 .logout-button {
@@ -431,7 +461,9 @@ a:hover {
 }
 
 .services-filters-label,
-.services-mobile-list {
+.services-mobile-list,
+.admin-users-mobile-list,
+.admin-journal-mobile-list {
   display: none;
 }
 
@@ -686,6 +718,19 @@ a:hover {
     padding: 12px;
     border-radius: 20px;
     background: #f7fbff;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .topbar-identity {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .mobile-menu-button {
@@ -730,6 +775,12 @@ a:hover {
     background: #e8f1fb;
     color: #1f4f84;
     border: none;
+  }
+
+  .topbar-inline-logout {
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 9px;
   }
 
   .services-panel > .dashboard-card {
@@ -1022,9 +1073,158 @@ a:hover {
     display: none;
   }
 
-  .admin-users-table th:nth-child(5),
-  .admin-users-table td:nth-child(5) {
+  .admin-users-desktop-table,
+  .admin-journal-desktop-table {
     display: none;
+  }
+
+  .admin-users-mobile-list,
+  .admin-journal-mobile-list {
+    display: grid;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .admin-user-card {
+    background: #ffffff;
+    border: 1px solid #c8d5e7;
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 2px 8px rgba(15, 52, 87, 0.08);
+    display: grid;
+    gap: 6px;
+  }
+
+  .admin-user-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .admin-user-username {
+    font-weight: 700;
+    font-size: 16px;
+    color: #162741;
+  }
+
+  .admin-enabled-badge {
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    flex: 0 0 auto;
+  }
+
+  .admin-enabled-badge.is-active {
+    background: #2ea55f;
+    color: #ffffff;
+  }
+
+  .admin-enabled-badge.is-disabled {
+    background: #e53935;
+    color: #ffffff;
+  }
+
+  .admin-user-email {
+    font-size: 14px;
+    color: #5f7693;
+  }
+
+  .admin-user-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-top: 6px;
+    border-top: 1px solid #eaf0f7;
+  }
+
+  .admin-user-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .admin-role-chip {
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: #e0ecf7;
+    color: #2c5a8a;
+  }
+
+  .admin-role-chip-admin {
+    background: #e3f0fd;
+    color: #1565a8;
+  }
+
+  .admin-role-chip-gestionale {
+    background: #e2f5ec;
+    color: #1a7a46;
+  }
+
+  .admin-role-chip-driver {
+    background: #eef0f3;
+    color: #4a5568;
+  }
+
+  .admin-user-date {
+    font-size: 13px;
+    color: #7a92ab;
+  }
+
+  .admin-journal-card {
+    background: #ffffff;
+    border: 1px solid #d1dcea;
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: grid;
+    gap: 6px;
+    box-shadow: 0 1px 6px rgba(15, 52, 87, 0.07);
+  }
+
+  .admin-journal-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .admin-journal-date {
+    font-size: 14px;
+    color: #445a72;
+    font-weight: 500;
+  }
+
+  .admin-journal-action-chip {
+    background: #edf3fa;
+    color: #3c6288;
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex: 0 0 auto;
+  }
+
+  .admin-journal-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 14px;
+    color: #4f6782;
+  }
+
+  .admin-journal-fields {
+    font-size: 13px;
+    color: #7a92ab;
   }
 
   .fleet-vehicles-table th:nth-child(4),
