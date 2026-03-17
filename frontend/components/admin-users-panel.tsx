@@ -170,36 +170,63 @@ export function AdminUsersPanel() {
         {loading ? (
           <p>Caricamento utenti...</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th align="left">User ID</th>
-                  <th align="left">Email</th>
-                  <th align="left">Ruolo</th>
-                  <th align="left">Stato</th>
-                  <th align="left">Data Creazione</th>
-                  <th align="left">Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orderedUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td style={{ padding: '8px 0' }}>{user.userId}</td>
-                    <td style={{ padding: '8px 0' }}>{user.email}</td>
-                    <td style={{ padding: '8px 0' }}>{user.role}</td>
-                    <td style={{ padding: '8px 0' }}>{user.enabled ? 'ATTIVO' : 'DISABILITATO'}</td>
-                    <td style={{ padding: '8px 0' }}>{new Date(user.createdAt).toLocaleString('it-IT')}</td>
-                    <td style={{ padding: '8px 0' }}>
-                      <button type="button" className="logout-button" onClick={() => openEdit(user)}>
-                        Modifica
-                      </button>
-                    </td>
+          <>
+            {/* Desktop table */}
+            <div className="admin-users-desktop-table" style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th align="left">User ID</th>
+                    <th align="left">Email</th>
+                    <th align="left">Ruolo</th>
+                    <th align="left">Stato</th>
+                    <th align="left">Data Creazione</th>
+                    <th align="left">Azioni</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {orderedUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td style={{ padding: '8px 0' }}>{user.userId}</td>
+                      <td style={{ padding: '8px 0' }}>{user.email}</td>
+                      <td style={{ padding: '8px 0' }}>{user.role}</td>
+                      <td style={{ padding: '8px 0' }}>{user.enabled ? 'ATTIVO' : 'DISABILITATO'}</td>
+                      <td style={{ padding: '8px 0' }}>{new Date(user.createdAt).toLocaleString('it-IT')}</td>
+                      <td style={{ padding: '8px 0' }}>
+                        <button type="button" className="logout-button" onClick={() => openEdit(user)}>
+                          Modifica
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card list */}
+            <div className="admin-users-mobile-list">
+              {orderedUsers.map((user) => (
+                <article key={user.id} className="admin-user-card">
+                  <div className="admin-user-card-top">
+                    <span className="admin-user-username">{user.userId}</span>
+                    <span className={`admin-enabled-badge ${user.enabled ? 'is-active' : 'is-disabled'}`}>
+                      {user.enabled ? 'ATTIVO' : 'DISABILITATO'}
+                    </span>
+                  </div>
+                  <div className="admin-user-email">{user.email}</div>
+                  <div className="admin-user-card-footer">
+                    <div className="admin-user-meta">
+                      <span className={`admin-role-chip admin-role-chip-${user.role.toLowerCase()}`}>{user.role}</span>
+                      <span className="admin-user-date">{new Date(user.createdAt).toLocaleString('it-IT')}</span>
+                    </div>
+                    <button type="button" className="logout-button compact-button" onClick={() => openEdit(user)}>
+                      Modifica
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
         )}
       </article>
 
@@ -339,36 +366,62 @@ export function AdminUsersPanel() {
             {journalLoading ? (
               <p>Caricamento journal...</p>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>
-                      <th align="left">Quando</th>
-                      <th align="left">Admin UserID</th>
-                      <th align="left">Utente modificato</th>
-                      <th align="left">Azione</th>
-                      <th align="left">Campi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {journalEntries.length === 0 ? (
+              <>
+                {/* Desktop table */}
+                <div className="admin-journal-desktop-table" style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
+                    <thead>
                       <tr>
-                        <td colSpan={5} style={{ padding: '8px 0' }}>Nessuna modifica trovata.</td>
+                        <th align="left">Quando</th>
+                        <th align="left">Admin UserID</th>
+                        <th align="left">Utente modificato</th>
+                        <th align="left">Azione</th>
+                        <th align="left">Campi</th>
                       </tr>
-                    ) : (
-                      journalEntries.map((entry) => (
-                        <tr key={entry.id}>
-                          <td style={{ padding: '8px 0' }}>{new Date(entry.createdAt).toLocaleString('it-IT')}</td>
-                          <td style={{ padding: '8px 0' }}>{entry.adminUserId}</td>
-                          <td style={{ padding: '8px 0' }}>{entry.targetUserId}</td>
-                          <td style={{ padding: '8px 0' }}>{entry.action}</td>
-                          <td style={{ padding: '8px 0' }}>{entry.changedFields}</td>
+                    </thead>
+                    <tbody>
+                      {journalEntries.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} style={{ padding: '8px 0' }}>Nessuna modifica trovata.</td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      ) : (
+                        journalEntries.map((entry) => (
+                          <tr key={entry.id}>
+                            <td style={{ padding: '8px 0' }}>{new Date(entry.createdAt).toLocaleString('it-IT')}</td>
+                            <td style={{ padding: '8px 0' }}>{entry.adminUserId}</td>
+                            <td style={{ padding: '8px 0' }}>{entry.targetUserId}</td>
+                            <td style={{ padding: '8px 0' }}>{entry.action}</td>
+                            <td style={{ padding: '8px 0' }}>{entry.changedFields}</td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile card list */}
+                <div className="admin-journal-mobile-list">
+                  {journalEntries.length === 0 ? (
+                    <p>Nessuna modifica trovata.</p>
+                  ) : (
+                    journalEntries.map((entry) => (
+                      <article key={entry.id} className="admin-journal-card">
+                        <div className="admin-journal-card-header">
+                          <span className="admin-journal-date">{new Date(entry.createdAt).toLocaleString('it-IT')}</span>
+                          <span className="admin-journal-action-chip">{entry.action}</span>
+                        </div>
+                        <div className="admin-journal-meta">
+                          <span>Admin: <strong>{entry.adminUserId}</strong></span>
+                          <span>Utente: <strong>{entry.targetUserId}</strong></span>
+                        </div>
+                        {entry.changedFields && (
+                          <div className="admin-journal-fields">Campi: {entry.changedFields}</div>
+                        )}
+                      </article>
+                    ))
+                  )}
+                </div>
+              </>
             )}
           </>
         )}
