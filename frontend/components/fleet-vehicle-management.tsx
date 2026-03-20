@@ -208,14 +208,19 @@ function sanitizeStatusForType(status: DeadlineStatus, type: DeadlineType): Dead
 
 type FleetVehicleManagementProps = {
   userRole?: string;
+  initialVehicleId?: number;
 };
 
-export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleManagementProps) {
+export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId }: FleetVehicleManagementProps) {
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | ''>('');
   const [detail, setDetail] = useState<VehicleDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCreateVehicleForm, setShowCreateVehicleForm] = useState(false);
+  const [showFiltersCard, setShowFiltersCard] = useState(false);
+  const [plateFilter, setPlateFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | VehicleType>('ALL');
+  const [seatsFilter, setSeatsFilter] = useState('');
 
   const [vehicleForm, setVehicleForm] = useState({ plate: '', seats: '', type: 'SEDAN' as VehicleType, notes: '' });
   const [newVehicleForm, setNewVehicleForm] = useState({ plate: '', seats: '', type: 'SEDAN' as VehicleType, notes: '' });
@@ -319,8 +324,38 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
     }
   }, [selectedVehicleId]);
 
+  useEffect(() => {
+    if (!initialVehicleId || selectedVehicleId) {
+      return;
+    }
+
+    if (vehicles.some((item) => item.id === initialVehicleId)) {
+      setSelectedVehicleId(initialVehicleId);
+    }
+  }, [initialVehicleId, selectedVehicleId, vehicles]);
+
   const occurrences = detail?.occurrences ?? [];
   const plans = detail?.plans ?? [];
+  const normalizedPlateFilter = plateFilter.trim().toLowerCase();
+  const normalizedSeatsFilter = seatsFilter.trim();
+  const filteredVehicles = vehicles.filter((vehicle) => {
+    if (normalizedPlateFilter && !vehicle.plate.toLowerCase().includes(normalizedPlateFilter)) {
+      return false;
+    }
+
+    if (typeFilter !== 'ALL' && vehicle.type !== typeFilter) {
+      return false;
+    }
+
+    if (normalizedSeatsFilter) {
+      const seatsValue = Number(normalizedSeatsFilter);
+      if (Number.isNaN(seatsValue) || vehicle.seats !== seatsValue) {
+        return false;
+      }
+    }
+
+    return true;
+  });
 
   async function saveVehicle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -659,7 +694,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
   }
 
   return (
-    <section className="responsive-panel fleet-management-panel" style={{ display: 'grid', gap: 16 }}>
+    <section id="scadenze" className="responsive-panel fleet-management-panel" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
         <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
           <h2>Gestione Veicoli e Scadenze</h2>
@@ -753,6 +788,74 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
               <h3>Lista veicoli</h3>
             </div>
 
+            <div style={{ marginTop: 8, marginBottom: 10 }}>
+              <button
+                type="button"
+                className="logout-button compact-button"
+                onClick={() => setShowFiltersCard((prev) => !prev)}
+              >
+                {showFiltersCard ? 'Chiudi filtri' : 'Apri filtri'}
+              </button>
+            </div>
+
+            {showFiltersCard && (
+              <div className="dashboard-card" style={{ marginBottom: 10 }}>
+                <div className="form-grid" style={{ display: 'grid', gap: 10 }}>
+                  <label>
+                    Targa
+                    <input
+                      className="form-input"
+                      value={plateFilter}
+                      onChange={(event) => setPlateFilter(event.target.value)}
+                      placeholder="Es. RO-TR"
+                    />
+                  </label>
+
+                  <label>
+                    Tipo
+                    <select
+                      className="form-input"
+                      value={typeFilter}
+                      onChange={(event) => setTypeFilter(event.target.value as 'ALL' | VehicleType)}
+                    >
+                      <option value="ALL">Tutti</option>
+                      <option value="SEDAN">Sedan</option>
+                      <option value="VAN">Van</option>
+                      <option value="MINIBUS">Minibus</option>
+                      <option value="SUV">Suv</option>
+                      <option value="OTHER">Altro</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Numero posti
+                    <input
+                      className="form-input"
+                      type="number"
+                      min={1}
+                      value={seatsFilter}
+                      onChange={(event) => setSeatsFilter(event.target.value)}
+                      placeholder="Es. 4"
+                    />
+                  </label>
+
+                  <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
+                    <button
+                      type="button"
+                      className="logout-button compact-button"
+                      onClick={() => {
+                        setPlateFilter('');
+                        setTypeFilter('ALL');
+                        setSeatsFilter('');
+                      }}
+                    >
+                      Reset filtri
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
               <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
@@ -765,14 +868,14 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
                   </tr>
                 </thead>
                 <tbody>
-                  {vehicles.length === 0 ? (
+                  {filteredVehicles.length === 0 ? (
                     <tr>
                       <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }} colSpan={5}>
-                        Nessun veicolo presente.
+                        {vehicles.length === 0 ? 'Nessun veicolo presente.' : 'Nessun veicolo corrisponde ai filtri.'}
                       </td>
                     </tr>
                   ) : (
-                    vehicles.map((vehicle) => (
+                    filteredVehicles.map((vehicle) => (
                       <tr
                         key={vehicle.id}
                         style={selectedVehicleId === vehicle.id ? { background: '#eaf1f9' } : undefined}

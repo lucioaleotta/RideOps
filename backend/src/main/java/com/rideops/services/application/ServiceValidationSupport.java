@@ -53,4 +53,10 @@ final class ServiceValidationSupport {
             throw new ServiceValidationException("Transizione di stato non valida");
         }
     }
+
+    static void validatePassengersCount(Integer passengersCount) {
+        if (passengersCount != null && passengersCount <= 0) {
+            throw new ServiceValidationException("Il numero passeggeri deve essere positivo");
+        }
+    }
 }

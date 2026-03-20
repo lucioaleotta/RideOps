@@ -2,6 +2,7 @@ package com.rideops.services.application;
 
 import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.domain.ServiceStatus;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,7 @@ public class CreateServiceUseCase {
             command.pickupLocation(),
             command.destination()
         );
+        ServiceValidationSupport.validatePassengersCount(command.passengersCount());
         vehicleAssignmentValidationService.validateForCreate(command);
 
         ServiceStatus initialStatus = ServiceValidationSupport.sanitizeCreateStatus(command.status());
@@ -37,6 +39,13 @@ public class CreateServiceUseCase {
         entity.setDurationHours(command.durationHours());
         entity.setNotes(cleanNullable(command.notes()));
         entity.setPrice(command.price());
+        entity.setExternalBookingReference(command.externalBookingReference());
+        entity.setInternalBookingReference(generateInternalBookingReference());
+        entity.setClientName(cleanNullable(command.clientName()));
+        entity.setClientPhone(cleanNullable(command.clientPhone()));
+        entity.setClientEmail(cleanNullable(command.clientEmail()));
+        entity.setPassengersCount(command.passengersCount());
+        entity.setItinerary(cleanNullable(command.itinerary()));
         entity.setStatus(initialStatus);
         entity.setAssignedVehicleId(command.assignedVehicleId());
 
@@ -55,5 +64,11 @@ public class CreateServiceUseCase {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String generateInternalBookingReference() {
+        String yearSuffix = String.format("%02d", LocalDate.now().getYear() % 100);
+        int nextSequence = serviceRepositoryPort.findMaxInternalBookingSequenceForYear(yearSuffix) + 1;
+        return nextSequence + "-" + yearSuffix;
     }
 }

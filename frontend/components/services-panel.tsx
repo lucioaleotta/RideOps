@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatCurrencyEUR } from '../lib/currency';
 
@@ -16,6 +16,13 @@ type ServiceItem = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
+  externalBookingReference: number | null;
+  internalBookingReference: string | null;
+  clientName: string | null;
+  clientPhone: string | null;
+  clientEmail: string | null;
+  passengersCount: number | null;
+  itinerary: string | null;
   status: ServiceStatus;
   assignedDriverId: number | null;
   assignedVehicleId: number | null;
@@ -44,6 +51,13 @@ type ServiceFormState = {
   durationHours: string;
   notes: string;
   price: string;
+  externalBookingReference: string;
+  internalBookingReference: string;
+  clientName: string;
+  clientPhone: string;
+  clientEmail: string;
+  passengersCount: string;
+  itinerary: string;
   assignedDriverId: number | '';
   assignedVehicleId: number | '';
 };
@@ -72,6 +86,13 @@ const defaultForm: ServiceFormState = {
   durationHours: '',
   notes: '',
   price: '',
+  externalBookingReference: '',
+  internalBookingReference: '',
+  clientName: '',
+  clientPhone: '',
+  clientEmail: '',
+  passengersCount: '',
+  itinerary: '',
   assignedDriverId: '',
   assignedVehicleId: ''
 };
@@ -131,7 +152,6 @@ export function ServicesPanel() {
 
   const PAGE_SIZE = 10;
   const searchParams = useSearchParams();
-  const initializedFromQuery = useRef(false);
 
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
@@ -274,13 +294,13 @@ export function ServicesPanel() {
   }, []);
 
   useEffect(() => {
-    if (initializedFromQuery.current) {
-      return;
-    }
     const active = searchParams.get('unassigned') === '1';
-    setFilters((prev) => ({ ...prev, onlyUnassigned: active }));
-    setCurrentPage(1);
-    initializedFromQuery.current = true;
+    setFilters((prev) => {
+      if (prev.onlyUnassigned === active) {
+        return prev;
+      }
+      return { ...prev, onlyUnassigned: active };
+    });
   }, [searchParams]);
 
   useEffect(() => {
@@ -314,6 +334,14 @@ export function ServicesPanel() {
       durationHours: form.type === 'TOUR' ? Number(form.durationHours) : null,
       notes: form.notes.trim() || null,
       price: form.price.trim() ? Number(form.price) : null,
+      externalBookingReference: form.externalBookingReference.trim()
+        ? Number(form.externalBookingReference)
+        : null,
+      clientName: form.clientName.trim() || null,
+      clientPhone: form.clientPhone.trim() || null,
+      clientEmail: form.clientEmail.trim() || null,
+      passengersCount: form.passengersCount.trim() ? Number(form.passengersCount) : null,
+      itinerary: form.itinerary.trim() || null,
       status,
       assignedVehicleId: form.assignedVehicleId ? Number(form.assignedVehicleId) : null
     };
@@ -460,6 +488,14 @@ export function ServicesPanel() {
       durationHours: service.durationHours ? String(service.durationHours) : '',
       notes: service.notes ?? '',
       price: service.price != null ? String(service.price) : '',
+      externalBookingReference:
+        service.externalBookingReference != null ? String(service.externalBookingReference) : '',
+      internalBookingReference: service.internalBookingReference ?? '',
+      clientName: service.clientName ?? '',
+      clientPhone: service.clientPhone ?? '',
+      clientEmail: service.clientEmail ?? '',
+      passengersCount: service.passengersCount != null ? String(service.passengersCount) : '',
+      itinerary: service.itinerary ?? '',
       assignedDriverId: service.assignedDriverId ?? '',
       assignedVehicleId: service.assignedVehicleId ?? ''
     });
@@ -756,6 +792,27 @@ export function ServicesPanel() {
                 </p>
                 <p style={{ margin: '6px 0 0' }}>
                   <strong>Prezzo:</strong> {formatCurrencyEUR(selectedService.price)}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Rif. prenotazione esterno:</strong> {selectedService.externalBookingReference ?? '-'}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Rif. prenotazione interno:</strong> {selectedService.internalBookingReference ?? '-'}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Cliente:</strong> {selectedService.clientName ?? '-'}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Telefono cliente:</strong> {selectedService.clientPhone ?? '-'}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Email cliente:</strong> {selectedService.clientEmail ?? '-'}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Numero passeggeri:</strong> {selectedService.passengersCount ?? '-'}
+                </p>
+                <p style={{ margin: '6px 0 0' }}>
+                  <strong>Itinerario:</strong> {selectedService.itinerary ?? '-'}
                 </p>
                 {selectedService.notes && (
                   <p style={{ margin: '6px 0 0' }}>
@@ -1102,6 +1159,79 @@ export function ServicesPanel() {
               <small style={{ color: 'var(--muted)' }}>
                 {form.price.trim() ? `Anteprima: ${formatCurrencyEUR(Number(form.price))}` : 'Anteprima: -'}
               </small>
+            </label>
+
+            <label>
+              Rif. prenotazione esterno (opzionale)
+              <input
+                className="form-input"
+                type="number"
+                min={0}
+                step="1"
+                value={form.externalBookingReference}
+                onChange={(event) => setForm((prev) => ({ ...prev, externalBookingReference: event.target.value }))}
+              />
+            </label>
+
+            <label>
+              Rif. prenotazione interno
+              <input
+                className="form-input"
+                value={form.internalBookingReference || (editingId ? '' : 'Generato al salvataggio')}
+                readOnly
+                disabled
+                style={{ color: 'var(--text-muted, #888)', cursor: 'not-allowed' }}
+              />
+            </label>
+
+            <label>
+              Nome cliente
+              <input
+                className="form-input"
+                value={form.clientName}
+                onChange={(event) => setForm((prev) => ({ ...prev, clientName: event.target.value }))}
+              />
+            </label>
+
+            <label>
+              Telefono cliente
+              <input
+                className="form-input"
+                value={form.clientPhone}
+                onChange={(event) => setForm((prev) => ({ ...prev, clientPhone: event.target.value }))}
+              />
+            </label>
+
+            <label>
+              Email cliente
+              <input
+                className="form-input"
+                type="email"
+                value={form.clientEmail}
+                onChange={(event) => setForm((prev) => ({ ...prev, clientEmail: event.target.value }))}
+              />
+            </label>
+
+            <label>
+              Numero passeggeri
+              <input
+                className="form-input"
+                type="number"
+                min={1}
+                step="1"
+                value={form.passengersCount}
+                onChange={(event) => setForm((prev) => ({ ...prev, passengersCount: event.target.value }))}
+              />
+            </label>
+
+            <label>
+              Itinerario
+              <textarea
+                className="form-input"
+                value={form.itinerary}
+                onChange={(event) => setForm((prev) => ({ ...prev, itinerary: event.target.value }))}
+                rows={3}
+              />
             </label>
 
             <label>

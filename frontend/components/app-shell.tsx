@@ -17,6 +17,7 @@ const menuItems = [
   { href: '/app/services', label: 'Servizi', icon: '🧾', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/finance', label: 'Finanza', icon: '💶', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/fleet', label: 'Parco mezzi', icon: '🚙', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
+  { href: '/app/partners', label: 'Gestione Partner', icon: '🤝', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/gestionale', label: 'Gestione Personale', icon: '📋', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/driver', label: 'Autista', icon: '🚗', roles: ['ADMIN', 'DRIVER'] as Role[] }
 ];
@@ -62,7 +63,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
       const detailResponses = await Promise.all(
         vehicleIds.map((id) =>
-          fetch(`/api/fleet/vehicles/${id}/detail?withinDays=7`, { cache: 'no-store' })
+          fetch(`/api/fleet/vehicles/${id}/detail?withinDays=30`, { cache: 'no-store' })
             .then(async (response) => {
               if (!response.ok) {
                 return null;
@@ -115,51 +116,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
     };
   }, [normalizedRole]);
 
-  const fleetAlertStyle = useMemo(() => {
-    if (fleetAlertCounts.overdue > 0) {
-      return {
-        display: 'inline-block',
-        background: '#fdecea',
-        color: '#d32f2f',
-        fontWeight: 700
-      } as const;
-    }
-
-    if (fleetAlertCounts.upcoming > 0) {
-      return {
-        display: 'inline-block',
-        background: '#fff3e0',
-        color: '#ef6c00',
-        fontWeight: 700
-      } as const;
-    }
-
-    return { display: 'inline-block' } as const;
-  }, [fleetAlertCounts.overdue, fleetAlertCounts.upcoming]);
-
-  const serviceAlertStyle = useMemo(() => {
-    if (serviceAlertCounts.overdue > 0) {
-      return {
-        display: 'inline-block',
-        background: '#fdecea',
-        color: '#d32f2f',
-        fontWeight: 700
-      } as const;
-    }
-
-    if (serviceAlertCounts.upcoming > 0) {
-      return {
-        display: 'inline-block',
-        background: '#fff3e0',
-        color: '#ef6c00',
-        fontWeight: 700
-      } as const;
-    }
-
-    return { display: 'inline-block' } as const;
-  }, [serviceAlertCounts.overdue, serviceAlertCounts.upcoming]);
-
-  const serviceAlertHref = normalizedRole === 'DRIVER' ? '/app/driver' : '/app/services';
+  const serviceAlertHref = normalizedRole === 'DRIVER' ? '/app/driver' : '/app/services?unassigned=1';
 
   useEffect(() => {
     const handleResize = () => {
@@ -187,6 +144,8 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
   }, [mobileMenuOpen]);
 
   const sidebarCollapsed = collapsed && !isMobileViewport;
+  const fleetHasAlerts = fleetAlertCounts.total > 0;
+  const serviceHasAlerts = serviceAlertCounts.total > 0;
 
   useEffect(() => {
     const canSeeServiceAlerts = normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER';
@@ -268,22 +227,21 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
         return;
       }
 
-      const today = new Date();
-      const to = toIsoStartOfDay(addDays(today, 3));
-      const query = new URLSearchParams({ to });
+      // Keep admin/gestionale badge aligned with the Services page "Servizi non assegnati" card.
+      const response = await fetch('/api/services/unassigned-count', { cache: 'no-store' });
+      const payload = (await response.json().catch(() => ({}))) as { count?: number };
 
-      const response = await fetch(`/api/services?${query.toString()}`, { cache: 'no-store' });
-      const payload = (await response.json().catch(() => [])) as unknown;
-
-      if (!response.ok || !Array.isArray(payload)) {
+      if (!response.ok) {
         return;
       }
 
       if (isMounted) {
-        const summary = summarizeWindow(payload as Array<{ startAt?: string; status?: string }>);
+        const count = payload.count ?? 0;
+        // Use overdue channel to keep red emphasis when count is greater than zero.
+        const summary = { total: count, upcoming: 0, overdue: count };
         setServiceAlertCounts({
           ...summary,
-          total: summary.upcoming + summary.overdue
+          total: summary.total
         });
       }
     }
@@ -353,14 +311,24 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
           <div className="topbar-actions">
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE') && (
-              <Link href="/app/fleet" className="logout-button mobile-alert-chip mobile-alert-chip-fleet" style={fleetAlertStyle}>
-                Allarme Fleet: {fleetAlertCounts.total}
+              <Link
+                href="/app/fleet"
+                className={`logout-button mobile-alert-chip mobile-alert-chip-fleet ${fleetHasAlerts ? 'is-alert' : 'is-clear'}`}
+              >
+                <span className="alert-chip-icon" aria-hidden="true">{fleetHasAlerts ? '⚠️' : '✅'}</span>
+                <span className="alert-chip-label">Flotta:</span>
+                <span className="alert-chip-count">{fleetAlertCounts.total}</span>
               </Link>
             )}
 
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER') && (
-              <Link href={serviceAlertHref} className="logout-button mobile-alert-chip mobile-alert-chip-service" style={serviceAlertStyle}>
-                Allarme Service: {serviceAlertCounts.total}
+              <Link
+                href={serviceAlertHref}
+                className={`logout-button mobile-alert-chip mobile-alert-chip-service ${serviceHasAlerts ? 'is-alert' : 'is-clear'}`}
+              >
+                <span className="alert-chip-icon" aria-hidden="true">{serviceHasAlerts ? '⚠️' : '✅'}</span>
+                <span className="alert-chip-label">Servizi:</span>
+                <span className="alert-chip-count">{serviceAlertCounts.total}</span>
               </Link>
             )}
           </div>

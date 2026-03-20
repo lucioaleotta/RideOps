@@ -328,6 +328,71 @@ a:hover {
   cursor: pointer;
 }
 
+.mobile-alert-chip {
+  border: 2px solid #f0c350;
+  border-radius: 22px;
+  background: #fff9e8;
+  color: #8a4300;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+}
+
+.mobile-alert-chip:hover {
+  text-decoration: none;
+  background: #fff4d8;
+}
+
+.alert-chip-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.alert-chip-label {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.alert-chip-count {
+  min-width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: #d87900;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.mobile-alert-chip.is-alert {
+  border-color: #f0c350;
+  background: #fff9e8;
+  color: #8a4300;
+}
+
+.mobile-alert-chip.is-alert .alert-chip-count {
+  background: #d87900;
+  color: #fff;
+}
+
+.mobile-alert-chip.is-clear {
+  border-color: #9ed9bf;
+  background: #f2fbf6;
+  color: #2b6a55;
+}
+
+.mobile-alert-chip.is-clear .alert-chip-count {
+  background: #2da980;
+  color: #fff;
+}
+
 .secondary-button {
   border: 1px solid #c8d7ea;
   border-radius: 10px;
@@ -540,6 +605,19 @@ a:hover {
 }
 
 @media (max-width: 960px) {
+  .content-panel > h1 {
+    font-size: 15px;
+    line-height: 1.15;
+    margin: 0 0 6px;
+  }
+
+  .content-panel > p:first-of-type {
+    font-size: 14px;
+    line-height: 1.25;
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
   .app-shell {
     grid-template-columns: 1fr;
   }
@@ -678,6 +756,30 @@ a:hover {
 }
 
 @media (max-width: 640px) {
+  .content-panel > h1 {
+    font-size: 13px;
+    line-height: 1.15;
+    margin-bottom: 6px;
+  }
+
+  .content-panel > p:first-of-type {
+    font-size: 13px;
+    line-height: 1.2;
+    margin-bottom: 8px;
+  }
+
+  .content-panel h2 {
+    font-size: 18px;
+    line-height: 1.25;
+  }
+
+  .dashboard-card h3,
+  .services-title {
+    font-size: 17px;
+    line-height: 1.25;
+    margin-bottom: 8px;
+  }
+
   .auth-page,
   .home-public,
   .print-page {
@@ -751,24 +853,42 @@ a:hover {
 
   .mobile-alert-chip,
   .mobile-logout-button {
-    border-radius: 14px;
-    padding: 8px 12px;
-    font-size: 14px;
+    border-radius: 16px;
+    padding: 7px 11px;
+    font-size: 13px;
     font-weight: 700;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
-    min-height: 38px;
+    gap: 7px;
+    min-height: 34px;
   }
 
   .mobile-alert-chip.mobile-alert-chip-fleet {
-    background: #e8f1fb;
-    color: #245386;
+    background: #fff9e8;
+    color: #8a4300;
+    border-color: #f0c350;
   }
 
   .mobile-alert-chip.mobile-alert-chip-service {
-    background: #fce9e8;
-    color: #cc3333;
+    background: #fff9e8;
+    color: #8a4300;
+    border-color: #f0c350;
+  }
+
+  .alert-chip-icon {
+    font-size: 15px;
+  }
+
+  .alert-chip-label {
+    font-size: 13px;
+  }
+
+  .alert-chip-count {
+    min-width: 27px;
+    height: 27px;
+    font-size: 14px;
+    padding: 0 6px;
   }
 
   .mobile-logout-button {

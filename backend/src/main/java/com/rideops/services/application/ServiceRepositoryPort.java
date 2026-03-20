@@ -42,5 +42,7 @@ public interface ServiceRepositoryPort {
         Long excludedServiceId
     );
 
+    int findMaxInternalBookingSequenceForYear(String yearSuffix);
+
     void delete(@NonNull RideServiceEntity entity);
 }

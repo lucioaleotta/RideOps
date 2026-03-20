@@ -35,6 +35,7 @@ public class UpdateServiceUseCase {
             command.pickupLocation(),
             command.destination()
         );
+        ServiceValidationSupport.validatePassengersCount(command.passengersCount());
         vehicleAssignmentValidationService.validateForUpdate(serviceId, command);
 
         ServiceValidationSupport.validateRequestedTransition(entity.getStatus(), command.status());
@@ -46,6 +47,12 @@ public class UpdateServiceUseCase {
         entity.setDurationHours(command.durationHours());
         entity.setNotes(cleanNullable(command.notes()));
         entity.setPrice(command.price());
+        entity.setExternalBookingReference(command.externalBookingReference());
+        entity.setClientName(cleanNullable(command.clientName()));
+        entity.setClientPhone(cleanNullable(command.clientPhone()));
+        entity.setClientEmail(cleanNullable(command.clientEmail()));
+        entity.setPassengersCount(command.passengersCount());
+        entity.setItinerary(cleanNullable(command.itinerary()));
         entity.setAssignedVehicleId(command.assignedVehicleId());
         if (command.status() != null) {
             entity.setStatus(command.status());

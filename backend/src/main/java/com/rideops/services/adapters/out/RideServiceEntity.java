@@ -45,6 +45,27 @@ public class RideServiceEntity {
     @Column(precision = 12, scale = 2)
     private BigDecimal price;
 
+    @Column(name = "external_booking_reference")
+    private Long externalBookingReference;
+
+    @Column(name = "internal_booking_reference", length = 32)
+    private String internalBookingReference;
+
+    @Column(name = "client_name", length = 255)
+    private String clientName;
+
+    @Column(name = "client_phone", length = 50)
+    private String clientPhone;
+
+    @Column(name = "client_email", length = 255)
+    private String clientEmail;
+
+    @Column(name = "passengers_count")
+    private Integer passengersCount;
+
+    @Column(columnDefinition = "TEXT")
+    private String itinerary;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ServiceStatus status = ServiceStatus.OPEN;
@@ -139,6 +160,62 @@ public class RideServiceEntity {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+
+    public Long getExternalBookingReference() {
+        return externalBookingReference;
+    }
+
+    public void setExternalBookingReference(Long externalBookingReference) {
+        this.externalBookingReference = externalBookingReference;
+    }
+
+    public String getInternalBookingReference() {
+        return internalBookingReference;
+    }
+
+    public void setInternalBookingReference(String internalBookingReference) {
+        this.internalBookingReference = internalBookingReference;
+    }
+
+    public String getClientName() {
+        return clientName;
+    }
+
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+
+    public String getClientPhone() {
+        return clientPhone;
+    }
+
+    public void setClientPhone(String clientPhone) {
+        this.clientPhone = clientPhone;
+    }
+
+    public String getClientEmail() {
+        return clientEmail;
+    }
+
+    public void setClientEmail(String clientEmail) {
+        this.clientEmail = clientEmail;
+    }
+
+    public Integer getPassengersCount() {
+        return passengersCount;
+    }
+
+    public void setPassengersCount(Integer passengersCount) {
+        this.passengersCount = passengersCount;
+    }
+
+    public String getItinerary() {
+        return itinerary;
+    }
+
+    public void setItinerary(String itinerary) {
+        this.itinerary = itinerary;
     }
 
     public ServiceStatus getStatus() {
