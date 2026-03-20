@@ -85,6 +85,18 @@ function typeLabel(type: PartnerType) {
   return 'Altro';
 }
 
+function valueOrDash(value: string | null | undefined) {
+  if (!value) {
+    return '—';
+  }
+  return value;
+}
+
+function currencyEur(value: number | null | undefined) {
+  const amount = value ?? 0;
+  return `€ ${amount.toFixed(2)}`;
+}
+
 export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementProps) {
   const isAllowed = userRole.toUpperCase() === 'ADMIN' || userRole.toUpperCase() === 'GESTIONALE';
 
@@ -522,10 +534,16 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
       </article>
 
       {selectedPartnerDetail && (
-        <article className="dashboard-card">
-          <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-            <h3>Dettaglio Partner</h3>
-            <div style={{ display: 'flex', gap: 8 }}>
+        <article style={{ display: 'grid', gap: 14 }}>
+          <div className="dashboard-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: '#6f7e8c' }}>←</span>
+                <h3 style={{ margin: 0 }}>{selectedPartnerDetail.ragioneSociale}</h3>
+              </div>
+              <p style={{ margin: '4px 0 0 26px', color: '#6f7e8c' }}>{typeLabel(selectedPartnerDetail.type)}</p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="button" className="logout-button compact-button" onClick={deselectPartner}>Deseleziona</button>
               <button
                 type="button"
@@ -540,40 +558,70 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
                 className="logout-button compact-button"
                 onClick={deactivateSelectedPartner}
                 disabled={selectedPartnerDetail.deleted}
+                style={{ background: '#d32f2f', color: '#fff', borderColor: '#d32f2f' }}
               >
                 Cancella
               </button>
             </div>
           </div>
 
-          <p>
-            <strong>{selectedPartnerDetail.ragioneSociale}</strong> · {typeLabel(selectedPartnerDetail.type)}
-          </p>
+          <section>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>ANAGRAFICA & CONTATTO</h4>
+            <div className="dashboard-card table-scroll" style={{ overflowX: 'auto' }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr><td style={{ fontWeight: 700 }}>Referente</td><td>{valueOrDash(`${selectedPartnerDetail.nomeReferente ?? ''} ${selectedPartnerDetail.cognomeReferente ?? ''}`.trim())}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Telefono</td><td>{valueOrDash(selectedPartnerDetail.telefono)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Email</td><td>{valueOrDash(selectedPartnerDetail.email)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Citta`</td><td>{valueOrDash(selectedPartnerDetail.citta)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Indirizzo</td><td>{valueOrDash(selectedPartnerDetail.indirizzo)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Zona Operativa</td><td>{valueOrDash(selectedPartnerDetail.zonaOperativa)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-          <div className="table-scroll" style={{ overflowX: 'auto' }}>
-            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <tbody>
-                <tr><td><strong>Referente</strong></td><td>{selectedPartnerDetail.nomeReferente ?? '-'} {selectedPartnerDetail.cognomeReferente ?? ''}</td></tr>
-                <tr><td><strong>Telefono</strong></td><td>{selectedPartnerDetail.telefono ?? '-'}</td></tr>
-                <tr><td><strong>Email</strong></td><td>{selectedPartnerDetail.email ?? '-'}</td></tr>
-                <tr><td><strong>Citta`</strong></td><td>{selectedPartnerDetail.citta ?? '-'}</td></tr>
-                <tr><td><strong>Indirizzo</strong></td><td>{selectedPartnerDetail.indirizzo ?? '-'}</td></tr>
-                <tr><td><strong>Zona Operativa</strong></td><td>{selectedPartnerDetail.zonaOperativa ?? '-'}</td></tr>
-                <tr><td><strong>Partita IVA</strong></td><td>{selectedPartnerDetail.partitaIva ?? '-'}</td></tr>
-                <tr><td><strong>Codice Fiscale</strong></td><td>{selectedPartnerDetail.codiceFiscale ?? '-'}</td></tr>
-                <tr><td><strong>IBAN</strong></td><td>{selectedPartnerDetail.iban ?? '-'}</td></tr>
-                <tr><td><strong>Intestatario Conto</strong></td><td>{selectedPartnerDetail.intestatarioConto ?? '-'}</td></tr>
-                <tr><td><strong>Note Pagamenti</strong></td><td>{selectedPartnerDetail.notePagamenti ?? '-'}</td></tr>
-                <tr><td><strong>Saldo Attuale</strong></td><td>{selectedPartnerDetail.saldoAttuale ?? 0}</td></tr>
-                <tr><td><strong>Totale Crediti</strong></td><td>{selectedPartnerDetail.totaleCrediti ?? 0}</td></tr>
-                <tr><td><strong>Totale Debiti</strong></td><td>{selectedPartnerDetail.totaleDebiti ?? 0}</td></tr>
-                <tr><td><strong>Riceve Email</strong></td><td>{selectedPartnerDetail.riceveEmail ? 'Si' : 'No'}</td></tr>
-                <tr><td><strong>Riceve WhatsApp</strong></td><td>{selectedPartnerDetail.riceveWhatsApp ? 'Si' : 'No'}</td></tr>
-                <tr><td><strong>Telefono WhatsApp</strong></td><td>{selectedPartnerDetail.telefonoWhatsApp ?? '-'}</td></tr>
-                <tr><td><strong>Note Operative</strong></td><td>{selectedPartnerDetail.noteOperative ?? '-'}</td></tr>
-              </tbody>
-            </table>
-          </div>
+          <section>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>DATI FISCALI</h4>
+            <div className="dashboard-card table-scroll" style={{ overflowX: 'auto' }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr><td style={{ fontWeight: 700 }}>Partita IVA</td><td>{valueOrDash(selectedPartnerDetail.partitaIva)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Codice Fiscale</td><td>{valueOrDash(selectedPartnerDetail.codiceFiscale)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>IBAN</td><td>{valueOrDash(selectedPartnerDetail.iban)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Intestatario Conto</td><td>{valueOrDash(selectedPartnerDetail.intestatarioConto)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>CONTABILITA`</h4>
+            <div className="dashboard-card table-scroll" style={{ overflowX: 'auto' }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr><td style={{ fontWeight: 700 }}>Note Pagamenti</td><td>{valueOrDash(selectedPartnerDetail.notePagamenti)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Saldo Attuale</td><td>{currencyEur(selectedPartnerDetail.saldoAttuale)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Totale Crediti</td><td>{currencyEur(selectedPartnerDetail.totaleCrediti)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Totale Debiti</td><td>{currencyEur(selectedPartnerDetail.totaleDebiti)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>PREFERENZE & NOTE</h4>
+            <div className="dashboard-card table-scroll" style={{ overflowX: 'auto' }}>
+              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr><td style={{ fontWeight: 700 }}>Riceve Email</td><td>{selectedPartnerDetail.riceveEmail ? 'Si' : 'No'}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Riceve WhatsApp</td><td>{selectedPartnerDetail.riceveWhatsApp ? 'Si' : 'No'}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Telefono WhatsApp</td><td>{valueOrDash(selectedPartnerDetail.telefonoWhatsApp)}</td></tr>
+                  <tr><td style={{ fontWeight: 700 }}>Note Operative</td><td>{valueOrDash(selectedPartnerDetail.noteOperative)}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
 
           {isEditMode && (
             <form className="form-grid" onSubmit={updatePartner} style={{ marginTop: 10 }}>
