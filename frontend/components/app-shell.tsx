@@ -116,50 +116,6 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
     };
   }, [normalizedRole]);
 
-  const fleetAlertStyle = useMemo(() => {
-    if (fleetAlertCounts.overdue > 0) {
-      return {
-        display: 'inline-block',
-        background: '#fdecea',
-        color: '#d32f2f',
-        fontWeight: 700
-      } as const;
-    }
-
-    if (fleetAlertCounts.upcoming > 0) {
-      return {
-        display: 'inline-block',
-        background: '#fff3e0',
-        color: '#ef6c00',
-        fontWeight: 700
-      } as const;
-    }
-
-    return { display: 'inline-block' } as const;
-  }, [fleetAlertCounts.overdue, fleetAlertCounts.upcoming]);
-
-  const serviceAlertStyle = useMemo(() => {
-    if (serviceAlertCounts.overdue > 0) {
-      return {
-        display: 'inline-block',
-        background: '#fdecea',
-        color: '#d32f2f',
-        fontWeight: 700
-      } as const;
-    }
-
-    if (serviceAlertCounts.upcoming > 0) {
-      return {
-        display: 'inline-block',
-        background: '#fff3e0',
-        color: '#ef6c00',
-        fontWeight: 700
-      } as const;
-    }
-
-    return { display: 'inline-block' } as const;
-  }, [serviceAlertCounts.overdue, serviceAlertCounts.upcoming]);
-
   const serviceAlertHref = normalizedRole === 'DRIVER' ? '/app/driver' : '/app/services?unassigned=1';
 
   useEffect(() => {
@@ -353,14 +309,18 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
           <div className="topbar-actions">
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE') && (
-              <Link href="/app/fleet" className="logout-button mobile-alert-chip mobile-alert-chip-fleet" style={fleetAlertStyle}>
-                <span aria-hidden="true">🔔</span> Flotta: {fleetAlertCounts.total}
+              <Link href="/app/fleet" className="logout-button mobile-alert-chip mobile-alert-chip-fleet">
+                <span className="alert-chip-icon" aria-hidden="true">⚠️</span>
+                <span className="alert-chip-label">Flotta:</span>
+                <span className="alert-chip-count">{fleetAlertCounts.total}</span>
               </Link>
             )}
 
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER') && (
-              <Link href={serviceAlertHref} className="logout-button mobile-alert-chip mobile-alert-chip-service" style={serviceAlertStyle}>
-                <span aria-hidden="true">🔔</span> Servizi: {serviceAlertCounts.total}
+              <Link href={serviceAlertHref} className="logout-button mobile-alert-chip mobile-alert-chip-service">
+                <span className="alert-chip-icon" aria-hidden="true">⚠️</span>
+                <span className="alert-chip-label">Servizi:</span>
+                <span className="alert-chip-count">{serviceAlertCounts.total}</span>
               </Link>
             )}
           </div>
