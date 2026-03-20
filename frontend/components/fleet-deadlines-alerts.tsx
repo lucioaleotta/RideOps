@@ -223,11 +223,20 @@ export function FleetDeadlinesAlerts({
         onClick={() => setIsOpen((prev) => !prev)}
         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
       >
-        <h3 style={{ margin: 0 }}>{title}</h3>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>{orderedItems.length}</span>
-          <span style={{ fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
+          <h3 style={{ margin: 0, color: orderedItems.length > 0 ? '#d32f2f' : 'inherit' }}>{title}</h3>
+          <span style={{
+            fontWeight: 700,
+            fontSize: 14,
+            color: orderedItems.length > 0 ? '#ffffff' : '#555',
+            background: orderedItems.length > 0 ? '#d32f2f' : '#e0e0e0',
+            borderRadius: 999,
+            padding: '1px 8px',
+            minWidth: 20,
+            textAlign: 'center'
+          }}>{orderedItems.length}</span>
         </div>
+        <span style={{ fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
       </button>
 
       {isOpen && (
