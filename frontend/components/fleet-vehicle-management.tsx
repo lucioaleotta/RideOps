@@ -208,9 +208,10 @@ function sanitizeStatusForType(status: DeadlineStatus, type: DeadlineType): Dead
 
 type FleetVehicleManagementProps = {
   userRole?: string;
+  initialVehicleId?: number;
 };
 
-export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleManagementProps) {
+export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId }: FleetVehicleManagementProps) {
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | ''>('');
   const [detail, setDetail] = useState<VehicleDetail | null>(null);
@@ -318,6 +319,16 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
       setLoading(false);
     }
   }, [selectedVehicleId]);
+
+  useEffect(() => {
+    if (!initialVehicleId || selectedVehicleId) {
+      return;
+    }
+
+    if (vehicles.some((item) => item.id === initialVehicleId)) {
+      setSelectedVehicleId(initialVehicleId);
+    }
+  }, [initialVehicleId, selectedVehicleId, vehicles]);
 
   const occurrences = detail?.occurrences ?? [];
   const plans = detail?.plans ?? [];
@@ -659,7 +670,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN' }: FleetVehicleMan
   }
 
   return (
-    <section className="responsive-panel fleet-management-panel" style={{ display: 'grid', gap: 16 }}>
+    <section id="scadenze" className="responsive-panel fleet-management-panel" style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
         <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
           <h2>Gestione Veicoli e Scadenze</h2>

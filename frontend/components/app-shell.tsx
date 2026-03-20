@@ -62,7 +62,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
       const detailResponses = await Promise.all(
         vehicleIds.map((id) =>
-          fetch(`/api/fleet/vehicles/${id}/detail?withinDays=7`, { cache: 'no-store' })
+          fetch(`/api/fleet/vehicles/${id}/detail?withinDays=30`, { cache: 'no-store' })
             .then(async (response) => {
               if (!response.ok) {
                 return null;

@@ -6,9 +6,10 @@ import { useEffect, useMemo, useState } from 'react';
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
 type DeadlineStatus = 'DA_ESEGUIRE' | 'IN_SCADENZA' | 'SCADUTA' | 'PAGATA' | 'ESEGUITA' | 'ANNULLATA';
 
-type DeadlineItem = {
+type OccurrenceItem = {
   id: number;
   vehicleId: number;
+  planId: number | null;
   type: DeadlineType;
   title: string;
   description: string | null;
@@ -30,6 +31,15 @@ type VehicleItem = {
   plate: string;
   type: VehicleType;
 };
+
+type VehicleDetail = {
+  vehicle: VehicleItem;
+  upcomingCount: number;
+  overdueCount: number;
+  occurrences: OccurrenceItem[];
+};
+
+const OPEN_STATUSES: DeadlineStatus[] = ['DA_ESEGUIRE', 'IN_SCADENZA', 'SCADUTA'];
 
 type FleetDeadlinesAlertsProps = {
   withinDays?: number;
@@ -87,7 +97,7 @@ export function FleetDeadlinesAlerts({
   title = 'Allarmi scadenze veicoli',
   suppressUnauthorizedError = false
 }: FleetDeadlinesAlertsProps) {
-  const [items, setItems] = useState<DeadlineItem[]>([]);
+  const [items, setItems] = useState<OccurrenceItem[]>([]);
   const [vehiclesById, setVehiclesById] = useState<Record<number, VehicleItem>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,51 +107,96 @@ export function FleetDeadlinesAlerts({
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/fleet/deadlines/upcoming?withinDays=${withinDays}`, { cache: 'no-store' });
-      const payload = (await response.json().catch(() => [])) as DeadlineItem[] | { message?: string };
+      // Step 1: carica la lista veicoli (stessa logica della topbar)
+      const vehiclesResponse = await fetch('/api/fleet/vehicles', { cache: 'no-store' });
+      const vehiclesPayload = (await vehiclesResponse.json().catch(() => [])) as VehicleItem[] | { message?: string };
 
-      if (!response.ok) {
-        if (suppressUnauthorizedError && (response.status === 401 || response.status === 403)) {
+      if (!vehiclesResponse.ok) {
+        const isUnauthorized = vehiclesResponse.status === 401 || vehiclesResponse.status === 403;
+        if (suppressUnauthorizedError && isUnauthorized) {
           setItems([]);
           setError(null);
           setLoading(false);
           return;
         }
-
-        setError((payload as { message?: string }).message ?? 'Errore caricamento scadenze');
+        setError((vehiclesPayload as { message?: string }).message ?? 'Errore caricamento veicoli');
         setItems([]);
         setLoading(false);
         return;
       }
 
-      setItems(payload as DeadlineItem[]);
+      const vehicles = vehiclesPayload as VehicleItem[];
+
+      const mapped = vehicles.reduce<Record<number, VehicleItem>>((acc, vehicle) => {
+        acc[vehicle.id] = vehicle;
+        return acc;
+      }, {});
+      setVehiclesById(mapped);
+
+      if (vehicles.length === 0) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: per ogni veicolo chiama detail (stessa fonte della topbar)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const cutoffMs = today.getTime() + withinDays * 24 * 60 * 60 * 1000;
+
+      const detailResponses = await Promise.all(
+        vehicles.map((vehicle) =>
+          fetch(`/api/fleet/vehicles/${vehicle.id}/detail?withinDays=${withinDays}`, { cache: 'no-store' })
+            .then(async (response) => {
+              if (!response.ok) return null;
+              return (await response.json().catch(() => null)) as VehicleDetail | null;
+            })
+            .catch(() => null)
+        )
+      );
+
+      // Step 3: raccogli occorrenze aperte (imminenti + scadute)
+      const allOpen: OccurrenceItem[] = [];
+      for (const detail of detailResponses) {
+        if (!detail) continue;
+        for (const occ of detail.occurrences) {
+          if (!OPEN_STATUSES.includes(occ.status)) continue;
+          const due = new Date(`${occ.dueDate.slice(0, 10)}T00:00:00`);
+          // scadute (passate) oppure imminenti entro la finestra
+          if (due.getTime() <= cutoffMs) {
+            allOpen.push(occ);
+          }
+        }
+      }
+
+      setItems(allOpen);
       setLoading(false);
     }
 
     loadAlerts();
   }, [suppressUnauthorizedError, withinDays]);
 
-  useEffect(() => {
-    async function loadVehicles() {
-      const response = await fetch('/api/fleet/vehicles', { cache: 'no-store' });
-      const payload = (await response.json().catch(() => [])) as VehicleItem[];
-      if (!response.ok || !Array.isArray(payload)) {
-        return;
-      }
-
-      const mapped = payload.reduce<Record<number, VehicleItem>>((acc, vehicle) => {
-        acc[vehicle.id] = vehicle;
-        return acc;
-      }, {});
-      setVehiclesById(mapped);
-    }
-
-    loadVehicles();
-  }, []);
-
   const orderedItems = useMemo(
     () => [...items].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
     [items]
+  );
+
+  const imminentVehicleIds = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const unique = new Set<number>();
+    items.forEach((item) => {
+      const due = new Date(`${item.dueDate.slice(0, 10)}T00:00:00`);
+      if (due >= today) {
+        unique.add(item.vehicleId);
+      }
+    });
+    return [...unique];
+  }, [items]);
+
+  const imminentVehicles = useMemo(
+    () => imminentVehicleIds.map((id) => vehiclesById[id]).filter((v): v is VehicleItem => Boolean(v)),
+    [imminentVehicleIds, vehiclesById]
   );
 
   function vehicleTypeLabel(type: VehicleType) {
@@ -172,9 +227,26 @@ export function FleetDeadlinesAlerts({
       ) : error ? (
         <p className="error-text">{error}</p>
       ) : orderedItems.length === 0 ? (
-        <p>Nessuna scadenza entro {withinDays} giorni.</p>
+        <p>Nessuna scadenza aperta.</p>
       ) : (
         <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+          {imminentVehicles.length > 0 && (
+            <div>
+              <strong>Targhe con scadenze imminenti ({withinDays} gg):</strong>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                {imminentVehicles.map((vehicle) => (
+                  <Link
+                    key={vehicle.id}
+                    href={`/app/fleet?vehicleId=${vehicle.id}#scadenze`}
+                    style={{ padding: '4px 10px', borderRadius: 999, border: '1px solid #cfdff2', background: '#f6faff' }}
+                  >
+                    {vehicle.plate}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
           {orderedItems.map((deadline) => {
             const days = daysToDue(deadline.dueDate);
             const vehicle = vehiclesById[deadline.vehicleId];
@@ -186,7 +258,7 @@ export function FleetDeadlinesAlerts({
                 </div>
                 <p style={{ margin: '6px 0 0 0' }}>
                   {vehicle
-                    ? `Targa ${vehicle.plate} · Modello ${vehicleTypeLabel(vehicle.type)} · Scadenza ${dateOnly(deadline.dueDate)}`
+                    ? `Targa ${vehicle.plate} · ${vehicleTypeLabel(vehicle.type)} · Scadenza ${dateOnly(deadline.dueDate)}`
                     : `Veicolo #${deadline.vehicleId} · Scadenza ${dateOnly(deadline.dueDate)}`}
                 </p>
                 <p style={{ margin: '4px 0 0 0' }}>Stato: {deadline.status}</p>

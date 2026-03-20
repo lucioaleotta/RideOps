@@ -9,9 +9,17 @@ type MePayload = {
   role: string;
 };
 
-export default async function FleetPage() {
+type FleetPageProps = {
+  searchParams?: {
+    vehicleId?: string;
+  };
+};
+
+export default async function FleetPage({ searchParams }: FleetPageProps) {
   const token = cookies().get('access_token')?.value;
   const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
+  const requestedVehicleId = Number(searchParams?.vehicleId ?? '');
+  const initialVehicleId = Number.isInteger(requestedVehicleId) && requestedVehicleId > 0 ? requestedVehicleId : undefined;
 
   let user: MePayload | null = null;
 
@@ -31,7 +39,7 @@ export default async function FleetPage() {
       <h1>Gestione Flotta</h1>
       <p>Gestione completa veicolo: anagrafica, scadenze/manutenzioni e piani ricorrenti.</p>
       <FleetDeadlinesAlerts />
-      <FleetVehicleManagement userRole={user?.role ?? 'UNKNOWN'} />
+      <FleetVehicleManagement userRole={user?.role ?? 'UNKNOWN'} initialVehicleId={initialVehicleId} />
     </main>
   );
 }
