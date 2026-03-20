@@ -11,6 +11,13 @@ type ServiceDetail = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
+  externalBookingReference: number | null;
+  internalBookingReference: string | null;
+  clientName: string | null;
+  clientPhone: string | null;
+  clientEmail: string | null;
+  passengersCount: number | null;
+  itinerary: string | null;
   status: 'OPEN' | 'ASSIGNED' | 'CLOSED';
 };
 
@@ -77,6 +84,34 @@ export default async function ServicePrintPage({ params }: { params: { id: strin
           <div>
             <strong>Prezzo</strong>
             <p>{formatCurrencyEUR(service.price)}</p>
+          </div>
+          <div>
+            <strong>Rif. prenotazione esterno</strong>
+            <p>{service.externalBookingReference ?? '-'}</p>
+          </div>
+          <div>
+            <strong>Rif. prenotazione interno</strong>
+            <p>{service.internalBookingReference ?? '-'}</p>
+          </div>
+          <div>
+            <strong>Nome cliente</strong>
+            <p>{service.clientName ?? '-'}</p>
+          </div>
+          <div>
+            <strong>Telefono cliente</strong>
+            <p>{service.clientPhone ?? '-'}</p>
+          </div>
+          <div>
+            <strong>Email cliente</strong>
+            <p>{service.clientEmail ?? '-'}</p>
+          </div>
+          <div>
+            <strong>Numero passeggeri</strong>
+            <p>{service.passengersCount ?? '-'}</p>
+          </div>
+          <div>
+            <strong>Itinerario</strong>
+            <p>{service.itinerary ?? '-'}</p>
           </div>
         </section>
 

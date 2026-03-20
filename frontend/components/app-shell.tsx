@@ -159,7 +159,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
     return { display: 'inline-block' } as const;
   }, [serviceAlertCounts.overdue, serviceAlertCounts.upcoming]);
 
-  const serviceAlertHref = normalizedRole === 'DRIVER' ? '/app/driver' : '/app/services';
+  const serviceAlertHref = normalizedRole === 'DRIVER' ? '/app/driver' : '/app/services?unassigned=1';
 
   useEffect(() => {
     const handleResize = () => {
@@ -268,22 +268,21 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
         return;
       }
 
-      const today = new Date();
-      const to = toIsoStartOfDay(addDays(today, 3));
-      const query = new URLSearchParams({ to });
+      // Keep admin/gestionale badge aligned with the Services page "Servizi non assegnati" card.
+      const response = await fetch('/api/services/unassigned-count', { cache: 'no-store' });
+      const payload = (await response.json().catch(() => ({}))) as { count?: number };
 
-      const response = await fetch(`/api/services?${query.toString()}`, { cache: 'no-store' });
-      const payload = (await response.json().catch(() => [])) as unknown;
-
-      if (!response.ok || !Array.isArray(payload)) {
+      if (!response.ok) {
         return;
       }
 
       if (isMounted) {
-        const summary = summarizeWindow(payload as Array<{ startAt?: string; status?: string }>);
+        const count = payload.count ?? 0;
+        // Use overdue channel to keep red emphasis when count is greater than zero.
+        const summary = { total: count, upcoming: 0, overdue: count };
         setServiceAlertCounts({
           ...summary,
-          total: summary.upcoming + summary.overdue
+          total: summary.total
         });
       }
     }

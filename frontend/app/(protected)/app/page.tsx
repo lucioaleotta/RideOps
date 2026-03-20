@@ -8,7 +8,7 @@ export default function AppHomePage() {
 
   return (
     <main>
-      <h1>Calendar Dashboard</h1>
+      <h1>Agenda Servizi</h1>
       <p>
         {isDriver
           ? 'Vista operativa dei servizi assegnati al driver loggato, con navigazione mese / settimana / giorno.'

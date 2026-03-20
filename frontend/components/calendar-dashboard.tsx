@@ -17,6 +17,13 @@ type ServiceItem = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
+  externalBookingReference: number | null;
+  internalBookingReference: string | null;
+  clientName: string | null;
+  clientPhone: string | null;
+  clientEmail: string | null;
+  passengersCount: number | null;
+  itinerary: string | null;
   status: ServiceStatus;
   assignedDriverId: number | null;
   assignedByUserId: number | null;
@@ -582,6 +589,13 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                   )}
                 </div>
                 <div><strong>Prezzo:</strong> {formatCurrencyEUR(selectedService.price)}</div>
+                <div><strong>Rif. int.:</strong> {selectedService.internalBookingReference ?? '-'}</div>
+                <div><strong>Rif. est.:</strong> {selectedService.externalBookingReference ?? '-'}</div>
+                <div><strong>Cliente:</strong> {selectedService.clientName ?? '-'}</div>
+                <div><strong>Tel.:</strong> {selectedService.clientPhone ?? '-'}</div>
+                <div><strong>Email:</strong> {selectedService.clientEmail ?? '-'}</div>
+                <div><strong>Passeggeri:</strong> {selectedService.passengersCount ?? '-'}</div>
+                <div><strong>Itinerario:</strong> {selectedService.itinerary ?? '-'}</div>
                 <div className="table-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <Link className="logout-button" href={`/services/${selectedService.id}/print`} target="_blank">Apri dettaglio stampa</Link>
                   {driverMode && canDriverCloseSelectedService && (

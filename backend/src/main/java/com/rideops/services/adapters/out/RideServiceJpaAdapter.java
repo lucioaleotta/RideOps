@@ -115,6 +115,11 @@ public class RideServiceJpaAdapter implements ServiceRepositoryPort {
     }
 
     @Override
+    public int findMaxInternalBookingSequenceForYear(String yearSuffix) {
+        return rideServiceRepository.findMaxInternalBookingSequenceForYear(yearSuffix);
+    }
+
+    @Override
     public void delete(@NonNull RideServiceEntity entity) {
         rideServiceRepository.delete(entity);
     }

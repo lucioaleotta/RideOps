@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-export function GestionaleUnassignedBadge() {
+export function UnassignedServicesBadge() {
   const [count, setCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
