@@ -97,6 +97,33 @@ function currencyEur(value: number | null | undefined) {
   return `€ ${amount.toFixed(2)}`;
 }
 
+type DetailRow = {
+  label: string;
+  value: string;
+};
+
+function DetailRows({ rows }: { rows: DetailRow[] }) {
+  return (
+    <div style={{ display: 'grid' }}>
+      {rows.map((row, index) => (
+        <div
+          key={`${row.label}-${index}`}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '180px minmax(0, 1fr)',
+            columnGap: 14,
+            padding: '10px 0',
+            borderBottom: index === rows.length - 1 ? 'none' : '1px solid #e6edf5'
+          }}
+        >
+          <div style={{ fontWeight: 700, color: '#2b4b6f' }}>{row.label}</div>
+          <div style={{ color: '#455b73' }}>{row.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementProps) {
   const isAllowed = userRole.toUpperCase() === 'ADMIN' || userRole.toUpperCase() === 'GESTIONALE';
 
@@ -567,59 +594,59 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
 
           <section>
             <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>ANAGRAFICA & CONTATTO</h4>
-            <div className="dashboard-card table-scroll" style={{ overflowX: 'auto' }}>
-              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <tbody>
-                  <tr><td style={{ fontWeight: 700 }}>Referente</td><td>{valueOrDash(`${selectedPartnerDetail.nomeReferente ?? ''} ${selectedPartnerDetail.cognomeReferente ?? ''}`.trim())}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Telefono</td><td>{valueOrDash(selectedPartnerDetail.telefono)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Email</td><td>{valueOrDash(selectedPartnerDetail.email)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Citta`</td><td>{valueOrDash(selectedPartnerDetail.citta)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Indirizzo</td><td>{valueOrDash(selectedPartnerDetail.indirizzo)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Zona Operativa</td><td>{valueOrDash(selectedPartnerDetail.zonaOperativa)}</td></tr>
-                </tbody>
-              </table>
+            <div className="dashboard-card" style={{ paddingTop: 8, paddingBottom: 8 }}>
+              <DetailRows
+                rows={[
+                  { label: 'Referente', value: valueOrDash(`${selectedPartnerDetail.nomeReferente ?? ''} ${selectedPartnerDetail.cognomeReferente ?? ''}`.trim()) },
+                  { label: 'Telefono', value: valueOrDash(selectedPartnerDetail.telefono) },
+                  { label: 'Email', value: valueOrDash(selectedPartnerDetail.email) },
+                  { label: 'Citta`', value: valueOrDash(selectedPartnerDetail.citta) },
+                  { label: 'Indirizzo', value: valueOrDash(selectedPartnerDetail.indirizzo) },
+                  { label: 'Zona Operativa', value: valueOrDash(selectedPartnerDetail.zonaOperativa) }
+                ]}
+              />
             </div>
           </section>
 
           <section>
             <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>DATI FISCALI</h4>
-            <div className="dashboard-card table-scroll" style={{ overflowX: 'auto' }}>
-              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <tbody>
-                  <tr><td style={{ fontWeight: 700 }}>Partita IVA</td><td>{valueOrDash(selectedPartnerDetail.partitaIva)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Codice Fiscale</td><td>{valueOrDash(selectedPartnerDetail.codiceFiscale)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>IBAN</td><td>{valueOrDash(selectedPartnerDetail.iban)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Intestatario Conto</td><td>{valueOrDash(selectedPartnerDetail.intestatarioConto)}</td></tr>
-                </tbody>
-              </table>
+            <div className="dashboard-card" style={{ paddingTop: 8, paddingBottom: 8 }}>
+              <DetailRows
+                rows={[
+                  { label: 'Partita IVA', value: valueOrDash(selectedPartnerDetail.partitaIva) },
+                  { label: 'Codice Fiscale', value: valueOrDash(selectedPartnerDetail.codiceFiscale) },
+                  { label: 'IBAN', value: valueOrDash(selectedPartnerDetail.iban) },
+                  { label: 'Intestatario Conto', value: valueOrDash(selectedPartnerDetail.intestatarioConto) }
+                ]}
+              />
             </div>
           </section>
 
           <section>
             <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>CONTABILITA`</h4>
-            <div className="dashboard-card table-scroll" style={{ overflowX: 'auto' }}>
-              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <tbody>
-                  <tr><td style={{ fontWeight: 700 }}>Note Pagamenti</td><td>{valueOrDash(selectedPartnerDetail.notePagamenti)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Saldo Attuale</td><td>{currencyEur(selectedPartnerDetail.saldoAttuale)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Totale Crediti</td><td>{currencyEur(selectedPartnerDetail.totaleCrediti)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Totale Debiti</td><td>{currencyEur(selectedPartnerDetail.totaleDebiti)}</td></tr>
-                </tbody>
-              </table>
+            <div className="dashboard-card" style={{ paddingTop: 8, paddingBottom: 8 }}>
+              <DetailRows
+                rows={[
+                  { label: 'Note Pagamenti', value: valueOrDash(selectedPartnerDetail.notePagamenti) },
+                  { label: 'Saldo Attuale', value: currencyEur(selectedPartnerDetail.saldoAttuale) },
+                  { label: 'Totale Crediti', value: currencyEur(selectedPartnerDetail.totaleCrediti) },
+                  { label: 'Totale Debiti', value: currencyEur(selectedPartnerDetail.totaleDebiti) }
+                ]}
+              />
             </div>
           </section>
 
           <section>
             <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>PREFERENZE & NOTE</h4>
-            <div className="dashboard-card table-scroll" style={{ overflowX: 'auto' }}>
-              <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <tbody>
-                  <tr><td style={{ fontWeight: 700 }}>Riceve Email</td><td>{selectedPartnerDetail.riceveEmail ? 'Si' : 'No'}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Riceve WhatsApp</td><td>{selectedPartnerDetail.riceveWhatsApp ? 'Si' : 'No'}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Telefono WhatsApp</td><td>{valueOrDash(selectedPartnerDetail.telefonoWhatsApp)}</td></tr>
-                  <tr><td style={{ fontWeight: 700 }}>Note Operative</td><td>{valueOrDash(selectedPartnerDetail.noteOperative)}</td></tr>
-                </tbody>
-              </table>
+            <div className="dashboard-card" style={{ paddingTop: 8, paddingBottom: 8 }}>
+              <DetailRows
+                rows={[
+                  { label: 'Riceve Email', value: selectedPartnerDetail.riceveEmail ? 'Si' : 'No' },
+                  { label: 'Riceve WhatsApp', value: selectedPartnerDetail.riceveWhatsApp ? 'Si' : 'No' },
+                  { label: 'Telefono WhatsApp', value: valueOrDash(selectedPartnerDetail.telefonoWhatsApp) },
+                  { label: 'Note Operative', value: valueOrDash(selectedPartnerDetail.noteOperative) }
+                ]}
+              />
             </div>
           </section>
 
