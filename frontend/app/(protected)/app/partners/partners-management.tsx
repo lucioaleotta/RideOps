@@ -565,10 +565,9 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
           <div className="dashboard-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ color: '#6f7e8c' }}>←</span>
                 <h3 style={{ margin: 0 }}>{selectedPartnerDetail.ragioneSociale}</h3>
               </div>
-              <p style={{ margin: '4px 0 0 26px', color: '#6f7e8c' }}>{typeLabel(selectedPartnerDetail.type)}</p>
+              <p style={{ margin: '4px 0 0 0', color: '#6f7e8c' }}>{typeLabel(selectedPartnerDetail.type)}</p>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="button" className="logout-button compact-button" onClick={deselectPartner}>Deseleziona</button>
