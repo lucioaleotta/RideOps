@@ -97,6 +97,7 @@ export function FleetDeadlinesAlerts({
   title = 'Allarmi scadenze veicoli',
   suppressUnauthorizedError = false
 }: FleetDeadlinesAlertsProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [items, setItems] = useState<OccurrenceItem[]>([]);
   const [vehiclesById, setVehiclesById] = useState<Record<number, VehicleItem>>({});
   const [loading, setLoading] = useState(true);
@@ -217,57 +218,68 @@ export function FleetDeadlinesAlerts({
 
   return (
     <article className="dashboard-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <h3>{title}</h3>
-        <span>{orderedItems.length}</span>
-      </div>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
+      >
+        <h3 style={{ margin: 0 }}>{title}</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>{orderedItems.length}</span>
+          <span style={{ fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
+        </div>
+      </button>
 
-      {loading ? (
-        <p>Caricamento allarmi...</p>
-      ) : error ? (
-        <p className="error-text">{error}</p>
-      ) : orderedItems.length === 0 ? (
-        <p>Nessuna scadenza aperta.</p>
-      ) : (
-        <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-          {imminentVehicles.length > 0 && (
-            <div>
-              <strong>Targhe con scadenze imminenti ({withinDays} gg):</strong>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
-                {imminentVehicles.map((vehicle) => (
-                  <Link
-                    key={vehicle.id}
-                    href={`/app/fleet?vehicleId=${vehicle.id}#scadenze`}
-                    style={{ padding: '4px 10px', borderRadius: 999, border: '1px solid #cfdff2', background: '#f6faff' }}
-                  >
-                    {vehicle.plate}
-                  </Link>
-                ))}
-              </div>
+      {isOpen && (
+        <>
+          {loading ? (
+            <p>Caricamento allarmi...</p>
+          ) : error ? (
+            <p className="error-text">{error}</p>
+          ) : orderedItems.length === 0 ? (
+            <p>Nessuna scadenza aperta.</p>
+          ) : (
+            <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+              {imminentVehicles.length > 0 && (
+                <div>
+                  <strong>Targhe con scadenze imminenti ({withinDays} gg):</strong>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                    {imminentVehicles.map((vehicle) => (
+                      <Link
+                        key={vehicle.id}
+                        href={`/app/fleet?vehicleId=${vehicle.id}#scadenze`}
+                        style={{ padding: '4px 10px', borderRadius: 999, border: '1px solid #cfdff2', background: '#f6faff' }}
+                      >
+                        {vehicle.plate}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {orderedItems.map((deadline) => {
+                const days = daysToDue(deadline.dueDate);
+                const vehicle = vehiclesById[deadline.vehicleId];
+                return (
+                  <div key={deadline.id} style={{ border: '1px solid #dce8f5', borderRadius: 10, padding: 10, background: '#ffffff' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                      <strong>{deadline.title || typeLabel(deadline.type)}</strong>
+                      <span>{urgencyLabel(days)}</span>
+                    </div>
+                    <p style={{ margin: '6px 0 0 0' }}>
+                      {vehicle
+                        ? `Targa ${vehicle.plate} · ${vehicleTypeLabel(vehicle.type)} · Scadenza ${dateOnly(deadline.dueDate)}`
+                        : `Veicolo #${deadline.vehicleId} · Scadenza ${dateOnly(deadline.dueDate)}`}
+                    </p>
+                    <p style={{ margin: '4px 0 0 0' }}>Stato: {deadline.status}</p>
+                    {deadline.notes && <p style={{ margin: '4px 0 0 0' }}>Note: {deadline.notes}</p>}
+                  </div>
+                );
+              })}
+              <Link href="/app/fleet#scadenze">Apri scadenze Fleet</Link>
             </div>
           )}
-
-          {orderedItems.map((deadline) => {
-            const days = daysToDue(deadline.dueDate);
-            const vehicle = vehiclesById[deadline.vehicleId];
-            return (
-              <div key={deadline.id} style={{ border: '1px solid #dce8f5', borderRadius: 10, padding: 10, background: '#ffffff' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-                  <strong>{deadline.title || typeLabel(deadline.type)}</strong>
-                  <span>{urgencyLabel(days)}</span>
-                </div>
-                <p style={{ margin: '6px 0 0 0' }}>
-                  {vehicle
-                    ? `Targa ${vehicle.plate} · ${vehicleTypeLabel(vehicle.type)} · Scadenza ${dateOnly(deadline.dueDate)}`
-                    : `Veicolo #${deadline.vehicleId} · Scadenza ${dateOnly(deadline.dueDate)}`}
-                </p>
-                <p style={{ margin: '4px 0 0 0' }}>Stato: {deadline.status}</p>
-                {deadline.notes && <p style={{ margin: '4px 0 0 0' }}>Note: {deadline.notes}</p>}
-              </div>
-            );
-          })}
-          <Link href="/app/fleet#scadenze">Apri scadenze Fleet</Link>
-        </div>
+        </>
       )}
     </article>
   );
