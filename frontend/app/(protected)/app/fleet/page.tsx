@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { FleetDeadlinesAlerts } from '../../../../components/fleet-deadlines-alerts';
 import { FleetVehicleManagement } from '../../../../components/fleet-vehicle-management';
 
 type MePayload = {
@@ -29,6 +30,7 @@ export default async function FleetPage() {
     <main>
       <h1>Fleet</h1>
       <p>Gestione completa veicolo: anagrafica, scadenze/manutenzioni e piani ricorrenti.</p>
+      <FleetDeadlinesAlerts />
       <FleetVehicleManagement userRole={user?.role ?? 'UNKNOWN'} />
     </main>
   );
