@@ -28,7 +28,7 @@ export default async function FleetPage() {
 
   return (
     <main>
-      <h1>Fleet</h1>
+      <h1>Gestione Flotta</h1>
       <p>Gestione completa veicolo: anagrafica, scadenze/manutenzioni e piani ricorrenti.</p>
       <FleetDeadlinesAlerts />
       <FleetVehicleManagement userRole={user?.role ?? 'UNKNOWN'} />
