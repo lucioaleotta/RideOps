@@ -354,13 +354,13 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
           <div className="topbar-actions">
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE') && (
               <Link href="/app/fleet" className="logout-button mobile-alert-chip mobile-alert-chip-fleet" style={fleetAlertStyle}>
-                Allarme Fleet: {fleetAlertCounts.total}
+                <span aria-hidden="true">🔔</span> Flotta: {fleetAlertCounts.total}
               </Link>
             )}
 
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER') && (
               <Link href={serviceAlertHref} className="logout-button mobile-alert-chip mobile-alert-chip-service" style={serviceAlertStyle}>
-                Allarme Service: {serviceAlertCounts.total}
+                <span aria-hidden="true">🔔</span> Servizi: {serviceAlertCounts.total}
               </Link>
             )}
           </div>
