@@ -1,0 +1,671 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+
+type PartnerType = 'AGENZIA' | 'NCC' | 'ALTRO';
+
+type PartnerItem = {
+  id: number;
+  type: PartnerType;
+  ragioneSociale: string;
+  nomeReferente: string | null;
+  cognomeReferente: string | null;
+  telefono: string | null;
+  email: string | null;
+  citta: string | null;
+  indirizzo: string | null;
+  zonaOperativa: string | null;
+  partitaIva: string | null;
+  codiceFiscale: string | null;
+  iban: string | null;
+  intestatarioConto: string | null;
+  notePagamenti: string | null;
+  saldoAttuale: number;
+  totaleCrediti: number;
+  totaleDebiti: number;
+  riceveEmail: boolean;
+  riceveWhatsApp: boolean;
+  telefonoWhatsApp: string | null;
+  noteOperative: string | null;
+  deleted: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PartnerFormState = {
+  type: PartnerType;
+  ragioneSociale: string;
+  nomeReferente: string;
+  cognomeReferente: string;
+  telefono: string;
+  email: string;
+  citta: string;
+  indirizzo: string;
+  zonaOperativa: string;
+  partitaIva: string;
+  codiceFiscale: string;
+  iban: string;
+  intestatarioConto: string;
+  notePagamenti: string;
+  riceveEmail: boolean;
+  riceveWhatsApp: boolean;
+  telefonoWhatsApp: string;
+  noteOperative: string;
+};
+
+const defaultForm: PartnerFormState = {
+  type: 'AGENZIA',
+  ragioneSociale: '',
+  nomeReferente: '',
+  cognomeReferente: '',
+  telefono: '',
+  email: '',
+  citta: '',
+  indirizzo: '',
+  zonaOperativa: '',
+  partitaIva: '',
+  codiceFiscale: '',
+  iban: '',
+  intestatarioConto: '',
+  notePagamenti: '',
+  riceveEmail: true,
+  riceveWhatsApp: false,
+  telefonoWhatsApp: '',
+  noteOperative: ''
+};
+
+type PartnersManagementProps = {
+  userRole?: string;
+};
+
+function typeLabel(type: PartnerType) {
+  if (type === 'AGENZIA') return 'Agenzia';
+  if (type === 'NCC') return 'NCC';
+  return 'Altro';
+}
+
+export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementProps) {
+  const isAllowed = userRole.toUpperCase() === 'ADMIN' || userRole.toUpperCase() === 'GESTIONALE';
+
+  const [partners, setPartners] = useState<PartnerItem[]>([]);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('');
+  const [selectedPartnerDetail, setSelectedPartnerDetail] = useState<PartnerItem | null>(null);
+
+  const [showFiltersCard, setShowFiltersCard] = useState(false);
+  const [filterRagioneSociale, setFilterRagioneSociale] = useState('');
+  const [filterType, setFilterType] = useState<'ALL' | PartnerType>('ALL');
+  const [showDeleted, setShowDeleted] = useState(false);
+
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [form, setForm] = useState<PartnerFormState>(defaultForm);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const loadPartners = useCallback(async function loadPartners() {
+    setLoading(true);
+    setError(null);
+
+    const query = new URLSearchParams();
+    if (filterRagioneSociale.trim()) {
+      query.set('ragioneSociale', filterRagioneSociale.trim());
+    }
+    if (filterType !== 'ALL') {
+      query.set('type', filterType);
+    }
+    if (showDeleted) {
+      query.set('includeDeleted', 'true');
+    }
+
+    const targetUrl = query.size > 0 ? `/api/partners?${query.toString()}` : '/api/partners';
+    const response = await fetch(targetUrl, { cache: 'no-store' });
+    const payload = (await response.json().catch(() => [])) as PartnerItem[] | { message?: string };
+
+    if (!response.ok) {
+      setError((payload as { message?: string }).message ?? 'Errore caricamento partner');
+      setPartners([]);
+      setLoading(false);
+      return;
+    }
+
+    setPartners(payload as PartnerItem[]);
+    setLoading(false);
+  }, [filterRagioneSociale, filterType, showDeleted]);
+
+  async function loadPartnerDetail(partnerId: number) {
+    const response = await fetch(`/api/partners/${partnerId}`, { cache: 'no-store' });
+    const payload = (await response.json().catch(() => ({}))) as PartnerItem | { message?: string };
+
+    if (!response.ok) {
+      setError((payload as { message?: string }).message ?? 'Errore caricamento dettaglio partner');
+      setSelectedPartnerDetail(null);
+      return;
+    }
+
+    const partner = payload as PartnerItem;
+    setSelectedPartnerDetail(partner);
+    setForm({
+      type: partner.type,
+      ragioneSociale: partner.ragioneSociale,
+      nomeReferente: partner.nomeReferente ?? '',
+      cognomeReferente: partner.cognomeReferente ?? '',
+      telefono: partner.telefono ?? '',
+      email: partner.email ?? '',
+      citta: partner.citta ?? '',
+      indirizzo: partner.indirizzo ?? '',
+      zonaOperativa: partner.zonaOperativa ?? '',
+      partitaIva: partner.partitaIva ?? '',
+      codiceFiscale: partner.codiceFiscale ?? '',
+      iban: partner.iban ?? '',
+      intestatarioConto: partner.intestatarioConto ?? '',
+      notePagamenti: partner.notePagamenti ?? '',
+      riceveEmail: partner.riceveEmail,
+      riceveWhatsApp: partner.riceveWhatsApp,
+      telefonoWhatsApp: partner.telefonoWhatsApp ?? '',
+      noteOperative: partner.noteOperative ?? ''
+    });
+  }
+
+  useEffect(() => {
+    if (!isAllowed) {
+      return;
+    }
+
+    loadPartners();
+  }, [isAllowed, loadPartners]);
+
+  useEffect(() => {
+    if (!selectedPartnerId) {
+      setSelectedPartnerDetail(null);
+      setIsEditMode(false);
+      return;
+    }
+
+    loadPartnerDetail(selectedPartnerId);
+  }, [selectedPartnerId]);
+
+  const visiblePartners = useMemo(() => {
+    // Safety fallback: if API ignores includeDeleted, still hide deleted by default.
+    if (!showDeleted) {
+      return partners.filter((partner) => !partner.deleted);
+    }
+    return partners;
+  }, [partners, showDeleted]);
+
+  function toPayload(current: PartnerFormState) {
+    return {
+      type: current.type,
+      ragioneSociale: current.ragioneSociale,
+      nomeReferente: current.nomeReferente || null,
+      cognomeReferente: current.cognomeReferente || null,
+      telefono: current.telefono || null,
+      email: current.email || null,
+      citta: current.citta || null,
+      indirizzo: current.indirizzo || null,
+      zonaOperativa: current.zonaOperativa || null,
+      partitaIva: current.partitaIva || null,
+      codiceFiscale: current.codiceFiscale || null,
+      iban: current.iban || null,
+      intestatarioConto: current.intestatarioConto || null,
+      notePagamenti: current.notePagamenti || null,
+      riceveEmail: current.riceveEmail,
+      riceveWhatsApp: current.riceveWhatsApp,
+      telefonoWhatsApp: current.telefonoWhatsApp || null,
+      noteOperative: current.noteOperative || null
+    };
+  }
+
+  async function createPartner(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch('/api/partners', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(toPayload(form))
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as PartnerItem & { message?: string };
+    if (!response.ok) {
+      setError(payload.message ?? 'Creazione partner fallita');
+      return;
+    }
+
+    const created = payload as PartnerItem;
+    setSuccess('Partner creato');
+    setShowCreateForm(false);
+    setForm(defaultForm);
+    setSelectedPartnerId(created.id);
+    await loadPartners();
+  }
+
+  async function updatePartner(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedPartnerId) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/partners/${selectedPartnerId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(toPayload(form))
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as PartnerItem & { message?: string };
+    if (!response.ok) {
+      setError(payload.message ?? 'Aggiornamento partner fallito');
+      return;
+    }
+
+    setSuccess('Partner aggiornato');
+    setIsEditMode(false);
+    await loadPartners();
+    await loadPartnerDetail(selectedPartnerId);
+  }
+
+  async function deactivateSelectedPartner() {
+    if (!selectedPartnerId) {
+      return;
+    }
+
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/partners/${selectedPartnerId}/deactivate`, {
+      method: 'PATCH'
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as PartnerItem & { message?: string };
+    if (!response.ok) {
+      setError(payload.message ?? 'Cancellazione logica fallita');
+      return;
+    }
+
+    setSuccess('Partner cancellato logicamente');
+    setSelectedPartnerId('');
+    setSelectedPartnerDetail(null);
+    setIsEditMode(false);
+    await loadPartners();
+  }
+
+  function selectPartner(partnerId: number) {
+    setSelectedPartnerId(partnerId);
+    setIsEditMode(false);
+  }
+
+  function deselectPartner() {
+    setSelectedPartnerId('');
+    setSelectedPartnerDetail(null);
+    setIsEditMode(false);
+  }
+
+  if (!isAllowed) {
+    return (
+      <article className="dashboard-card">
+        <p>Accesso negato: solo ADMIN o GESTIONALE possono gestire i partner.</p>
+      </article>
+    );
+  }
+
+  return (
+    <section className="responsive-panel partners-management-panel" style={{ display: 'grid', gap: 16 }}>
+      <article className="dashboard-card">
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <h2>Gestione Partner</h2>
+          <button
+            type="button"
+            className="primary-button compact-button"
+            onClick={() => {
+              setShowCreateForm((prev) => !prev);
+              setIsEditMode(false);
+              setSelectedPartnerId('');
+              setForm(defaultForm);
+            }}
+          >
+            {showCreateForm ? 'Chiudi nuovo partner' : 'Nuovo partner'}
+          </button>
+        </div>
+        <p>Gestisci anagrafica e operativita` di agenzie, NCC e altri fornitori.</p>
+
+        {showCreateForm && (
+          <form className="form-grid" onSubmit={createPartner}>
+            <label>
+              Tipologia
+              <select className="form-input" value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as PartnerType }))}>
+                <option value="AGENZIA">Agenzia</option>
+                <option value="NCC">NCC</option>
+                <option value="ALTRO">Altro</option>
+              </select>
+            </label>
+            <label>
+              Ragione Sociale
+              <input className="form-input" value={form.ragioneSociale} onChange={(e) => setForm((p) => ({ ...p, ragioneSociale: e.target.value }))} required />
+            </label>
+            <label>
+              Nome Referente
+              <input className="form-input" value={form.nomeReferente} onChange={(e) => setForm((p) => ({ ...p, nomeReferente: e.target.value }))} />
+            </label>
+            <label>
+              Cognome Referente
+              <input className="form-input" value={form.cognomeReferente} onChange={(e) => setForm((p) => ({ ...p, cognomeReferente: e.target.value }))} />
+            </label>
+            <label>
+              Telefono
+              <input className="form-input" value={form.telefono} onChange={(e) => setForm((p) => ({ ...p, telefono: e.target.value }))} />
+            </label>
+            <label>
+              Email
+              <input className="form-input" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+            </label>
+            <label>
+              Citta`
+              <input className="form-input" value={form.citta} onChange={(e) => setForm((p) => ({ ...p, citta: e.target.value }))} />
+            </label>
+            <label>
+              Indirizzo
+              <input className="form-input" value={form.indirizzo} onChange={(e) => setForm((p) => ({ ...p, indirizzo: e.target.value }))} />
+            </label>
+            <label>
+              Zona Operativa
+              <input className="form-input" value={form.zonaOperativa} onChange={(e) => setForm((p) => ({ ...p, zonaOperativa: e.target.value }))} />
+            </label>
+            <label>
+              Partita IVA
+              <input className="form-input" value={form.partitaIva} onChange={(e) => setForm((p) => ({ ...p, partitaIva: e.target.value }))} />
+            </label>
+            <label>
+              Codice Fiscale
+              <input className="form-input" value={form.codiceFiscale} onChange={(e) => setForm((p) => ({ ...p, codiceFiscale: e.target.value }))} />
+            </label>
+            <label>
+              IBAN
+              <input className="form-input" value={form.iban} onChange={(e) => setForm((p) => ({ ...p, iban: e.target.value }))} />
+            </label>
+            <label>
+              Intestatario Conto
+              <input className="form-input" value={form.intestatarioConto} onChange={(e) => setForm((p) => ({ ...p, intestatarioConto: e.target.value }))} />
+            </label>
+            <label>
+              Note Pagamenti
+              <input className="form-input" value={form.notePagamenti} onChange={(e) => setForm((p) => ({ ...p, notePagamenti: e.target.value }))} />
+            </label>
+            <label>
+              Telefono WhatsApp
+              <input className="form-input" value={form.telefonoWhatsApp} onChange={(e) => setForm((p) => ({ ...p, telefonoWhatsApp: e.target.value }))} />
+            </label>
+            <label>
+              Note Operative
+              <input className="form-input" value={form.noteOperative} onChange={(e) => setForm((p) => ({ ...p, noteOperative: e.target.value }))} />
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="checkbox" checked={form.riceveEmail} onChange={(e) => setForm((p) => ({ ...p, riceveEmail: e.target.checked }))} />
+              Riceve Email
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="checkbox" checked={form.riceveWhatsApp} onChange={(e) => setForm((p) => ({ ...p, riceveWhatsApp: e.target.checked }))} />
+              Riceve WhatsApp
+            </label>
+            <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
+              <button type="submit" className="primary-button compact-button">Crea partner</button>
+              <button type="button" className="logout-button compact-button" onClick={() => setForm(defaultForm)}>Reset</button>
+            </div>
+          </form>
+        )}
+      </article>
+
+      <article className="dashboard-card">
+        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+          <h3>Filtri</h3>
+          <button type="button" className="logout-button compact-button" onClick={() => setShowFiltersCard((prev) => !prev)}>
+            {showFiltersCard ? 'Chiudi filtri' : 'Apri filtri'}
+          </button>
+        </div>
+
+        {showFiltersCard && (
+          <div className="form-grid" style={{ display: 'grid', gap: 10, marginTop: 8 }}>
+            <label>
+              Ragione Sociale
+              <input className="form-input" value={filterRagioneSociale} onChange={(e) => setFilterRagioneSociale(e.target.value)} />
+            </label>
+            <label>
+              Tipologia
+              <select className="form-input" value={filterType} onChange={(e) => setFilterType(e.target.value as 'ALL' | PartnerType)}>
+                <option value="ALL">Tutte</option>
+                <option value="AGENZIA">Agenzia</option>
+                <option value="NCC">NCC</option>
+                <option value="ALTRO">Altro</option>
+              </select>
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
+              Mostra partner cancellati
+            </label>
+            <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
+              <button
+                type="button"
+                className="logout-button compact-button"
+                onClick={() => {
+                  setFilterRagioneSociale('');
+                  setFilterType('ALL');
+                  setShowDeleted(false);
+                }}
+              >
+                Reset filtri
+              </button>
+            </div>
+          </div>
+        )}
+      </article>
+
+      <article className="dashboard-card">
+        <h3>Lista Partner</h3>
+        {loading ? (
+          <p>Caricamento partner...</p>
+        ) : (
+          <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Ragione Sociale</th>
+                  <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Telefono</th>
+                  <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Email</th>
+                  <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Azioni</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visiblePartners.length === 0 ? (
+                  <tr>
+                    <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }} colSpan={4}>
+                      Nessun partner trovato.
+                    </td>
+                  </tr>
+                ) : (
+                  visiblePartners.map((partner) => (
+                    <tr key={partner.id} style={selectedPartnerId === partner.id ? { background: '#eaf1f9' } : undefined}>
+                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
+                        {partner.ragioneSociale} {partner.deleted ? '(cancellato)' : ''}
+                      </td>
+                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{partner.telefono ?? '-'}</td>
+                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{partner.email ?? '-'}</td>
+                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
+                        <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          <button type="button" className="logout-button compact-button" onClick={() => selectPartner(partner.id)}>
+                            Seleziona
+                          </button>
+                          <button
+                            type="button"
+                            className="primary-button compact-button"
+                            onClick={() => {
+                              selectPartner(partner.id);
+                              setIsEditMode(true);
+                            }}
+                            disabled={partner.deleted}
+                          >
+                            Modifica
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </article>
+
+      {selectedPartnerDetail && (
+        <article className="dashboard-card">
+          <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <h3>Dettaglio Partner</h3>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="logout-button compact-button" onClick={deselectPartner}>Deseleziona</button>
+              <button
+                type="button"
+                className="primary-button compact-button"
+                onClick={() => setIsEditMode((prev) => !prev)}
+                disabled={selectedPartnerDetail.deleted}
+              >
+                {isEditMode ? 'Chiudi modifica' : 'Modifica'}
+              </button>
+              <button
+                type="button"
+                className="logout-button compact-button"
+                onClick={deactivateSelectedPartner}
+                disabled={selectedPartnerDetail.deleted}
+              >
+                Cancella
+              </button>
+            </div>
+          </div>
+
+          <p>
+            <strong>{selectedPartnerDetail.ragioneSociale}</strong> · {typeLabel(selectedPartnerDetail.type)}
+          </p>
+
+          <div className="table-scroll" style={{ overflowX: 'auto' }}>
+            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <tbody>
+                <tr><td><strong>Referente</strong></td><td>{selectedPartnerDetail.nomeReferente ?? '-'} {selectedPartnerDetail.cognomeReferente ?? ''}</td></tr>
+                <tr><td><strong>Telefono</strong></td><td>{selectedPartnerDetail.telefono ?? '-'}</td></tr>
+                <tr><td><strong>Email</strong></td><td>{selectedPartnerDetail.email ?? '-'}</td></tr>
+                <tr><td><strong>Citta`</strong></td><td>{selectedPartnerDetail.citta ?? '-'}</td></tr>
+                <tr><td><strong>Indirizzo</strong></td><td>{selectedPartnerDetail.indirizzo ?? '-'}</td></tr>
+                <tr><td><strong>Zona Operativa</strong></td><td>{selectedPartnerDetail.zonaOperativa ?? '-'}</td></tr>
+                <tr><td><strong>Partita IVA</strong></td><td>{selectedPartnerDetail.partitaIva ?? '-'}</td></tr>
+                <tr><td><strong>Codice Fiscale</strong></td><td>{selectedPartnerDetail.codiceFiscale ?? '-'}</td></tr>
+                <tr><td><strong>IBAN</strong></td><td>{selectedPartnerDetail.iban ?? '-'}</td></tr>
+                <tr><td><strong>Intestatario Conto</strong></td><td>{selectedPartnerDetail.intestatarioConto ?? '-'}</td></tr>
+                <tr><td><strong>Note Pagamenti</strong></td><td>{selectedPartnerDetail.notePagamenti ?? '-'}</td></tr>
+                <tr><td><strong>Saldo Attuale</strong></td><td>{selectedPartnerDetail.saldoAttuale ?? 0}</td></tr>
+                <tr><td><strong>Totale Crediti</strong></td><td>{selectedPartnerDetail.totaleCrediti ?? 0}</td></tr>
+                <tr><td><strong>Totale Debiti</strong></td><td>{selectedPartnerDetail.totaleDebiti ?? 0}</td></tr>
+                <tr><td><strong>Riceve Email</strong></td><td>{selectedPartnerDetail.riceveEmail ? 'Si' : 'No'}</td></tr>
+                <tr><td><strong>Riceve WhatsApp</strong></td><td>{selectedPartnerDetail.riceveWhatsApp ? 'Si' : 'No'}</td></tr>
+                <tr><td><strong>Telefono WhatsApp</strong></td><td>{selectedPartnerDetail.telefonoWhatsApp ?? '-'}</td></tr>
+                <tr><td><strong>Note Operative</strong></td><td>{selectedPartnerDetail.noteOperative ?? '-'}</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          {isEditMode && (
+            <form className="form-grid" onSubmit={updatePartner} style={{ marginTop: 10 }}>
+              <label>
+                Tipologia
+                <select className="form-input" value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as PartnerType }))}>
+                  <option value="AGENZIA">Agenzia</option>
+                  <option value="NCC">NCC</option>
+                  <option value="ALTRO">Altro</option>
+                </select>
+              </label>
+              <label>
+                Ragione Sociale
+                <input className="form-input" value={form.ragioneSociale} onChange={(e) => setForm((p) => ({ ...p, ragioneSociale: e.target.value }))} required />
+              </label>
+              <label>
+                Nome Referente
+                <input className="form-input" value={form.nomeReferente} onChange={(e) => setForm((p) => ({ ...p, nomeReferente: e.target.value }))} />
+              </label>
+              <label>
+                Cognome Referente
+                <input className="form-input" value={form.cognomeReferente} onChange={(e) => setForm((p) => ({ ...p, cognomeReferente: e.target.value }))} />
+              </label>
+              <label>
+                Telefono
+                <input className="form-input" value={form.telefono} onChange={(e) => setForm((p) => ({ ...p, telefono: e.target.value }))} />
+              </label>
+              <label>
+                Email
+                <input className="form-input" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
+              </label>
+              <label>
+                Citta`
+                <input className="form-input" value={form.citta} onChange={(e) => setForm((p) => ({ ...p, citta: e.target.value }))} />
+              </label>
+              <label>
+                Indirizzo
+                <input className="form-input" value={form.indirizzo} onChange={(e) => setForm((p) => ({ ...p, indirizzo: e.target.value }))} />
+              </label>
+              <label>
+                Zona Operativa
+                <input className="form-input" value={form.zonaOperativa} onChange={(e) => setForm((p) => ({ ...p, zonaOperativa: e.target.value }))} />
+              </label>
+              <label>
+                Partita IVA
+                <input className="form-input" value={form.partitaIva} onChange={(e) => setForm((p) => ({ ...p, partitaIva: e.target.value }))} />
+              </label>
+              <label>
+                Codice Fiscale
+                <input className="form-input" value={form.codiceFiscale} onChange={(e) => setForm((p) => ({ ...p, codiceFiscale: e.target.value }))} />
+              </label>
+              <label>
+                IBAN
+                <input className="form-input" value={form.iban} onChange={(e) => setForm((p) => ({ ...p, iban: e.target.value }))} />
+              </label>
+              <label>
+                Intestatario Conto
+                <input className="form-input" value={form.intestatarioConto} onChange={(e) => setForm((p) => ({ ...p, intestatarioConto: e.target.value }))} />
+              </label>
+              <label>
+                Note Pagamenti
+                <input className="form-input" value={form.notePagamenti} onChange={(e) => setForm((p) => ({ ...p, notePagamenti: e.target.value }))} />
+              </label>
+              <label>
+                Telefono WhatsApp
+                <input className="form-input" value={form.telefonoWhatsApp} onChange={(e) => setForm((p) => ({ ...p, telefonoWhatsApp: e.target.value }))} />
+              </label>
+              <label>
+                Note Operative
+                <input className="form-input" value={form.noteOperative} onChange={(e) => setForm((p) => ({ ...p, noteOperative: e.target.value }))} />
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input type="checkbox" checked={form.riceveEmail} onChange={(e) => setForm((p) => ({ ...p, riceveEmail: e.target.checked }))} />
+                Riceve Email
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <input type="checkbox" checked={form.riceveWhatsApp} onChange={(e) => setForm((p) => ({ ...p, riceveWhatsApp: e.target.checked }))} />
+                Riceve WhatsApp
+              </label>
+              <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
+                <button type="submit" className="primary-button compact-button">Salva modifiche</button>
+                <button type="button" className="logout-button compact-button" onClick={() => selectedPartnerId && loadPartnerDetail(selectedPartnerId)}>
+                  Reset
+                </button>
+              </div>
+            </form>
+          )}
+        </article>
+      )}
+
+      {error && <p className="error-text">{error}</p>}
+      {success && <p style={{ color: '#2e7d32' }}>{success}</p>}
+    </section>
+  );
+}

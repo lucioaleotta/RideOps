@@ -17,6 +17,7 @@ const menuItems = [
   { href: '/app/services', label: 'Servizi', icon: '🧾', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/finance', label: 'Finanza', icon: '💶', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/fleet', label: 'Parco mezzi', icon: '🚙', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
+  { href: '/app/partners', label: 'Gestione Partner', icon: '🤝', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/gestionale', label: 'Gestione Personale', icon: '📋', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
   { href: '/app/driver', label: 'Autista', icon: '🚗', roles: ['ADMIN', 'DRIVER'] as Role[] }
 ];
