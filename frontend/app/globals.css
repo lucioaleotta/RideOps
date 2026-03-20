@@ -337,8 +337,8 @@ a:hover {
   text-decoration: none;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
+  gap: 8px;
+  padding: 7px 12px;
 }
 
 .mobile-alert-chip:hover {
@@ -347,28 +347,50 @@ a:hover {
 }
 
 .alert-chip-icon {
-  font-size: 20px;
+  font-size: 16px;
   line-height: 1;
 }
 
 .alert-chip-label {
-  font-size: 17px;
+  font-size: 14px;
   line-height: 1;
 }
 
 .alert-chip-count {
-  min-width: 40px;
-  height: 40px;
+  min-width: 30px;
+  height: 30px;
   border-radius: 999px;
   background: #d87900;
   color: #fff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 10px;
-  font-size: 32px;
+  padding: 0 7px;
+  font-size: 17px;
   line-height: 1;
   font-weight: 800;
+}
+
+.mobile-alert-chip.is-alert {
+  border-color: #f0c350;
+  background: #fff9e8;
+  color: #8a4300;
+}
+
+.mobile-alert-chip.is-alert .alert-chip-count {
+  background: #d87900;
+  color: #fff;
+}
+
+.mobile-alert-chip.is-clear {
+  border-color: #7fd9b0;
+  background: #eafaf2;
+  color: #0f5e45;
+}
+
+.mobile-alert-chip.is-clear .alert-chip-count {
+  background: #0a9a74;
+  color: #fff;
 }
 
 .secondary-button {
@@ -832,14 +854,14 @@ a:hover {
   .mobile-alert-chip,
   .mobile-logout-button {
     border-radius: 16px;
-    padding: 8px 12px;
-    font-size: 14px;
+    padding: 7px 11px;
+    font-size: 13px;
     font-weight: 700;
     text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    min-height: 38px;
+    gap: 7px;
+    min-height: 34px;
   }
 
   .mobile-alert-chip.mobile-alert-chip-fleet {
@@ -855,18 +877,18 @@ a:hover {
   }
 
   .alert-chip-icon {
-    font-size: 18px;
+    font-size: 15px;
   }
 
   .alert-chip-label {
-    font-size: 14px;
+    font-size: 13px;
   }
 
   .alert-chip-count {
-    min-width: 32px;
-    height: 32px;
-    font-size: 20px;
-    padding: 0 8px;
+    min-width: 27px;
+    height: 27px;
+    font-size: 15px;
+    padding: 0 6px;
   }
 
   .mobile-logout-button {

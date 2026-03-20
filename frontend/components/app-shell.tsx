@@ -144,6 +144,8 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
   }, [mobileMenuOpen]);
 
   const sidebarCollapsed = collapsed && !isMobileViewport;
+  const fleetHasAlerts = fleetAlertCounts.total > 0;
+  const serviceHasAlerts = serviceAlertCounts.total > 0;
 
   useEffect(() => {
     const canSeeServiceAlerts = normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER';
@@ -309,16 +311,22 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
           <div className="topbar-actions">
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE') && (
-              <Link href="/app/fleet" className="logout-button mobile-alert-chip mobile-alert-chip-fleet">
-                <span className="alert-chip-icon" aria-hidden="true">⚠️</span>
+              <Link
+                href="/app/fleet"
+                className={`logout-button mobile-alert-chip mobile-alert-chip-fleet ${fleetHasAlerts ? 'is-alert' : 'is-clear'}`}
+              >
+                <span className="alert-chip-icon" aria-hidden="true">{fleetHasAlerts ? '⚠️' : '✅'}</span>
                 <span className="alert-chip-label">Flotta:</span>
                 <span className="alert-chip-count">{fleetAlertCounts.total}</span>
               </Link>
             )}
 
             {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER') && (
-              <Link href={serviceAlertHref} className="logout-button mobile-alert-chip mobile-alert-chip-service">
-                <span className="alert-chip-icon" aria-hidden="true">⚠️</span>
+              <Link
+                href={serviceAlertHref}
+                className={`logout-button mobile-alert-chip mobile-alert-chip-service ${serviceHasAlerts ? 'is-alert' : 'is-clear'}`}
+              >
+                <span className="alert-chip-icon" aria-hidden="true">{serviceHasAlerts ? '⚠️' : '✅'}</span>
                 <span className="alert-chip-label">Servizi:</span>
                 <span className="alert-chip-count">{serviceAlertCounts.total}</span>
               </Link>
