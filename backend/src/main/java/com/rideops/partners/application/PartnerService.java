@@ -6,6 +6,7 @@ import com.rideops.partners.domain.PartnerType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,8 +19,22 @@ public class PartnerService {
     }
 
     public List<PartnerDto> search(String ragioneSociale, PartnerType type, boolean includeDeleted) {
-        return partnerRepository.search(cleanNullable(ragioneSociale), type, includeDeleted)
-            .stream()
+        String normalized = cleanNullable(ragioneSociale);
+        String lowerFilter = normalized == null ? null : normalized.toLowerCase(Locale.ROOT);
+
+        List<PartnerEntity> base = type == null
+            ? partnerRepository.findAllByOrderByRagioneSocialeAsc()
+            : partnerRepository.findAllByTypeOrderByRagioneSocialeAsc(type);
+
+        return base.stream()
+            .filter(entity -> includeDeleted || !entity.isDeleted())
+            .filter(entity -> {
+                if (lowerFilter == null) {
+                    return true;
+                }
+                return entity.getRagioneSociale() != null
+                    && entity.getRagioneSociale().toLowerCase(Locale.ROOT).contains(lowerFilter);
+            })
             .map(this::toDto)
             .toList();
     }
