@@ -26,7 +26,18 @@ export function UnassignedServicesBadge() {
   return (
     <article className="dashboard-card">
       <h3>Servizi non assegnati</h3>
-      {error ? <p className="error-text">{error}</p> : <p style={{ fontSize: 28, margin: 0 }}>{count}</p>}
+      {error ? (
+        <p className="error-text">{error}</p>
+      ) : (
+        <div
+          className={`mobile-alert-chip ${count > 0 ? 'is-alert' : 'is-clear'}`}
+          style={{ width: 'fit-content', marginTop: 6 }}
+        >
+          <span className="alert-chip-icon" aria-hidden="true">{count > 0 ? '⚠️' : '✅'}</span>
+          <span className="alert-chip-label">Servizi:</span>
+          <span className="alert-chip-count">{count}</span>
+        </div>
+      )}
       {!error && (
         <p style={{ marginTop: 10, marginBottom: 0 }}>
           <Link href="/app/services?unassigned=1" className="logout-button compact-button" style={{ display: 'inline-block' }}>
