@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { ButtonContent, FilterIcon } from './action-icons';
 
 export function UnassignedServicesBadge() {
   const [count, setCount] = useState(0);
@@ -41,7 +42,7 @@ export function UnassignedServicesBadge() {
       {!error && (
         <p style={{ marginTop: 10, marginBottom: 0 }}>
           <Link href="/app/services?unassigned=1" className="logout-button compact-button" style={{ display: 'inline-block' }}>
-            Vedi non assegnati
+            <ButtonContent icon={<FilterIcon />}>Vedi non assegnati</ButtonContent>
           </Link>
         </p>
       )}

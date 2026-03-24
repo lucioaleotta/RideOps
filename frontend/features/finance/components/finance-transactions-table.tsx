@@ -1,6 +1,7 @@
 "use client";
 
 import { formatCurrencyEUR } from '../../../lib/currency';
+import { ButtonContent, CancelIcon, EditIcon } from '../../../components/action-icons';
 import { FinancialTransaction } from '../../../types/finance';
 
 type TableProps = {
@@ -38,8 +39,8 @@ export function FinanceTransactionsTable({ items, onEdit, onVoid }: TableProps) 
                 {item.voided ? 'ANNULLATO' : item.autoCreated ? 'AUTO' : 'MANUALE'}
               </td>
               <td style={{ borderBottom: '1px solid #eef4fb', padding: '8px 6px', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button type="button" className="logout-button" onClick={() => onEdit(item)} disabled={item.voided}>Modifica</button>
-                <button type="button" className="logout-button" onClick={() => onVoid(item)} disabled={item.voided}>Annulla</button>
+                <button type="button" className="logout-button" onClick={() => onEdit(item)} disabled={item.voided}><ButtonContent icon={<EditIcon />}>Modifica</ButtonContent></button>
+                <button type="button" className="logout-button" onClick={() => onVoid(item)} disabled={item.voided}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
               </td>
             </tr>
           ))}

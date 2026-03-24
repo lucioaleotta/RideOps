@@ -2,6 +2,7 @@
 
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CancelIcon, CursorIcon, LockIcon, OpenIcon, PartnerIcon as SharedPartnerIcon, PrintIcon as SharedPrintIcon, ResetIcon, SaveIcon, SelectIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
 
 type ServiceType = 'TRANSFER' | 'TOUR';
@@ -41,6 +42,25 @@ type PartnerItem = {
   id: number;
   ragioneSociale: string;
   deleted: boolean;
+};
+
+type ServicePartnerCommunicationItem = {
+  communicationId: number;
+  channel: string;
+  recipient: string;
+  subject: string;
+  createdAt: string;
+};
+
+type ServicePartnerHistoryItem = {
+  serviceId: number;
+  serviceAssignmentType: ServiceAssignmentType;
+  partnerId: number;
+  partnerRagioneSociale: string | null;
+  partnerEmail: string | null;
+  pricePartner: number | null;
+  margin: number | null;
+  communications: ServicePartnerCommunicationItem[];
 };
 
 type DriverItem = {
@@ -228,6 +248,64 @@ function ServiceDetailRow({ icon, label, value }: { icon: ReactNode; label: stri
   );
 }
 
+function ActionEditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m5 16.8 9.9-9.9 3.2 3.2-9.9 9.9L5 20Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="m13.8 8 3.2 3.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ActionDeleteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M5.8 7.4h12.4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M9.4 7.4V5.7h5.2v1.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="M8 7.4l.8 10.1h6.4L16 7.4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="M10.5 10.2v4.8M13.5 10.2v4.8" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ActionLockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="6.3" y="10.6" width="11.4" height="8.2" rx="1.7" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M8.8 10.6V8.5A3.2 3.2 0 0 1 12 5.3a3.2 3.2 0 0 1 3.2 3.2v2.1" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ActionHandshakeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m7 12.4 3.2 2.8a2 2 0 0 0 2.7-.1l4.3-4.1" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m3.8 11.3 2.6-2.5a2 2 0 0 1 2.7 0l2 1.8" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m20.2 11.3-2.6-2.5a2 2 0 0 0-2.7 0l-2 1.8" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m7.1 14.8-1.8 1.8m3 1.1-1.6 1.6m3-.3-1.5 1.5m3.1-1.2-1.3 1.3" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ActionPrintIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7.1 9.4V5.7h9.8v3.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <rect x="6.1" y="13" width="11.8" height="5.4" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <rect x="4.8" y="9.4" width="14.4" height="5.3" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.9" />
+    </svg>
+  );
+}
+
+function ActionDeselectIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m6 5 10 7-4 1.2L13.6 19 11 20l-1.6-5.8L6 5Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function ServicesPanel() {
   function driverLabel(driver: DriverItem) {
     const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(' ').trim();
@@ -259,6 +337,9 @@ export function ServicesPanel() {
   const [outsourcePartnerQuery, setOutsourcePartnerQuery] = useState('');
   const [outsourcePartnerId, setOutsourcePartnerId] = useState<number | ''>('');
   const [outsourcePricePartner, setOutsourcePricePartner] = useState('');
+  const [partnerHistory, setPartnerHistory] = useState<ServicePartnerHistoryItem | null>(null);
+  const [partnerHistoryLoading, setPartnerHistoryLoading] = useState(false);
+  const [partnerEmailSending, setPartnerEmailSending] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
@@ -739,6 +820,42 @@ export function ServicesPanel() {
     setSuccess('Servizio affidato a partner');
     closeOutsourceModal();
     await loadServices();
+    await loadPartnerHistory(selectedService.id);
+  }
+
+  async function loadPartnerHistory(serviceId: number) {
+    setPartnerHistoryLoading(true);
+    const response = await fetch(`/api/services/${serviceId}/partner-history`, { cache: 'no-store' });
+    const payload = (await response.json().catch(() => ({}))) as ServicePartnerHistoryItem | { message?: string };
+    setPartnerHistoryLoading(false);
+
+    if (!response.ok) {
+      setPartnerHistory(null);
+      return;
+    }
+
+    setPartnerHistory(payload as ServicePartnerHistoryItem);
+  }
+
+  async function sendPartnerEmailFromService(serviceId: number) {
+    setPartnerEmailSending(true);
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/services/${serviceId}/partner-communications/email`, {
+      method: 'POST'
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as { message?: string };
+    setPartnerEmailSending(false);
+
+    if (!response.ok) {
+      setError(payload.message ?? 'Invio email partner fallito');
+      return;
+    }
+
+    setSuccess('Email partner inserita in outbox');
+    await loadPartnerHistory(serviceId);
   }
 
   function openPrint(serviceId: number) {
@@ -862,8 +979,10 @@ export function ServicesPanel() {
 
   useEffect(() => {
     if (!selectedServiceId) {
+      setPartnerHistory(null);
       return;
     }
+    loadPartnerHistory(selectedServiceId);
     if (!orderedServices.some((item) => item.id === selectedServiceId)) {
       setSelectedServiceId(null);
     }
@@ -893,7 +1012,7 @@ export function ServicesPanel() {
               }
             }}
           >
-            {isFormOpen && !editingId ? 'Chiudi form' : 'Nuovo servizio'}
+            <ButtonContent icon={isFormOpen && !editingId ? <LockIcon /> : <AddIcon />}>{isFormOpen && !editingId ? 'Chiudi form' : 'Nuovo servizio'}</ButtonContent>
           </button>
         </div>
         <button
@@ -991,7 +1110,7 @@ export function ServicesPanel() {
               className="logout-button compact-button"
               onClick={() => setFilters(defaultFilters)}
             >
-              Reset filtri
+              <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
             </button>
           </div>
         </div>
@@ -1003,7 +1122,7 @@ export function ServicesPanel() {
               className="logout-button compact-button"
               onClick={() => setFilters((prev) => ({ ...prev, onlyUnassigned: false }))}
             >
-              Rimuovi filtro
+              <ButtonContent icon={<CancelIcon />}>Rimuovi filtro</ButtonContent>
             </button>
           </div>
         )}
@@ -1141,6 +1260,7 @@ export function ServicesPanel() {
 
                 <div className="table-actions services-selected-actions" style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button type="button" className="primary-button compact-button" onClick={() => onEdit(selectedService)}>
+                    <span className="action-button-icon"><ActionEditIcon /></span>
                     Modifica
                   </button>
                   <button
@@ -1148,6 +1268,7 @@ export function ServicesPanel() {
                     className="primary-button compact-button services-selected-delete"
                     onClick={() => onDelete(selectedService.id)}
                   >
+                    <span className="action-button-icon"><ActionDeleteIcon /></span>
                     Elimina
                   </button>
                   {selectedService.status === 'ASSIGNED' && (
@@ -1156,19 +1277,22 @@ export function ServicesPanel() {
                       className="compact-button services-selected-close-service"
                       onClick={() => onClose(selectedService.id)}
                     >
+                      <span className="action-button-icon"><ActionLockIcon /></span>
                       Chiudi
                     </button>
                   )}
                   {selectedService.serviceAssignmentType === 'INTERNAL' && selectedService.status !== 'CLOSED' && (
                     <button
                       type="button"
-                      className="compact-button services-selected-close-service"
+                      className="compact-button services-selected-outsource"
                       onClick={() => openOutsourceModal(selectedService)}
                     >
-                      Affida a partner
+                      <span className="action-button-icon"><ActionHandshakeIcon /></span>
+                      Affida servizio al partner
                     </button>
                   )}
                   <button type="button" className="compact-button services-selected-print" onClick={() => openPrint(selectedService.id)}>
+                    <span className="action-button-icon"><ActionPrintIcon /></span>
                     Stampa
                   </button>
                   <button
@@ -1176,8 +1300,62 @@ export function ServicesPanel() {
                     className="compact-button services-selected-deselect"
                     onClick={() => setSelectedServiceId(null)}
                   >
+                    <span className="action-button-icon"><ActionDeselectIcon /></span>
                     Deseleziona
                   </button>
+                </div>
+
+                <div className="services-selected-divider" />
+                <div style={{ marginTop: 10 }}>
+                  <strong style={{ display: 'block', marginBottom: 8 }}>Storico partner servizio</strong>
+                  {partnerHistoryLoading ? (
+                    <p style={{ margin: 0, color: 'var(--muted)' }}>Caricamento storico...</p>
+                  ) : !partnerHistory ? (
+                    <p style={{ margin: 0, color: 'var(--muted)' }}>Nessuno storico disponibile per questo servizio.</p>
+                  ) : (
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      <p style={{ margin: 0 }}>
+                        <strong>Partner:</strong> {partnerHistory.partnerRagioneSociale ?? '-'} ({partnerHistory.partnerEmail ?? '-'})
+                      </p>
+                      <p style={{ margin: 0 }}>
+                        <strong>Comunicazioni email inviate:</strong> {partnerHistory.communications.length}
+                      </p>
+                      {partnerHistory.communications.length > 0 && (
+                        <div className="table-scroll" style={{ overflowX: 'auto' }}>
+                          <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+                            <thead>
+                              <tr>
+                                <th style={thStyle}>Canale</th>
+                                <th style={thStyle}>Destinatario</th>
+                                <th style={thStyle}>Oggetto</th>
+                                <th style={thStyle}>Data invio</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {partnerHistory.communications.map((communication) => (
+                                <tr key={communication.communicationId}>
+                                  <td style={tdStyle}>{communication.channel}</td>
+                                  <td style={tdStyle}>{communication.recipient}</td>
+                                  <td style={tdStyle}>{communication.subject}</td>
+                                  <td style={tdStyle}>{new Date(communication.createdAt).toLocaleString('it-IT')}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      <div>
+                        <button
+                          type="button"
+                          className="logout-button compact-button"
+                          onClick={() => sendPartnerEmailFromService(selectedService.id)}
+                          disabled={partnerEmailSending || !selectedService.partnerId}
+                        >
+                          <ButtonContent icon={<SharedPartnerIcon />}>{partnerEmailSending ? 'Invio email...' : 'Invia email al partner'}</ButtonContent>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1191,7 +1369,7 @@ export function ServicesPanel() {
                   className="primary-button compact-button"
                   onClick={printSelectedServices}
                 >
-                  Stampa selezionati
+                  <ButtonContent icon={<SharedPrintIcon />}>Stampa selezionati</ButtonContent>
                 </button>
                 <button
                   type="button"
@@ -1199,7 +1377,7 @@ export function ServicesPanel() {
                   onClick={() => setSelectedForPrintIds([])}
                   disabled={selectedForPrintIds.length === 0}
                 >
-                  Pulisci selezione
+                  <ButtonContent icon={<ResetIcon />}>Pulisci selezione</ButtonContent>
                 </button>
               </div>
             </div>
@@ -1286,14 +1464,14 @@ export function ServicesPanel() {
                           className="primary-button compact-button"
                           onClick={() => setSelectedServiceId(service.id)}
                         >
-                          Seleziona
+                          <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
                         </button>
                         <button
                           type="button"
                           className="primary-button compact-button"
                           onClick={() => openPrint(service.id)}
                         >
-                          Stampa
+                          <ButtonContent icon={<SharedPrintIcon />}>Stampa</ButtonContent>
                         </button>
                       </div>
                     </td>
@@ -1365,14 +1543,14 @@ export function ServicesPanel() {
                         className="primary-button compact-button"
                         onClick={() => setSelectedServiceId(service.id)}
                       >
-                        Seleziona
+                        <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
                       </button>
                       <button
                         type="button"
                         className="logout-button compact-button"
                         onClick={() => openPrint(service.id)}
                       >
-                        Apri
+                        <ButtonContent icon={<OpenIcon />}>Apri</ButtonContent>
                       </button>
                     </div>
                   </article>
@@ -1392,7 +1570,7 @@ export function ServicesPanel() {
                   aria-label="Pagina precedente"
                   title="Pagina precedente"
                 >
-                  ←
+                  <ButtonContent icon={<ArrowLeftIcon />}>Prec.</ButtonContent>
                 </button>
                 <button
                   type="button"
@@ -1402,7 +1580,7 @@ export function ServicesPanel() {
                   aria-label="Pagina successiva"
                   title="Pagina successiva"
                 >
-                  →
+                  <ButtonContent icon={<ArrowRightIcon />}>Succ.</ButtonContent>
                 </button>
               </div>
             </div>
@@ -1412,27 +1590,43 @@ export function ServicesPanel() {
 
       {outsourceOpen && selectedService && (
         <div className="services-modal-overlay" role="dialog" aria-modal="true" aria-label="Affida servizio a partner">
-          <article className="dashboard-card services-modal-card" style={{ borderColor: '#f0d7b3', background: '#fff9ef' }}>
-            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-              <h3>Affida servizio #{selectedService.id} a partner</h3>
-              <button type="button" className="logout-button" onClick={closeOutsourceModal}>Chiudi</button>
+          <article className="dashboard-card services-modal-card services-outsource-modal-card">
+            <div className="services-outsource-modal-header">
+              <h3 className="services-outsource-modal-title">Affida servizio #{selectedService.id} a partner</h3>
+              <button
+                type="button"
+                className="services-outsource-modal-close"
+                onClick={closeOutsourceModal}
+                aria-label="Chiudi finestra affidamento"
+                title="Chiudi"
+              >
+                ×
+              </button>
             </div>
 
-            <div className="form-grid" style={{ display: 'grid', gap: 10, marginTop: 8 }}>
-              <label>
+            <div className="services-outsource-modal-grid">
+              <label className="services-outsource-modal-field">
                 Cerca partner
-                <input
-                  className="form-input"
-                  value={outsourcePartnerQuery}
-                  onChange={(event) => setOutsourcePartnerQuery(event.target.value)}
-                  placeholder="Filtra per ragione sociale"
-                />
+                <div className="services-outsource-input-wrap">
+                  <span className="services-outsource-input-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
+                      <line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <input
+                    className="form-input services-outsource-input with-icon"
+                    value={outsourcePartnerQuery}
+                    onChange={(event) => setOutsourcePartnerQuery(event.target.value)}
+                    placeholder="Filtra per ragione sociale"
+                  />
+                </div>
               </label>
 
-              <label>
+              <label className="services-outsource-modal-field">
                 Partner
                 <select
-                  className="form-input"
+                  className="form-input services-outsource-input services-outsource-select"
                   value={outsourcePartnerId}
                   onChange={(event) => setOutsourcePartnerId(event.target.value ? Number(event.target.value) : '')}
                 >
@@ -1443,31 +1637,36 @@ export function ServicesPanel() {
                 </select>
               </label>
 
-              <label>
+              <label className="services-outsource-modal-field">
                 Prezzo partner
-                <input
-                  className="form-input"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={outsourcePricePartner}
-                  onChange={(event) => setOutsourcePricePartner(event.target.value)}
-                />
-                <small style={{ color: 'var(--muted)' }}>
+                <div className="services-outsource-input-wrap">
+                  <span className="services-outsource-input-icon" aria-hidden="true">€</span>
+                  <input
+                    className="form-input services-outsource-input with-icon"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
+                    value={outsourcePricePartner}
+                    onChange={(event) => setOutsourcePricePartner(event.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <small className="services-outsource-margin-preview">
                   Margine previsto: {outsourceMarginPreview == null ? '-' : formatCurrencyEUR(outsourceMarginPreview)}
                 </small>
               </label>
 
-              <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
+              <div className="form-actions services-outsource-modal-actions">
                 <button
                   type="button"
-                  className="primary-button compact-button"
+                  className="primary-button compact-button services-outsource-confirm"
                   onClick={submitOutsource}
-                  disabled={submitting}
+                  disabled={submitting || !outsourcePartnerId || !outsourcePricePartner.trim()}
                 >
-                  {submitting ? 'Salvataggio...' : 'Conferma affidamento'}
+                  <ButtonContent icon={<SharedPartnerIcon />}>{submitting ? 'Salvataggio...' : 'Conferma affidamento'}</ButtonContent>
                 </button>
-                <button type="button" className="logout-button" onClick={closeOutsourceModal}>Annulla</button>
+                <button type="button" className="logout-button compact-button services-outsource-cancel" onClick={closeOutsourceModal}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
               </div>
             </div>
           </article>
@@ -1478,9 +1677,7 @@ export function ServicesPanel() {
         <article className="dashboard-card">
           <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <h3>{editingId ? `Modifica servizio #${editingId}` : 'Nuovo servizio'}</h3>
-            <button type="button" className="logout-button" onClick={closeForm}>
-              Chiudi
-            </button>
+            <button type="button" className="logout-button" onClick={closeForm}><ButtonContent icon={<LockIcon />}>Chiudi</ButtonContent></button>
           </div>
           <form className="form-grid" onSubmit={onSubmit}>
             <label>
@@ -1730,12 +1927,10 @@ export function ServicesPanel() {
 
             <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
-                {submitting ? 'Salvataggio...' : editingId ? 'Aggiorna servizio' : 'Crea servizio'}
+                <ButtonContent icon={editingId ? <SaveIcon /> : <AddIcon />}>{submitting ? 'Salvataggio...' : editingId ? 'Aggiorna servizio' : 'Crea servizio'}</ButtonContent>
               </button>
               {editingId && (
-                <button type="button" className="logout-button" onClick={openCreateForm}>
-                  Nuovo servizio
-                </button>
+                <button type="button" className="logout-button" onClick={openCreateForm}><ButtonContent icon={<AddIcon />}>Nuovo servizio</ButtonContent></button>
               )}
             </div>
           </form>

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, LockIcon, ResetIcon, SaveIcon, SelectIcon } from './action-icons';
 import { PasswordInput } from './password-input';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
@@ -331,7 +332,7 @@ export function GestionaleDriversPanel() {
                 }
               }}
             >
-              {isFormOpen && !editingDriverId ? 'Chiudi form' : 'Nuovo driver'}
+              <ButtonContent icon={isFormOpen && !editingDriverId ? <LockIcon /> : <AddIcon />}>{isFormOpen && !editingDriverId ? 'Chiudi form' : 'Nuovo driver'}</ButtonContent>
             </button>
           </div>
         </div>
@@ -376,10 +377,10 @@ export function GestionaleDriversPanel() {
                     <td style={{ padding: '10px 0 10px 0', borderBottom: '1px solid #eaf1f9' }}>
                       <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                         <button type="button" className="primary-button compact-button" onClick={() => onSelectDriver(driver)}>
-                          Seleziona
+                          <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
                         </button>
                         <button type="button" className="primary-button compact-button" onClick={() => onEditDriver(driver)}>
-                          Modifica
+                          <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
                         </button>
                         {driver.enabled ? (
                           <button
@@ -388,7 +389,7 @@ export function GestionaleDriversPanel() {
                             style={{ background: '#d32f2f' }}
                             onClick={() => onDeleteDriver(driver.id)}
                           >
-                            Cancella
+                            <ButtonContent icon={<DeleteIcon />}>Cancella</ButtonContent>
                           </button>
                         ) : (
                           <button
@@ -397,7 +398,7 @@ export function GestionaleDriversPanel() {
                             style={{ background: '#7cb342' }}
                             onClick={() => onRestoreDriver(driver.id)}
                           >
-                            Ripristina
+                            <ButtonContent icon={<ResetIcon />}>Ripristina</ButtonContent>
                           </button>
                         )}
                       </div>
@@ -548,7 +549,7 @@ export function GestionaleDriversPanel() {
             <div className="dashboard-card" style={{ background: '#f4f9ff' }}>
               <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <strong>Indirizzi di residenza</strong>
-                <button type="button" className="primary-button compact-button" onClick={addAddress}>Aggiungi indirizzo</button>
+                <button type="button" className="primary-button compact-button" onClick={addAddress}><ButtonContent icon={<AddIcon />}>Aggiungi indirizzo</ButtonContent></button>
               </div>
               <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
                 {form.residentialAddresses.map((address, index) => (
@@ -567,7 +568,7 @@ export function GestionaleDriversPanel() {
                       onClick={() => removeAddress(index)}
                       disabled={form.residentialAddresses.length <= 1}
                     >
-                      Rimuovi
+                      <ButtonContent icon={<DeleteIcon />}>Rimuovi</ButtonContent>
                     </button>
                   </div>
                 ))}
@@ -576,7 +577,7 @@ export function GestionaleDriversPanel() {
 
             <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
-                {submitting ? 'Salvataggio...' : editingDriverId ? 'Aggiorna driver' : 'Crea driver'}
+                <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : editingDriverId ? 'Aggiorna driver' : 'Crea driver'}</ButtonContent>
               </button>
               <button
                 type="button"
@@ -587,7 +588,7 @@ export function GestionaleDriversPanel() {
                   resetForm();
                 }}
               >
-                Annulla
+                <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
               </button>
             </div>
           </form>

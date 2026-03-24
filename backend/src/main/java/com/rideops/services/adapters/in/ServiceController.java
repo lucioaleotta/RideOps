@@ -11,6 +11,9 @@ import com.rideops.services.application.GetUnassignedServicesCountUseCase;
 import com.rideops.services.application.ListServicesUseCase;
 import com.rideops.services.application.OutsourceServiceUseCase;
 import com.rideops.services.application.ServiceDto;
+import com.rideops.services.application.ServicePartnerCommunicationResultDto;
+import com.rideops.services.application.ServicePartnerHistoryDto;
+import com.rideops.services.application.ServicePartnerOperationsUseCase;
 import com.rideops.services.application.ServiceNotFoundException;
 import com.rideops.services.application.ServiceValidationException;
 import com.rideops.services.application.UnassignServiceUseCase;
@@ -58,6 +61,7 @@ public class ServiceController {
     private final ListServicesUseCase listServicesUseCase;
     private final GetServiceUseCase getServiceUseCase;
     private final OutsourceServiceUseCase outsourceServiceUseCase;
+    private final ServicePartnerOperationsUseCase servicePartnerOperationsUseCase;
 
     public ServiceController(CreateServiceUseCase createServiceUseCase,
                              UpdateServiceUseCase updateServiceUseCase,
@@ -68,7 +72,8 @@ public class ServiceController {
                              GetUnassignedServicesCountUseCase getUnassignedServicesCountUseCase,
                              ListServicesUseCase listServicesUseCase,
                              GetServiceUseCase getServiceUseCase,
-                             OutsourceServiceUseCase outsourceServiceUseCase) {
+                             OutsourceServiceUseCase outsourceServiceUseCase,
+                             ServicePartnerOperationsUseCase servicePartnerOperationsUseCase) {
         this.createServiceUseCase = createServiceUseCase;
         this.updateServiceUseCase = updateServiceUseCase;
         this.deleteServiceUseCase = deleteServiceUseCase;
@@ -79,6 +84,7 @@ public class ServiceController {
         this.listServicesUseCase = listServicesUseCase;
         this.getServiceUseCase = getServiceUseCase;
         this.outsourceServiceUseCase = outsourceServiceUseCase;
+        this.servicePartnerOperationsUseCase = servicePartnerOperationsUseCase;
     }
 
     @GetMapping
@@ -187,6 +193,16 @@ public class ServiceController {
     public ServiceDto outsource(@PathVariable @NonNull Long serviceId,
                                 @Valid @RequestBody OutsourceRequest request) {
         return outsourceServiceUseCase.execute(serviceId, request.partnerId(), request.pricePartner());
+    }
+
+    @GetMapping("/{serviceId}/partner-history")
+    public ServicePartnerHistoryDto getPartnerHistory(@PathVariable @NonNull Long serviceId) {
+        return servicePartnerOperationsUseCase.getPartnerHistory(serviceId);
+    }
+
+    @PostMapping("/{serviceId}/partner-communications/email")
+    public ServicePartnerCommunicationResultDto sendPartnerEmail(@PathVariable @NonNull Long serviceId) {
+        return servicePartnerOperationsUseCase.sendEmail(serviceId);
     }
 
     @GetMapping("/unassigned/count")

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from 'react';
+import { ButtonContent, CancelIcon, EditIcon, SaveIcon } from './action-icons';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
 
@@ -191,7 +192,7 @@ export function DriverProfilePanel() {
         {!isEditing && (
           <div className="form-actions" style={{ marginTop: 12 }}>
             <button type="button" className="primary-button" onClick={onStartEditing}>
-              Modifica
+              <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
             </button>
           </div>
         )}
@@ -263,10 +264,10 @@ export function DriverProfilePanel() {
 
             <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <button type="submit" className="primary-button" disabled={submitting}>
-                {submitting ? 'Salvataggio...' : 'Salva'}
+                <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : 'Salva'}</ButtonContent>
               </button>
               <button type="button" className="secondary-button" onClick={onCancelEditing} disabled={submitting}>
-                Cancella
+                <ButtonContent icon={<CancelIcon />}>Cancella</ButtonContent>
               </button>
             </div>
           </form>

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { ButtonContent, SaveIcon } from './action-icons';
 import { PasswordInput } from './password-input';
 
 export function ResetPasswordForm() {
@@ -66,7 +67,7 @@ export function ResetPasswordForm() {
       </label>
 
       <button type="submit" disabled={loading} className="primary-button">
-        {loading ? 'Aggiornamento...' : 'Aggiorna password'}
+        <ButtonContent icon={<SaveIcon />}>{loading ? 'Aggiornamento...' : 'Aggiorna password'}</ButtonContent>
       </button>
 
       {message && <p className="success-text">{message}</p>}

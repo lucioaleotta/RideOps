@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from 'react';
+import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, LockIcon, SaveIcon } from './action-icons';
 
 type VehicleType = 'SEDAN' | 'VAN' | 'MINIBUS' | 'SUV' | 'OTHER';
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
@@ -258,7 +259,7 @@ export function FleetVehiclesPanel() {
               }
             }}
           >
-            {isFormOpen && !editingId ? 'Chiudi form' : 'Nuovo veicolo'}
+            <ButtonContent icon={isFormOpen && !editingId ? <LockIcon /> : <AddIcon />}>{isFormOpen && !editingId ? 'Chiudi form' : 'Nuovo veicolo'}</ButtonContent>
           </button>
         </div>
 
@@ -319,7 +320,7 @@ export function FleetVehiclesPanel() {
                     className="primary-button compact-button"
                     onClick={() => setInitialDeadlines((prev) => [...prev, { ...defaultDeadline }])}
                   >
-                    Aggiungi scadenza
+                    <ButtonContent icon={<AddIcon />}>Aggiungi scadenza</ButtonContent>
                   </button>
                 </div>
 
@@ -450,7 +451,7 @@ export function FleetVehiclesPanel() {
                             });
                           }}
                         >
-                          Rimuovi
+                          <ButtonContent icon={<DeleteIcon />}>Rimuovi</ButtonContent>
                         </button>
                       </div>
                     </div>
@@ -461,10 +462,10 @@ export function FleetVehiclesPanel() {
 
             <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
-                {submitting ? 'Salvataggio...' : editingId ? 'Aggiorna veicolo' : 'Crea veicolo'}
+                <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : editingId ? 'Aggiorna veicolo' : 'Crea veicolo'}</ButtonContent>
               </button>
               <button type="button" className="logout-button" onClick={closeForm}>
-                Annulla
+                <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
               </button>
             </div>
           </form>
@@ -506,14 +507,14 @@ export function FleetVehiclesPanel() {
                           className="primary-button compact-button"
                           onClick={() => onEdit(vehicle)}
                         >
-                          Modifica
+                          <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
                         </button>
                         <button
                           type="button"
                           className="logout-button"
                           onClick={() => onDelete(vehicle.id)}
                         >
-                          Elimina
+                          <ButtonContent icon={<DeleteIcon />}>Elimina</ButtonContent>
                         </button>
                       </div>
                     </td>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ButtonContent, LoginIcon } from '../components/action-icons';
 
 export default function HomePage() {
   return (
@@ -8,7 +9,7 @@ export default function HomePage() {
         <h1>RideOps Dashboard</h1>
         <p>Interfaccia moderna pronta per operatività e monitoraggio servizi.</p>
         <p>
-          <Link href="/login" className="primary-button">Accedi</Link>
+          <Link href="/login" className="primary-button"><ButtonContent icon={<LoginIcon />}>Accedi</ButtonContent></Link>
         </p>
       </section>
     </main>

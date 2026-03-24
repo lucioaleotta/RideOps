@@ -5,8 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.rideops.identity.adapters.out.EmailOutboxRepository;
 import com.rideops.partners.adapters.out.PartnerEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
+import com.rideops.partners.adapters.out.PartnerServiceCommunicationRepository;
 import com.rideops.partners.domain.PartnerType;
 import com.rideops.services.adapters.out.RideServiceRepository;
 import com.rideops.services.domain.ServiceAssignmentType;
@@ -27,11 +29,22 @@ class PartnerServiceTest {
     @Mock
     private RideServiceRepository rideServiceRepository;
 
+    @Mock
+    private EmailOutboxRepository emailOutboxRepository;
+
+    @Mock
+    private PartnerServiceCommunicationRepository communicationRepository;
+
     private PartnerService service;
 
     @BeforeEach
     void setUp() {
-        service = new PartnerService(partnerRepository, rideServiceRepository);
+        service = new PartnerService(
+            partnerRepository,
+            rideServiceRepository,
+            emailOutboxRepository,
+            communicationRepository
+        );
     }
 
     @Test
