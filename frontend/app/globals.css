@@ -679,6 +679,23 @@ a:hover {
   padding: 8px 4px;
 }
 
+.services-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 31, 47, 0.38);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  z-index: 40;
+}
+
+.services-modal-card {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  box-shadow: 0 24px 70px rgba(12, 26, 42, 0.22);
+}
+
 .services-filters-label,
 .services-mobile-list,
 .admin-users-mobile-list,
@@ -973,6 +990,16 @@ a:hover {
   .services-selected-deselect {
     font-size: 14px;
     margin-left: auto;
+  }
+
+  .services-modal-overlay {
+    padding: 12px;
+    align-items: end;
+  }
+
+  .services-modal-card {
+    width: 100%;
+    max-height: min(88vh, 760px);
   }
 
   .content-panel > h1 {

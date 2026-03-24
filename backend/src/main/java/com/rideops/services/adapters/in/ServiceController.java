@@ -9,6 +9,7 @@ import com.rideops.services.application.DeleteServiceUseCase;
 import com.rideops.services.application.GetServiceUseCase;
 import com.rideops.services.application.GetUnassignedServicesCountUseCase;
 import com.rideops.services.application.ListServicesUseCase;
+import com.rideops.services.application.OutsourceServiceUseCase;
 import com.rideops.services.application.ServiceDto;
 import com.rideops.services.application.ServiceNotFoundException;
 import com.rideops.services.application.ServiceValidationException;
@@ -17,6 +18,7 @@ import com.rideops.services.application.UpdateServiceCommand;
 import com.rideops.services.application.UpdateServiceUseCase;
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
+import com.rideops.services.domain.ServiceAssignmentType;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -55,6 +57,7 @@ public class ServiceController {
     private final GetUnassignedServicesCountUseCase getUnassignedServicesCountUseCase;
     private final ListServicesUseCase listServicesUseCase;
     private final GetServiceUseCase getServiceUseCase;
+    private final OutsourceServiceUseCase outsourceServiceUseCase;
 
     public ServiceController(CreateServiceUseCase createServiceUseCase,
                              UpdateServiceUseCase updateServiceUseCase,
@@ -64,7 +67,8 @@ public class ServiceController {
                              UnassignServiceUseCase unassignServiceUseCase,
                              GetUnassignedServicesCountUseCase getUnassignedServicesCountUseCase,
                              ListServicesUseCase listServicesUseCase,
-                             GetServiceUseCase getServiceUseCase) {
+                             GetServiceUseCase getServiceUseCase,
+                             OutsourceServiceUseCase outsourceServiceUseCase) {
         this.createServiceUseCase = createServiceUseCase;
         this.updateServiceUseCase = updateServiceUseCase;
         this.deleteServiceUseCase = deleteServiceUseCase;
@@ -74,6 +78,7 @@ public class ServiceController {
         this.getUnassignedServicesCountUseCase = getUnassignedServicesCountUseCase;
         this.listServicesUseCase = listServicesUseCase;
         this.getServiceUseCase = getServiceUseCase;
+        this.outsourceServiceUseCase = outsourceServiceUseCase;
     }
 
     @GetMapping
@@ -112,6 +117,9 @@ public class ServiceController {
                 request.passengersCount(),
                 request.itinerary(),
                 request.status(),
+                request.serviceAssignmentType(),
+                request.partnerId(),
+                request.pricePartner(),
                 request.assignedVehicleId(),
                 request.overrideVehicleDayConflict(),
                 request.overrideVehicleMaintenanceConflict()
@@ -139,6 +147,9 @@ public class ServiceController {
                 request.passengersCount(),
                 request.itinerary(),
                 request.status(),
+                request.serviceAssignmentType(),
+                request.partnerId(),
+                request.pricePartner(),
                 request.assignedVehicleId(),
                 request.overrideVehicleDayConflict(),
                 request.overrideVehicleMaintenanceConflict()
@@ -172,6 +183,12 @@ public class ServiceController {
         return unassignServiceUseCase.execute(serviceId);
     }
 
+    @PatchMapping("/{serviceId}/outsource")
+    public ServiceDto outsource(@PathVariable @NonNull Long serviceId,
+                                @Valid @RequestBody OutsourceRequest request) {
+        return outsourceServiceUseCase.execute(serviceId, request.partnerId(), request.pricePartner());
+    }
+
     @GetMapping("/unassigned/count")
     public CountResponse unassignedCount() {
         return new CountResponse(getUnassignedServicesCountUseCase.execute());
@@ -203,6 +220,9 @@ public class ServiceController {
                                 Integer passengersCount,
                                 String itinerary,
                                 @NotNull ServiceStatus status,
+                                ServiceAssignmentType serviceAssignmentType,
+                                Long partnerId,
+                                BigDecimal pricePartner,
                                 Long assignedVehicleId,
                                 Boolean overrideVehicleDayConflict,
                                 Boolean overrideVehicleMaintenanceConflict) {
@@ -222,6 +242,9 @@ public class ServiceController {
                                 Integer passengersCount,
                                 String itinerary,
                                 @NotNull ServiceStatus status,
+                                ServiceAssignmentType serviceAssignmentType,
+                                Long partnerId,
+                                BigDecimal pricePartner,
                                 Long assignedVehicleId,
                                 Boolean overrideVehicleDayConflict,
                                 Boolean overrideVehicleMaintenanceConflict) {
@@ -231,6 +254,10 @@ public class ServiceController {
     }
 
     record AssignRequest(@NotNull Long driverId) {
+    }
+
+    record OutsourceRequest(@NotNull Long partnerId,
+                            @NotNull BigDecimal pricePartner) {
     }
 
     record CountResponse(long count) {

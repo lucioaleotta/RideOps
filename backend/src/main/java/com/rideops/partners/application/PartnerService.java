@@ -3,6 +3,8 @@ package com.rideops.partners.application;
 import com.rideops.partners.adapters.out.PartnerEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
 import com.rideops.partners.domain.PartnerType;
+import com.rideops.services.adapters.out.RideServiceRepository;
+import com.rideops.services.domain.ServiceAssignmentType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -13,9 +15,12 @@ import org.springframework.stereotype.Service;
 public class PartnerService {
 
     private final PartnerRepository partnerRepository;
+    private final RideServiceRepository rideServiceRepository;
 
-    public PartnerService(PartnerRepository partnerRepository) {
+    public PartnerService(PartnerRepository partnerRepository,
+                          RideServiceRepository rideServiceRepository) {
         this.partnerRepository = partnerRepository;
+        this.rideServiceRepository = rideServiceRepository;
     }
 
     public List<PartnerDto> search(String ragioneSociale, PartnerType type, boolean includeDeleted) {
@@ -179,8 +184,10 @@ public class PartnerService {
     }
 
     private PartnerDto toDto(PartnerEntity entity) {
-        BigDecimal totaleCrediti = BigDecimal.ZERO;
-        BigDecimal totaleDebiti = BigDecimal.ZERO;
+        BigDecimal totaleCrediti = rideServiceRepository
+            .sumPriceByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.INCOMING);
+        BigDecimal totaleDebiti = rideServiceRepository
+            .sumPricePartnerByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.OUTSOURCED);
         BigDecimal saldoAttuale = totaleCrediti.subtract(totaleDebiti);
 
         return new PartnerDto(

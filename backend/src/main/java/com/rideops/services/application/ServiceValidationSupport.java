@@ -1,9 +1,11 @@
 package com.rideops.services.application;
 
 import com.rideops.services.domain.RideService;
+import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceDomainException;
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
+import java.math.BigDecimal;
 
 final class ServiceValidationSupport {
 
@@ -16,6 +18,10 @@ final class ServiceValidationSupport {
             throw new ServiceValidationException("Il servizio non puo` essere creato con stato CLOSED");
         }
         return safeStatus;
+    }
+
+    static ServiceAssignmentType sanitizeCreateAssignmentType(ServiceAssignmentType assignmentType) {
+        return assignmentType == null ? ServiceAssignmentType.INTERNAL : assignmentType;
     }
 
     static void validateBusinessFields(ServiceType type,
@@ -58,5 +64,49 @@ final class ServiceValidationSupport {
         if (passengersCount != null && passengersCount <= 0) {
             throw new ServiceValidationException("Il numero passeggeri deve essere positivo");
         }
+    }
+
+    static void validateAssignmentBusinessRules(ServiceAssignmentType assignmentType,
+                                                Long partnerId,
+                                                BigDecimal pricePartner) {
+        ServiceAssignmentType safeType = sanitizeCreateAssignmentType(assignmentType);
+
+        if (safeType == ServiceAssignmentType.INTERNAL) {
+            if (partnerId != null || pricePartner != null) {
+                throw new ServiceValidationException("Per servizi INTERNAL partner e prezzo partner non sono ammessi");
+            }
+            return;
+        }
+
+        if (partnerId == null) {
+            throw new ServiceValidationException("Il partner e` obbligatorio per servizi OUTSOURCED/INCOMING");
+        }
+
+        if (safeType == ServiceAssignmentType.OUTSOURCED) {
+            if (pricePartner == null || pricePartner.signum() < 0) {
+                throw new ServiceValidationException("Il prezzo partner e` obbligatorio e non negativo per OUTSOURCED");
+            }
+            return;
+        }
+
+        if (pricePartner != null && pricePartner.signum() < 0) {
+            throw new ServiceValidationException("Il prezzo partner non puo` essere negativo");
+        }
+    }
+
+    static void validateAssignmentTransition(ServiceAssignmentType currentType, ServiceAssignmentType targetType) {
+        ServiceAssignmentType safeCurrent = sanitizeCreateAssignmentType(currentType);
+        ServiceAssignmentType safeTarget = sanitizeCreateAssignmentType(targetType);
+
+        if (safeCurrent == ServiceAssignmentType.INCOMING && safeTarget == ServiceAssignmentType.INTERNAL) {
+            throw new ServiceValidationException("Un servizio INCOMING non puo` diventare INTERNAL");
+        }
+    }
+
+    static BigDecimal calculateMargin(BigDecimal servicePrice, BigDecimal pricePartner) {
+        if (servicePrice == null || pricePartner == null) {
+            return null;
+        }
+        return servicePrice.subtract(pricePartner);
     }
 }

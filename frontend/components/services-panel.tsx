@@ -6,6 +6,7 @@ import { formatCurrencyEUR } from '../lib/currency';
 
 type ServiceType = 'TRANSFER' | 'TOUR';
 type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'CLOSED';
+type ServiceAssignmentType = 'INTERNAL' | 'OUTSOURCED' | 'INCOMING';
 
 type ServiceItem = {
   id: number;
@@ -28,8 +29,18 @@ type ServiceItem = {
   assignedVehicleId: number | null;
   assignedByUserId: number | null;
   assignedAt: string | null;
+  serviceAssignmentType: ServiceAssignmentType;
+  partnerId: number | null;
+  pricePartner: number | null;
+  margin: number | null;
   createdAt: string;
   updatedAt: string;
+};
+
+type PartnerItem = {
+  id: number;
+  ragioneSociale: string;
+  deleted: boolean;
 };
 
 type DriverItem = {
@@ -58,6 +69,10 @@ type ServiceFormState = {
   clientEmail: string;
   passengersCount: string;
   itinerary: string;
+  serviceAssignmentType: ServiceAssignmentType;
+  partnerId: number | '';
+  pricePartner: string;
+  receivedFromPartner: boolean;
   assignedDriverId: number | '';
   assignedVehicleId: number | '';
 };
@@ -93,6 +108,10 @@ const defaultForm: ServiceFormState = {
   clientEmail: '',
   passengersCount: '',
   itinerary: '',
+  serviceAssignmentType: 'INTERNAL',
+  partnerId: '',
+  pricePartner: '',
+  receivedFromPartner: false,
   assignedDriverId: '',
   assignedVehicleId: ''
 };
@@ -224,6 +243,7 @@ export function ServicesPanel() {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
+  const [partners, setPartners] = useState<PartnerItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -235,6 +255,10 @@ export function ServicesPanel() {
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [selectedForPrintIds, setSelectedForPrintIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [outsourceOpen, setOutsourceOpen] = useState(false);
+  const [outsourcePartnerQuery, setOutsourcePartnerQuery] = useState('');
+  const [outsourcePartnerId, setOutsourcePartnerId] = useState<number | ''>('');
+  const [outsourcePricePartner, setOutsourcePricePartner] = useState('');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
@@ -279,6 +303,26 @@ export function ServicesPanel() {
     return 'Tour';
   }
 
+  function assignmentTypeLabel(type: ServiceAssignmentType) {
+    if (type === 'OUTSOURCED') {
+      return 'Affidato';
+    }
+    if (type === 'INCOMING') {
+      return 'Ricevuto';
+    }
+    return 'Interno';
+  }
+
+  function assignmentTypeClass(type: ServiceAssignmentType) {
+    if (type === 'OUTSOURCED') {
+      return 'assigned';
+    }
+    if (type === 'INCOMING') {
+      return 'open';
+    }
+    return 'closed';
+  }
+
   function toStartDateTime(dateValue: string) {
     return `${dateValue}T00:00:00`;
   }
@@ -314,6 +358,18 @@ export function ServicesPanel() {
     }
 
     setVehicles(payload as VehicleItem[]);
+  }
+
+  async function loadPartners() {
+    const response = await fetch('/api/partners', { cache: 'no-store' });
+    const payload = (await response.json().catch(() => [])) as PartnerItem[] | { message?: string };
+
+    if (!response.ok) {
+      setError((payload as { message?: string }).message ?? 'Errore caricamento partner');
+      return;
+    }
+
+    setPartners((payload as PartnerItem[]).filter((partner) => !partner.deleted));
   }
 
   async function loadServices() {
@@ -359,6 +415,7 @@ export function ServicesPanel() {
   useEffect(() => {
     loadDrivers();
     loadVehicles();
+    loadPartners();
   }, []);
 
   useEffect(() => {
@@ -394,6 +451,10 @@ export function ServicesPanel() {
   }
 
   function toPayload(status: Exclude<ServiceStatus, 'CLOSED'>) {
+    const assignmentType: ServiceAssignmentType = form.receivedFromPartner
+      ? 'INCOMING'
+      : form.serviceAssignmentType;
+
     return {
       startAt: form.startAt,
       pickupLocation: form.pickupLocation,
@@ -411,6 +472,9 @@ export function ServicesPanel() {
       passengersCount: form.passengersCount.trim() ? Number(form.passengersCount) : null,
       itinerary: form.itinerary.trim() || null,
       status,
+      serviceAssignmentType: assignmentType,
+      partnerId: form.partnerId ? Number(form.partnerId) : null,
+      pricePartner: form.pricePartner.trim() ? Number(form.pricePartner) : null,
       assignedVehicleId: form.assignedVehicleId ? Number(form.assignedVehicleId) : null
     };
   }
@@ -458,6 +522,22 @@ export function ServicesPanel() {
     setSubmitting(true);
     setError(null);
     setSuccess(null);
+
+    const effectiveAssignmentType: ServiceAssignmentType = form.receivedFromPartner
+      ? 'INCOMING'
+      : form.serviceAssignmentType;
+
+    if ((effectiveAssignmentType === 'INCOMING' || effectiveAssignmentType === 'OUTSOURCED') && !form.partnerId) {
+      setSubmitting(false);
+      setError('Seleziona un partner per servizi ricevuti/affidati');
+      return;
+    }
+
+    if (effectiveAssignmentType === 'OUTSOURCED' && !form.pricePartner.trim()) {
+      setSubmitting(false);
+      setError('Inserisci il prezzo partner per servizi affidati');
+      return;
+    }
 
     const targetUrl = editingId ? `/api/services/${editingId}` : '/api/services';
     const method = editingId ? 'PUT' : 'POST';
@@ -564,6 +644,10 @@ export function ServicesPanel() {
       clientEmail: service.clientEmail ?? '',
       passengersCount: service.passengersCount != null ? String(service.passengersCount) : '',
       itinerary: service.itinerary ?? '',
+      serviceAssignmentType: service.serviceAssignmentType,
+      partnerId: service.partnerId ?? '',
+      pricePartner: service.pricePartner != null ? String(service.pricePartner) : '',
+      receivedFromPartner: service.serviceAssignmentType === 'INCOMING',
       assignedDriverId: service.assignedDriverId ?? '',
       assignedVehicleId: service.assignedVehicleId ?? ''
     });
@@ -599,6 +683,61 @@ export function ServicesPanel() {
     }
 
     setSuccess('Servizio chiuso');
+    await loadServices();
+  }
+
+  function openOutsourceModal(service: ServiceItem) {
+    setOutsourceOpen(true);
+    setOutsourcePartnerQuery('');
+    setOutsourcePartnerId(service.partnerId ?? '');
+    setOutsourcePricePartner(service.pricePartner != null ? String(service.pricePartner) : '');
+    setError(null);
+    setSuccess(null);
+  }
+
+  function closeOutsourceModal() {
+    setOutsourceOpen(false);
+    setOutsourcePartnerQuery('');
+    setOutsourcePartnerId('');
+    setOutsourcePricePartner('');
+  }
+
+  async function submitOutsource() {
+    if (!selectedService) {
+      return;
+    }
+    if (!outsourcePartnerId) {
+      setError('Seleziona un partner');
+      return;
+    }
+    if (!outsourcePricePartner.trim()) {
+      setError('Inserisci il prezzo partner');
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/services/${selectedService.id}/outsource`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        partnerId: Number(outsourcePartnerId),
+        pricePartner: Number(outsourcePricePartner)
+      })
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as { message?: string };
+    setSubmitting(false);
+
+    if (!response.ok) {
+      setError(payload.message ?? 'Affidamento a partner fallito');
+      return;
+    }
+
+    setSuccess('Servizio affidato a partner');
+    closeOutsourceModal();
     await loadServices();
   }
 
@@ -667,6 +806,17 @@ export function ServicesPanel() {
     return found.plate;
   }
 
+  function partnerLabel(partnerId: number | null) {
+    if (!partnerId) {
+      return '-';
+    }
+    const found = partners.find((partner) => partner.id === partnerId);
+    if (!found) {
+      return `#${partnerId}`;
+    }
+    return found.ragioneSociale;
+  }
+
   const orderedServices = useMemo(
     () => [...services].sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime()),
     [services]
@@ -689,6 +839,26 @@ export function ServicesPanel() {
     () => orderedServices.find((item) => item.id === selectedServiceId) ?? null,
     [orderedServices, selectedServiceId]
   );
+
+  const filteredPartners = useMemo(() => {
+    const query = outsourcePartnerQuery.trim().toLowerCase();
+    if (!query) {
+      return partners;
+    }
+    return partners.filter((partner) => partner.ragioneSociale.toLowerCase().includes(query));
+  }, [partners, outsourcePartnerQuery]);
+
+  const outsourceMarginPreview = useMemo(() => {
+    if (!selectedService || !outsourcePricePartner.trim()) {
+      return null;
+    }
+    const servicePrice = selectedService.price;
+    const partnerPrice = Number(outsourcePricePartner);
+    if (servicePrice == null || Number.isNaN(partnerPrice)) {
+      return null;
+    }
+    return servicePrice - partnerPrice;
+  }, [selectedService, outsourcePricePartner]);
 
   useEffect(() => {
     if (!selectedServiceId) {
@@ -852,6 +1022,9 @@ export function ServicesPanel() {
                       {statusLabel(selectedService.status)}
                     </span>
                     <span className="services-selected-chip services-selected-chip-type">{typeLabel(selectedService.type)}</span>
+                    <span className={`services-selected-chip services-selected-chip-status ${assignmentTypeClass(selectedService.serviceAssignmentType)}`}>
+                      {assignmentTypeLabel(selectedService.serviceAssignmentType)}
+                    </span>
                   </div>
                   <button
                     type="button"
@@ -896,6 +1069,21 @@ export function ServicesPanel() {
                       icon={<DetailEuroIcon />}
                       label="Prezzo"
                       value={formatCurrencyEUR(selectedService.price)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailUserIcon />}
+                      label="Partner"
+                      value={partnerLabel(selectedService.partnerId)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailEuroIcon />}
+                      label="Prezzo partner"
+                      value={formatCurrencyEUR(selectedService.pricePartner)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailEuroIcon />}
+                      label="Margine"
+                      value={formatCurrencyEUR(selectedService.margin)}
                     />
                   </div>
                 </div>
@@ -969,6 +1157,15 @@ export function ServicesPanel() {
                       onClick={() => onClose(selectedService.id)}
                     >
                       Chiudi
+                    </button>
+                  )}
+                  {selectedService.serviceAssignmentType === 'INTERNAL' && selectedService.status !== 'CLOSED' && (
+                    <button
+                      type="button"
+                      className="compact-button services-selected-close-service"
+                      onClick={() => openOutsourceModal(selectedService)}
+                    >
+                      Affida a partner
                     </button>
                   )}
                   <button type="button" className="compact-button services-selected-print" onClick={() => openPrint(selectedService.id)}>
@@ -1130,6 +1327,9 @@ export function ServicesPanel() {
                         <span className={`service-chip service-chip-status ${statusClass(service.status)}`}>
                           {statusLabel(service.status)}
                         </span>
+                        <span className={`service-chip service-chip-status ${assignmentTypeClass(service.serviceAssignmentType)}`}>
+                          {assignmentTypeLabel(service.serviceAssignmentType)}
+                        </span>
                       </div>
                       <strong className="service-mobile-price">{formatCurrencyEUR(service.price)}</strong>
                     </div>
@@ -1209,6 +1409,70 @@ export function ServicesPanel() {
           </>
         )}
       </article>
+
+      {outsourceOpen && selectedService && (
+        <div className="services-modal-overlay" role="dialog" aria-modal="true" aria-label="Affida servizio a partner">
+          <article className="dashboard-card services-modal-card" style={{ borderColor: '#f0d7b3', background: '#fff9ef' }}>
+            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+              <h3>Affida servizio #{selectedService.id} a partner</h3>
+              <button type="button" className="logout-button" onClick={closeOutsourceModal}>Chiudi</button>
+            </div>
+
+            <div className="form-grid" style={{ display: 'grid', gap: 10, marginTop: 8 }}>
+              <label>
+                Cerca partner
+                <input
+                  className="form-input"
+                  value={outsourcePartnerQuery}
+                  onChange={(event) => setOutsourcePartnerQuery(event.target.value)}
+                  placeholder="Filtra per ragione sociale"
+                />
+              </label>
+
+              <label>
+                Partner
+                <select
+                  className="form-input"
+                  value={outsourcePartnerId}
+                  onChange={(event) => setOutsourcePartnerId(event.target.value ? Number(event.target.value) : '')}
+                >
+                  <option value="">Seleziona partner</option>
+                  {filteredPartners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>{partner.ragioneSociale}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Prezzo partner
+                <input
+                  className="form-input"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={outsourcePricePartner}
+                  onChange={(event) => setOutsourcePricePartner(event.target.value)}
+                />
+                <small style={{ color: 'var(--muted)' }}>
+                  Margine previsto: {outsourceMarginPreview == null ? '-' : formatCurrencyEUR(outsourceMarginPreview)}
+                </small>
+              </label>
+
+              <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  className="primary-button compact-button"
+                  onClick={submitOutsource}
+                  disabled={submitting}
+                >
+                  {submitting ? 'Salvataggio...' : 'Conferma affidamento'}
+                </button>
+                <button type="button" className="logout-button" onClick={closeOutsourceModal}>Annulla</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      )}
 
       {isFormOpen && (
         <article className="dashboard-card">
@@ -1363,6 +1627,58 @@ export function ServicesPanel() {
                 rows={3}
               />
             </label>
+
+            {!editingId && (
+              <label className="inline-checkbox" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={form.receivedFromPartner}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      receivedFromPartner: event.target.checked,
+                      serviceAssignmentType: event.target.checked ? 'INCOMING' : 'INTERNAL',
+                      pricePartner: event.target.checked ? '' : prev.pricePartner
+                    }))
+                  }
+                />
+                Ricevuto da partner
+              </label>
+            )}
+
+            {(form.receivedFromPartner || form.serviceAssignmentType === 'INCOMING' || form.serviceAssignmentType === 'OUTSOURCED') && (
+              <label>
+                Partner
+                <select
+                  className="form-input"
+                  value={form.partnerId}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      partnerId: event.target.value ? Number(event.target.value) : ''
+                    }))
+                  }
+                  required={form.receivedFromPartner || form.serviceAssignmentType !== 'INTERNAL'}
+                >
+                  <option value="">Seleziona partner</option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>{partner.ragioneSociale}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {editingId && (
+              <label>
+                Modalita` gestione servizio
+                <input
+                  className="form-input"
+                  value={assignmentTypeLabel(form.serviceAssignmentType)}
+                  readOnly
+                  disabled
+                />
+              </label>
+            )}
 
             <label>
               Driver (opzionale)

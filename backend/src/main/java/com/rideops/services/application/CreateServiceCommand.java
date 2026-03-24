@@ -2,6 +2,7 @@ package com.rideops.services.application;
 
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
+import com.rideops.services.domain.ServiceAssignmentType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -20,6 +21,9 @@ public record CreateServiceCommand(
     Integer passengersCount,
     String itinerary,
     ServiceStatus status,
+    ServiceAssignmentType serviceAssignmentType,
+    Long partnerId,
+    BigDecimal pricePartner,
     Long assignedVehicleId,
     Boolean overrideVehicleDayConflict,
     Boolean overrideVehicleMaintenanceConflict

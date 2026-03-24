@@ -8,6 +8,9 @@ import static org.mockito.Mockito.when;
 import com.rideops.partners.adapters.out.PartnerEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
 import com.rideops.partners.domain.PartnerType;
+import com.rideops.services.adapters.out.RideServiceRepository;
+import com.rideops.services.domain.ServiceAssignmentType;
+import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,11 +24,14 @@ class PartnerServiceTest {
     @Mock
     private PartnerRepository partnerRepository;
 
+    @Mock
+    private RideServiceRepository rideServiceRepository;
+
     private PartnerService service;
 
     @BeforeEach
     void setUp() {
-        service = new PartnerService(partnerRepository);
+        service = new PartnerService(partnerRepository, rideServiceRepository);
     }
 
     @Test
@@ -34,6 +40,7 @@ class PartnerServiceTest {
         PartnerEntity deleted = partner(2L, PartnerType.AGENZIA, "Travel Old", true);
 
         when(partnerRepository.findAllByOrderByRagioneSocialeAsc()).thenReturn(List.of(active, deleted));
+        mockAccounting(active.getId());
 
         List<PartnerDto> result = service.search(null, null, false);
 
@@ -48,6 +55,8 @@ class PartnerServiceTest {
         PartnerEntity deleted = partner(2L, PartnerType.NCC, "NCC Beta", true);
 
         when(partnerRepository.findAllByTypeOrderByRagioneSocialeAsc(PartnerType.NCC)).thenReturn(List.of(active, deleted));
+        mockAccounting(active.getId());
+        mockAccounting(deleted.getId());
 
         List<PartnerDto> result = service.search(null, PartnerType.NCC, true);
 
@@ -63,6 +72,8 @@ class PartnerServiceTest {
         PartnerEntity p3 = partner(3L, PartnerType.AGENZIA, "TRAVEL Hub Milano", false);
 
         when(partnerRepository.findAllByTypeOrderByRagioneSocialeAsc(PartnerType.AGENZIA)).thenReturn(List.of(p1, p2, p3));
+        mockAccounting(p1.getId());
+        mockAccounting(p3.getId());
 
         List<PartnerDto> result = service.search("travel", PartnerType.AGENZIA, false);
 
@@ -91,5 +102,12 @@ class PartnerServiceTest {
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException(exception);
         }
+    }
+
+    private void mockAccounting(Long partnerId) {
+        when(rideServiceRepository.sumPriceByPartnerIdAndAssignmentType(partnerId, ServiceAssignmentType.INCOMING))
+            .thenReturn(BigDecimal.ZERO);
+        when(rideServiceRepository.sumPricePartnerByPartnerIdAndAssignmentType(partnerId, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(BigDecimal.ZERO);
     }
 }

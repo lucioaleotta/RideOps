@@ -29,6 +29,10 @@ public final class ServiceMapper {
             entity.getAssignedVehicleId(),
             entity.getAssignedByUserId(),
             entity.getAssignedAt(),
+            entity.getServiceAssignmentType(),
+            entity.getPartnerId(),
+            entity.getPricePartner(),
+            entity.getMargin(),
             entity.getCreatedAt(),
             entity.getUpdatedAt()
         );
