@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { formatCurrencyEUR } from '../lib/currency';
 
@@ -138,6 +138,74 @@ function MobileArrowRightIcon() {
       <path d="M5 12h13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       <path d="m13 7 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+function DetailUserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="8" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5.5 19c1.4-3.2 4-4.8 6.5-4.8s5.1 1.6 6.5 4.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DetailCarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6.5 14.5h11l-1.1-3.1a1.8 1.8 0 0 0-1.7-1.2H9.3a1.8 1.8 0 0 0-1.7 1.2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M4.8 16.2c0-1 .8-1.7 1.7-1.7h11c1 0 1.7.8 1.7 1.7v2.2H4.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="7.8" cy="18.4" r="1" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="16.2" cy="18.4" r="1" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function DetailEuroIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M16.5 7.6a5.6 5.6 0 0 0-3.5-1.1c-2.8 0-4.9 1.7-5.5 4.1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M16.5 16.4a5.6 5.6 0 0 1-3.5 1.1c-2.8 0-4.9-1.7-5.5-4.1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M5.7 10.7h7.5M5.7 13.3h7.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DetailDocumentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M8 4.8h6.8l3.2 3.2v10.6A1.6 1.6 0 0 1 16.4 20H8a1.6 1.6 0 0 1-1.6-1.6V6.4A1.6 1.6 0 0 1 8 4.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M14.8 4.8V8H18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M9.2 11.2h5.6M9.2 14.2h5.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DetailPhoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 4.8h10a1.5 1.5 0 0 1 1.5 1.5v11.4a1.5 1.5 0 0 1-1.5 1.5H7a1.5 1.5 0 0 1-1.5-1.5V6.3A1.5 1.5 0 0 1 7 4.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M10 7h4M11 17.2h2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DetailMailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="4.8" y="6.2" width="14.4" height="11.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="m6.4 8 5.6 4.6L17.6 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ServiceDetailRow({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
+  return (
+    <div className="services-selected-row">
+      <span className="services-selected-icon">{icon}</span>
+      <span className="services-selected-label">{label}</span>
+      <span className="services-selected-value">{value}</span>
+    </div>
   );
 }
 
@@ -776,57 +844,120 @@ export function ServicesPanel() {
         ) : (
           <>
             {selectedService && (
-              <div className="dashboard-card" style={{ marginTop: 10, background: '#eef6ff' }}>
-                <strong>Servizio selezionato #{selectedService.id}</strong>
-                <p style={{ margin: '6px 0 0' }}>
-                  {new Date(selectedService.startAt).toLocaleString('it-IT')} - {typeLabel(selectedService.type)} - {statusLabel(selectedService.status)}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  {selectedService.pickupLocation} {'->'} {selectedService.destination}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Driver:</strong> {assignedDriverLabel(selectedService)}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Veicolo:</strong> {assignedVehicleLabel(selectedService)}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Prezzo:</strong> {formatCurrencyEUR(selectedService.price)}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Rif. prenotazione esterno:</strong> {selectedService.externalBookingReference ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Rif. prenotazione interno:</strong> {selectedService.internalBookingReference ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Cliente:</strong> {selectedService.clientName ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Telefono cliente:</strong> {selectedService.clientPhone ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Email cliente:</strong> {selectedService.clientEmail ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Numero passeggeri:</strong> {selectedService.passengersCount ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Itinerario:</strong> {selectedService.itinerary ?? '-'}
-                </p>
-                {selectedService.notes && (
-                  <p style={{ margin: '6px 0 0' }}>
-                    <strong>Note:</strong> {selectedService.notes}
-                  </p>
-                )}
-                <div className="table-actions" style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="dashboard-card services-selected-detail" style={{ marginTop: 10 }}>
+                <div className="services-selected-header">
+                  <div className="services-selected-heading">
+                    <strong className="services-selected-title">Servizio #{selectedService.id}</strong>
+                    <span className={`services-selected-chip services-selected-chip-status ${statusClass(selectedService.status)}`}>
+                      {statusLabel(selectedService.status)}
+                    </span>
+                    <span className="services-selected-chip services-selected-chip-type">{typeLabel(selectedService.type)}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="services-selected-close"
+                    aria-label="Chiudi dettaglio servizio"
+                    onClick={() => setSelectedServiceId(null)}
+                  >
+                    x
+                  </button>
+                </div>
+
+                <div className="services-selected-grid">
+                  <div className="services-selected-column">
+                    <ServiceDetailRow
+                      icon={<MobileClockIcon />}
+                      label="Data e ora"
+                      value={new Date(selectedService.startAt).toLocaleString('it-IT')}
+                    />
+                    <ServiceDetailRow
+                      icon={<MobilePinIcon />}
+                      label="Pickup"
+                      value={selectedService.pickupLocation}
+                    />
+                    <ServiceDetailRow
+                      icon={<MobilePinIcon />}
+                      label="Destinazione"
+                      value={selectedService.destination}
+                    />
+                  </div>
+                  <div className="services-selected-column">
+                    <ServiceDetailRow
+                      icon={<DetailUserIcon />}
+                      label="Driver"
+                      value={assignedDriverLabel(selectedService)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailCarIcon />}
+                      label="Veicolo"
+                      value={assignedVehicleLabel(selectedService)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailEuroIcon />}
+                      label="Prezzo"
+                      value={formatCurrencyEUR(selectedService.price)}
+                    />
+                  </div>
+                </div>
+
+                <div className="services-selected-divider" />
+
+                <div className="services-selected-grid">
+                  <div className="services-selected-column">
+                    <ServiceDetailRow
+                      icon={<DetailUserIcon />}
+                      label="Cliente"
+                      value={selectedService.clientName ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailPhoneIcon />}
+                      label="Telefono"
+                      value={selectedService.clientPhone ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailMailIcon />}
+                      label="Email"
+                      value={selectedService.clientEmail ?? '-'}
+                    />
+                  </div>
+                  <div className="services-selected-column">
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Passeggeri"
+                      value={selectedService.passengersCount ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Rif. esterno"
+                      value={selectedService.externalBookingReference ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Rif. interno"
+                      value={selectedService.internalBookingReference ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Itinerario"
+                      value={selectedService.itinerary ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Note"
+                      value={selectedService.notes ?? '-'}
+                    />
+                  </div>
+                </div>
+
+                <div className="services-selected-divider" />
+
+                <div className="table-actions services-selected-actions" style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button type="button" className="primary-button compact-button" onClick={() => onEdit(selectedService)}>
                     Modifica
                   </button>
                   <button
                     type="button"
-                    className="primary-button compact-button"
-                    style={{ background: '#d32f2f' }}
+                    className="primary-button compact-button services-selected-delete"
                     onClick={() => onDelete(selectedService.id)}
                   >
                     Elimina
@@ -834,19 +965,18 @@ export function ServicesPanel() {
                   {selectedService.status === 'ASSIGNED' && (
                     <button
                       type="button"
-                      className="primary-button compact-button"
-                      style={{ background: '#ef6c00' }}
+                      className="compact-button services-selected-close-service"
                       onClick={() => onClose(selectedService.id)}
                     >
                       Chiudi
                     </button>
                   )}
-                  <button type="button" className="primary-button compact-button" onClick={() => openPrint(selectedService.id)}>
+                  <button type="button" className="compact-button services-selected-print" onClick={() => openPrint(selectedService.id)}>
                     Stampa
                   </button>
                   <button
                     type="button"
-                    className="logout-button compact-button"
+                    className="compact-button services-selected-deselect"
                     onClick={() => setSelectedServiceId(null)}
                   >
                     Deseleziona
