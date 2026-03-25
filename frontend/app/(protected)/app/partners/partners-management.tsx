@@ -21,6 +21,11 @@ type PartnerItem = {
   iban: string | null;
   intestatarioConto: string | null;
   notePagamenti: string | null;
+  numeroServiziAffidati: number;
+  numeroServiziRicevuti: number;
+  totaleMarginiOutsourced: number;
+  totaleRicaviIncoming: number;
+  totaleGuadagni: number;
   saldoAttuale: number;
   totaleCrediti: number;
   totaleDebiti: number;
@@ -96,6 +101,30 @@ function valueOrDash(value: string | null | undefined) {
 function currencyEur(value: number | null | undefined) {
   const amount = value ?? 0;
   return `€ ${amount.toFixed(2)}`;
+}
+
+function accountingMetricCard({ title, value, tone = 'default' }: { title: string; value: string; tone?: 'default' | 'positive' | 'negative' }) {
+  const palette = tone === 'positive'
+    ? { background: '#edf8f1', border: '#cde9d6', value: '#1d6f42' }
+    : tone === 'negative'
+      ? { background: '#fff2f0', border: '#f3cdc7', value: '#b54735' }
+      : { background: '#f6faff', border: '#dce9f8', value: '#1f4f82' };
+
+  return (
+    <div
+      style={{
+        background: palette.background,
+        border: `1px solid ${palette.border}`,
+        borderRadius: 14,
+        padding: '14px 16px',
+        display: 'grid',
+        gap: 6
+      }}
+    >
+      <span style={{ fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6c7a89', fontWeight: 700 }}>{title}</span>
+      <strong style={{ fontSize: 24, lineHeight: 1.1, color: palette.value }}>{value}</strong>
+    </div>
+  );
 }
 
 type DetailRow = {
@@ -623,16 +652,40 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
           </section>
 
           <section>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>CONTABILITA`</h4>
-            <div className="dashboard-card" style={{ paddingTop: 8, paddingBottom: 8 }}>
-              <DetailRows
-                rows={[
-                  { label: 'Note Pagamenti', value: valueOrDash(selectedPartnerDetail.notePagamenti) },
-                  { label: 'Saldo Attuale', value: currencyEur(selectedPartnerDetail.saldoAttuale) },
-                  { label: 'Totale Crediti', value: currencyEur(selectedPartnerDetail.totaleCrediti) },
-                  { label: 'Totale Debiti', value: currencyEur(selectedPartnerDetail.totaleDebiti) }
-                ]}
-              />
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>DASHBOARD CONTABILE</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              {accountingMetricCard({ title: 'Servizi affidati', value: String(selectedPartnerDetail.numeroServiziAffidati) })}
+              {accountingMetricCard({ title: 'Servizi ricevuti', value: String(selectedPartnerDetail.numeroServiziRicevuti) })}
+            </div>
+          </section>
+
+          <section>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>ANALISI ECONOMICA</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              {accountingMetricCard({ title: 'Margini OUTSOURCED', value: currencyEur(selectedPartnerDetail.totaleMarginiOutsourced), tone: 'positive' })}
+              {accountingMetricCard({ title: 'Ricavi INCOMING', value: currencyEur(selectedPartnerDetail.totaleRicaviIncoming), tone: 'positive' })}
+              {accountingMetricCard({ title: 'Totale guadagni', value: currencyEur(selectedPartnerDetail.totaleGuadagni) })}
+            </div>
+          </section>
+
+          <section>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>GESTIONE FINANZIARIA</h4>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                {accountingMetricCard({ title: 'Totale crediti', value: currencyEur(selectedPartnerDetail.totaleCrediti), tone: 'positive' })}
+                {accountingMetricCard({ title: 'Totale debiti', value: currencyEur(selectedPartnerDetail.totaleDebiti), tone: 'negative' })}
+                {accountingMetricCard({ title: 'Saldo netto', value: currencyEur(selectedPartnerDetail.saldoAttuale), tone: selectedPartnerDetail.saldoAttuale >= 0 ? 'positive' : 'negative' })}
+              </div>
+              <div className="dashboard-card" style={{ paddingTop: 8, paddingBottom: 8 }}>
+                <DetailRows
+                  rows={[
+                    { label: 'Note Pagamenti', value: valueOrDash(selectedPartnerDetail.notePagamenti) },
+                    { label: 'Crediti (partner paga te)', value: currencyEur(selectedPartnerDetail.totaleCrediti) },
+                    { label: 'Debiti (tu paghi il partner)', value: currencyEur(selectedPartnerDetail.totaleDebiti) },
+                    { label: 'Saldo Netto', value: currencyEur(selectedPartnerDetail.saldoAttuale) }
+                  ]}
+                />
+              </div>
             </div>
           </section>
 

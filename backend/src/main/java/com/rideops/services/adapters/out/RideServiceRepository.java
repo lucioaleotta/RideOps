@@ -61,6 +61,17 @@ public interface RideServiceRepository extends JpaRepository<RideServiceEntity, 
         BigDecimal sumPricePartnerByPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
                                                                                                                      @Param("assignmentType") ServiceAssignmentType assignmentType);
 
+        long countByPartnerIdAndServiceAssignmentType(Long partnerId, ServiceAssignmentType serviceAssignmentType);
+
+        @Query("""
+                SELECT COALESCE(SUM(s.margin), 0)
+                FROM RideServiceEntity s
+                WHERE s.partnerId = :partnerId
+                    AND s.serviceAssignmentType = :assignmentType
+                """)
+        BigDecimal sumMarginByPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
+                                                         @Param("assignmentType") ServiceAssignmentType assignmentType);
+
         java.util.List<RideServiceEntity> findAllByPartnerIdOrderByStartAtDesc(Long partnerId);
 
         java.util.List<RideServiceEntity> findAllByServiceAssignmentTypeAndStatusNotOrderByStartAtAsc(

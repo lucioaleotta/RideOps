@@ -95,6 +95,34 @@ class PartnerServiceTest {
         verify(partnerRepository).findAllByTypeOrderByRagioneSocialeAsc(PartnerType.AGENZIA);
     }
 
+    @Test
+    void getByIdReturnsPartnerAccountingSummary() {
+        PartnerEntity partner = partner(7L, PartnerType.NCC, "Partner Contabile", false);
+
+        when(partnerRepository.findById(7L)).thenReturn(java.util.Optional.of(partner));
+        when(rideServiceRepository.countByPartnerIdAndServiceAssignmentType(7L, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(8L);
+        when(rideServiceRepository.countByPartnerIdAndServiceAssignmentType(7L, ServiceAssignmentType.INCOMING))
+            .thenReturn(3L);
+        when(rideServiceRepository.sumMarginByPartnerIdAndAssignmentType(7L, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(new BigDecimal("1240.50"));
+        when(rideServiceRepository.sumPriceByPartnerIdAndAssignmentType(7L, ServiceAssignmentType.INCOMING))
+            .thenReturn(new BigDecimal("2750.00"));
+        when(rideServiceRepository.sumPricePartnerByPartnerIdAndAssignmentType(7L, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(new BigDecimal("1980.00"));
+
+        PartnerDto result = service.getById(7L);
+
+        assertEquals(8L, result.numeroServiziAffidati());
+        assertEquals(3L, result.numeroServiziRicevuti());
+        assertEquals(new BigDecimal("1240.50"), result.totaleMarginiOutsourced());
+        assertEquals(new BigDecimal("2750.00"), result.totaleRicaviIncoming());
+        assertEquals(new BigDecimal("3990.50"), result.totaleGuadagni());
+        assertEquals(new BigDecimal("2750.00"), result.totaleCrediti());
+        assertEquals(new BigDecimal("1980.00"), result.totaleDebiti());
+        assertEquals(new BigDecimal("770.00"), result.saldoAttuale());
+    }
+
     private PartnerEntity partner(Long id, PartnerType type, String ragioneSociale, boolean deleted) {
         PartnerEntity entity = new PartnerEntity();
         entity.setType(type);
@@ -118,6 +146,12 @@ class PartnerServiceTest {
     }
 
     private void mockAccounting(Long partnerId) {
+        when(rideServiceRepository.countByPartnerIdAndServiceAssignmentType(partnerId, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(0L);
+        when(rideServiceRepository.countByPartnerIdAndServiceAssignmentType(partnerId, ServiceAssignmentType.INCOMING))
+            .thenReturn(0L);
+        when(rideServiceRepository.sumMarginByPartnerIdAndAssignmentType(partnerId, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(BigDecimal.ZERO);
         when(rideServiceRepository.sumPriceByPartnerIdAndAssignmentType(partnerId, ServiceAssignmentType.INCOMING))
             .thenReturn(BigDecimal.ZERO);
         when(rideServiceRepository.sumPricePartnerByPartnerIdAndAssignmentType(partnerId, ServiceAssignmentType.OUTSOURCED))

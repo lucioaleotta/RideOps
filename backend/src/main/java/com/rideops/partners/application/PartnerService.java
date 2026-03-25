@@ -272,6 +272,19 @@ public class PartnerService {
     }
 
     private PartnerDto toDto(PartnerEntity entity) {
+        long numeroServiziAffidati = rideServiceRepository.countByPartnerIdAndServiceAssignmentType(
+            entity.getId(),
+            ServiceAssignmentType.OUTSOURCED
+        );
+        long numeroServiziRicevuti = rideServiceRepository.countByPartnerIdAndServiceAssignmentType(
+            entity.getId(),
+            ServiceAssignmentType.INCOMING
+        );
+        BigDecimal totaleMarginiOutsourced = rideServiceRepository
+            .sumMarginByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.OUTSOURCED);
+        BigDecimal totaleRicaviIncoming = rideServiceRepository
+            .sumPriceByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.INCOMING);
+        BigDecimal totaleGuadagni = totaleMarginiOutsourced.add(totaleRicaviIncoming);
         BigDecimal totaleCrediti = rideServiceRepository
             .sumPriceByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.INCOMING);
         BigDecimal totaleDebiti = rideServiceRepository
@@ -294,6 +307,11 @@ public class PartnerService {
             entity.getIban(),
             entity.getIntestatarioConto(),
             entity.getNotePagamenti(),
+            numeroServiziAffidati,
+            numeroServiziRicevuti,
+            totaleMarginiOutsourced,
+            totaleRicaviIncoming,
+            totaleGuadagni,
             saldoAttuale,
             totaleCrediti,
             totaleDebiti,

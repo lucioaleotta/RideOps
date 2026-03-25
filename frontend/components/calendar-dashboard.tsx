@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeftIcon, ArrowRightIcon, ButtonContent, LockIcon, OpenIcon, TodayIcon } from './action-icons';
+import { ArrowLeftIcon, ArrowRightIcon, ButtonContent, LockIcon, OpenIcon, SelectIcon, TodayIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
 
 type ViewMode = 'month' | 'week' | 'day';
