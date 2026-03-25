@@ -1,5 +1,6 @@
 package com.rideops.services.adapters.out;
 
+import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
 import jakarta.persistence.Column;
@@ -82,6 +83,19 @@ public class RideServiceEntity {
     @Column(name = "assigned_at")
     private LocalDateTime assignedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "service_assignment_type", nullable = false, length = 20)
+    private ServiceAssignmentType serviceAssignmentType = ServiceAssignmentType.INTERNAL;
+
+    @Column(name = "partner_id")
+    private Long partnerId;
+
+    @Column(name = "price_partner", precision = 12, scale = 2)
+    private BigDecimal pricePartner;
+
+    @Column(name = "margin", precision = 12, scale = 2)
+    private BigDecimal margin;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -93,6 +107,9 @@ public class RideServiceEntity {
         LocalDateTime now = LocalDateTime.now();
         if (createdAt == null) {
             createdAt = now;
+        }
+        if (serviceAssignmentType == null) {
+            serviceAssignmentType = ServiceAssignmentType.INTERNAL;
         }
         updatedAt = now;
     }
@@ -272,5 +289,37 @@ public class RideServiceEntity {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public ServiceAssignmentType getServiceAssignmentType() {
+        return serviceAssignmentType;
+    }
+
+    public void setServiceAssignmentType(ServiceAssignmentType serviceAssignmentType) {
+        this.serviceAssignmentType = serviceAssignmentType;
+    }
+
+    public Long getPartnerId() {
+        return partnerId;
+    }
+
+    public void setPartnerId(Long partnerId) {
+        this.partnerId = partnerId;
+    }
+
+    public BigDecimal getPricePartner() {
+        return pricePartner;
+    }
+
+    public void setPricePartner(BigDecimal pricePartner) {
+        this.pricePartner = pricePartner;
+    }
+
+    public BigDecimal getMargin() {
+        return margin;
+    }
+
+    public void setMargin(BigDecimal margin) {
+        this.margin = margin;
     }
 }

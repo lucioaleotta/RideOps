@@ -5,9 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.rideops.identity.adapters.out.EmailOutboxRepository;
 import com.rideops.partners.adapters.out.PartnerEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
+import com.rideops.partners.adapters.out.PartnerServiceCommunicationRepository;
 import com.rideops.partners.domain.PartnerType;
+import com.rideops.services.adapters.out.RideServiceRepository;
+import com.rideops.services.domain.ServiceAssignmentType;
+import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,11 +26,25 @@ class PartnerServiceTest {
     @Mock
     private PartnerRepository partnerRepository;
 
+    @Mock
+    private RideServiceRepository rideServiceRepository;
+
+    @Mock
+    private EmailOutboxRepository emailOutboxRepository;
+
+    @Mock
+    private PartnerServiceCommunicationRepository communicationRepository;
+
     private PartnerService service;
 
     @BeforeEach
     void setUp() {
-        service = new PartnerService(partnerRepository);
+        service = new PartnerService(
+            partnerRepository,
+            rideServiceRepository,
+            emailOutboxRepository,
+            communicationRepository
+        );
     }
 
     @Test
@@ -34,6 +53,7 @@ class PartnerServiceTest {
         PartnerEntity deleted = partner(2L, PartnerType.AGENZIA, "Travel Old", true);
 
         when(partnerRepository.findAllByOrderByRagioneSocialeAsc()).thenReturn(List.of(active, deleted));
+        mockAccounting(active.getId());
 
         List<PartnerDto> result = service.search(null, null, false);
 
@@ -48,6 +68,8 @@ class PartnerServiceTest {
         PartnerEntity deleted = partner(2L, PartnerType.NCC, "NCC Beta", true);
 
         when(partnerRepository.findAllByTypeOrderByRagioneSocialeAsc(PartnerType.NCC)).thenReturn(List.of(active, deleted));
+        mockAccounting(active.getId());
+        mockAccounting(deleted.getId());
 
         List<PartnerDto> result = service.search(null, PartnerType.NCC, true);
 
@@ -63,12 +85,42 @@ class PartnerServiceTest {
         PartnerEntity p3 = partner(3L, PartnerType.AGENZIA, "TRAVEL Hub Milano", false);
 
         when(partnerRepository.findAllByTypeOrderByRagioneSocialeAsc(PartnerType.AGENZIA)).thenReturn(List.of(p1, p2, p3));
+        mockAccounting(p1.getId());
+        mockAccounting(p3.getId());
 
         List<PartnerDto> result = service.search("travel", PartnerType.AGENZIA, false);
 
         assertEquals(2, result.size());
         assertTrue(result.stream().allMatch(item -> item.ragioneSociale().toLowerCase().contains("travel")));
         verify(partnerRepository).findAllByTypeOrderByRagioneSocialeAsc(PartnerType.AGENZIA);
+    }
+
+    @Test
+    void getByIdReturnsPartnerAccountingSummary() {
+        PartnerEntity partner = partner(7L, PartnerType.NCC, "Partner Contabile", false);
+
+        when(partnerRepository.findById(7L)).thenReturn(java.util.Optional.of(partner));
+        when(rideServiceRepository.countByPartnerIdAndServiceAssignmentType(7L, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(8L);
+        when(rideServiceRepository.countByPartnerIdAndServiceAssignmentType(7L, ServiceAssignmentType.INCOMING))
+            .thenReturn(3L);
+        when(rideServiceRepository.sumMarginByPartnerIdAndAssignmentType(7L, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(new BigDecimal("1240.50"));
+        when(rideServiceRepository.sumPriceByPartnerIdAndAssignmentType(7L, ServiceAssignmentType.INCOMING))
+            .thenReturn(new BigDecimal("2750.00"));
+        when(rideServiceRepository.sumPricePartnerByPartnerIdAndAssignmentType(7L, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(new BigDecimal("1980.00"));
+
+        PartnerDto result = service.getById(7L);
+
+        assertEquals(8L, result.numeroServiziAffidati());
+        assertEquals(3L, result.numeroServiziRicevuti());
+        assertEquals(new BigDecimal("1240.50"), result.totaleMarginiOutsourced());
+        assertEquals(new BigDecimal("2750.00"), result.totaleRicaviIncoming());
+        assertEquals(new BigDecimal("3990.50"), result.totaleGuadagni());
+        assertEquals(new BigDecimal("2750.00"), result.totaleCrediti());
+        assertEquals(new BigDecimal("1980.00"), result.totaleDebiti());
+        assertEquals(new BigDecimal("770.00"), result.saldoAttuale());
     }
 
     private PartnerEntity partner(Long id, PartnerType type, String ragioneSociale, boolean deleted) {
@@ -91,5 +143,18 @@ class PartnerServiceTest {
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException(exception);
         }
+    }
+
+    private void mockAccounting(Long partnerId) {
+        when(rideServiceRepository.countByPartnerIdAndServiceAssignmentType(partnerId, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(0L);
+        when(rideServiceRepository.countByPartnerIdAndServiceAssignmentType(partnerId, ServiceAssignmentType.INCOMING))
+            .thenReturn(0L);
+        when(rideServiceRepository.sumMarginByPartnerIdAndAssignmentType(partnerId, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(BigDecimal.ZERO);
+        when(rideServiceRepository.sumPriceByPartnerIdAndAssignmentType(partnerId, ServiceAssignmentType.INCOMING))
+            .thenReturn(BigDecimal.ZERO);
+        when(rideServiceRepository.sumPricePartnerByPartnerIdAndAssignmentType(partnerId, ServiceAssignmentType.OUTSOURCED))
+            .thenReturn(BigDecimal.ZERO);
     }
 }

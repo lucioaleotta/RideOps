@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from 'react';
+import { ButtonContent, LoginIcon } from './action-icons';
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('admin@rideops.local');
@@ -44,7 +45,7 @@ export function ForgotPasswordForm() {
         />
       </label>
       <button type="submit" disabled={loading} className="primary-button">
-        {loading ? 'Invio...' : 'Invia link reset'}
+        <ButtonContent icon={<LoginIcon />}>{loading ? 'Invio...' : 'Invia link reset'}</ButtonContent>
       </button>
       {message && <p className="success-text">{message}</p>}
       {error && <p className="error-text">{error}</p>}

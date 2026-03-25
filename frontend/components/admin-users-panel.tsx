@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { ButtonContent, CancelIcon, EditIcon, FilterIcon, JournalIcon, LockIcon, ResetIcon, SaveIcon } from './action-icons';
 import { PasswordInput } from './password-input';
 
 type UserRole = 'ADMIN' | 'GESTIONALE' | 'DRIVER';
@@ -194,7 +195,7 @@ export function AdminUsersPanel() {
                       <td style={{ padding: '8px 0' }}>{new Date(user.createdAt).toLocaleString('it-IT')}</td>
                       <td style={{ padding: '8px 0' }}>
                         <button type="button" className="logout-button" onClick={() => openEdit(user)}>
-                          Modifica
+                          <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
                         </button>
                       </td>
                     </tr>
@@ -220,7 +221,7 @@ export function AdminUsersPanel() {
                       <span className="admin-user-date">{new Date(user.createdAt).toLocaleString('it-IT')}</span>
                     </div>
                     <button type="button" className="logout-button compact-button" onClick={() => openEdit(user)}>
-                      Modifica
+                      <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
                     </button>
                   </div>
                 </article>
@@ -234,7 +235,7 @@ export function AdminUsersPanel() {
         <article className="dashboard-card">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
             <h3>Modifica utente: {editing.userId}</h3>
-            <button type="button" className="logout-button" onClick={closeEdit}>Chiudi</button>
+            <button type="button" className="logout-button" onClick={closeEdit}><ButtonContent icon={<LockIcon />}>Chiudi</ButtonContent></button>
           </div>
 
           <form className="form-grid" onSubmit={onSubmitEdit}>
@@ -298,9 +299,9 @@ export function AdminUsersPanel() {
 
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary-button" disabled={submitting}>
-                {submitting ? 'Salvataggio...' : 'Salva modifiche'}
+                <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : 'Salva modifiche'}</ButtonContent>
               </button>
-              <button type="button" className="logout-button" onClick={closeEdit}>Annulla</button>
+              <button type="button" className="logout-button" onClick={closeEdit}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
             </div>
           </form>
         </article>
@@ -314,7 +315,7 @@ export function AdminUsersPanel() {
             className="logout-button"
             onClick={() => setJournalOpen((prev) => !prev)}
           >
-            {journalOpen ? 'Nascondi' : 'Mostra'}
+            <ButtonContent icon={<JournalIcon />}>{journalOpen ? 'Nascondi' : 'Mostra'}</ButtonContent>
           </button>
         </div>
 
@@ -344,7 +345,7 @@ export function AdminUsersPanel() {
 
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <button type="button" className="primary-button" onClick={loadJournal} disabled={journalLoading}>
-                {journalLoading ? 'Caricamento...' : 'Applica filtri'}
+                <ButtonContent icon={<FilterIcon />}>{journalLoading ? 'Caricamento...' : 'Applica filtri'}</ButtonContent>
               </button>
               <button
                 type="button"
@@ -357,7 +358,7 @@ export function AdminUsersPanel() {
                   }, 0);
                 }}
               >
-                Reset filtri
+                <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
               </button>
             </div>
 

@@ -1,6 +1,9 @@
 package com.rideops.partners.adapters.in;
 
 import com.rideops.partners.application.PartnerDto;
+import com.rideops.partners.application.PartnerAssignableServiceDto;
+import com.rideops.partners.application.PartnerCollaborationDto;
+import com.rideops.partners.application.PartnerEmailCommunicationResultDto;
 import com.rideops.partners.application.PartnerNotFoundException;
 import com.rideops.partners.application.PartnerService;
 import com.rideops.partners.application.PartnerValidationException;
@@ -44,6 +47,22 @@ public class PartnerController {
     @GetMapping("/{partnerId}")
     public PartnerDto getById(@PathVariable Long partnerId) {
         return partnerService.getById(partnerId);
+    }
+
+    @GetMapping("/{partnerId}/assignable-services")
+    public List<PartnerAssignableServiceDto> listAssignableServices(@PathVariable Long partnerId) {
+        return partnerService.listAssignableServices(partnerId);
+    }
+
+    @GetMapping("/{partnerId}/collaborations")
+    public List<PartnerCollaborationDto> listCollaborations(@PathVariable Long partnerId) {
+        return partnerService.listCollaborations(partnerId);
+    }
+
+    @PostMapping("/{partnerId}/communications/email")
+    public PartnerEmailCommunicationResultDto sendServiceEmail(@PathVariable Long partnerId,
+                                                               @Valid @RequestBody SendEmailRequest request) {
+        return partnerService.sendServiceEmail(partnerId, request.serviceId());
     }
 
     @PostMapping
@@ -134,6 +153,9 @@ public class PartnerController {
         String telefonoWhatsApp,
         String noteOperative
     ) {
+    }
+
+    record SendEmailRequest(@NotNull Long serviceId) {
     }
 
     record ErrorResponse(String message) {

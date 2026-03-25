@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { AddIcon, ButtonContent, CancelIcon, CursorIcon, DeleteIcon, EditIcon, FilterIcon, LockIcon, ResetIcon, SaveIcon, SelectIcon } from '../../../../components/action-icons';
 
 type PartnerType = 'AGENZIA' | 'NCC' | 'ALTRO';
 
@@ -20,6 +21,11 @@ type PartnerItem = {
   iban: string | null;
   intestatarioConto: string | null;
   notePagamenti: string | null;
+  numeroServiziAffidati: number;
+  numeroServiziRicevuti: number;
+  totaleMarginiOutsourced: number;
+  totaleRicaviIncoming: number;
+  totaleGuadagni: number;
   saldoAttuale: number;
   totaleCrediti: number;
   totaleDebiti: number;
@@ -95,6 +101,30 @@ function valueOrDash(value: string | null | undefined) {
 function currencyEur(value: number | null | undefined) {
   const amount = value ?? 0;
   return `€ ${amount.toFixed(2)}`;
+}
+
+function accountingMetricCard({ title, value, tone = 'default' }: { title: string; value: string; tone?: 'default' | 'positive' | 'negative' }) {
+  const palette = tone === 'positive'
+    ? { background: '#edf8f1', border: '#cde9d6', value: '#1d6f42' }
+    : tone === 'negative'
+      ? { background: '#fff2f0', border: '#f3cdc7', value: '#b54735' }
+      : { background: '#f6faff', border: '#dce9f8', value: '#1f4f82' };
+
+  return (
+    <div
+      style={{
+        background: palette.background,
+        border: `1px solid ${palette.border}`,
+        borderRadius: 14,
+        padding: '14px 16px',
+        display: 'grid',
+        gap: 6
+      }}
+    >
+      <span style={{ fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6c7a89', fontWeight: 700 }}>{title}</span>
+      <strong style={{ fontSize: 24, lineHeight: 1.1, color: palette.value }}>{value}</strong>
+    </div>
+  );
 }
 
 type DetailRow = {
@@ -368,7 +398,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
               setForm(defaultForm);
             }}
           >
-            {showCreateForm ? 'Chiudi nuovo partner' : 'Nuovo partner'}
+            <ButtonContent icon={showCreateForm ? <LockIcon /> : <AddIcon />}>{showCreateForm ? 'Chiudi nuovo partner' : 'Nuovo partner'}</ButtonContent>
           </button>
         </div>
         <p>Gestisci anagrafica e operativita` di agenzie, NCC e altri fornitori.</p>
@@ -452,8 +482,8 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
               Riceve WhatsApp
             </label>
             <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
-              <button type="submit" className="primary-button compact-button">Crea partner</button>
-              <button type="button" className="logout-button compact-button" onClick={() => setForm(defaultForm)}>Reset</button>
+              <button type="submit" className="primary-button compact-button"><ButtonContent icon={<AddIcon />}>Crea partner</ButtonContent></button>
+              <button type="button" className="logout-button compact-button" onClick={() => setForm(defaultForm)}><ButtonContent icon={<ResetIcon />}>Reset</ButtonContent></button>
             </div>
           </form>
         )}
@@ -463,7 +493,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
         <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <h3>Filtri</h3>
           <button type="button" className="logout-button compact-button" onClick={() => setShowFiltersCard((prev) => !prev)}>
-            {showFiltersCard ? 'Chiudi filtri' : 'Apri filtri'}
+            <ButtonContent icon={showFiltersCard ? <LockIcon /> : <FilterIcon />}>{showFiltersCard ? 'Chiudi filtri' : 'Apri filtri'}</ButtonContent>
           </button>
         </div>
 
@@ -496,7 +526,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
                   setShowDeleted(false);
                 }}
               >
-                Reset filtri
+                <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
               </button>
             </div>
           </div>
@@ -536,7 +566,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
                       <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
                         <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           <button type="button" className="logout-button compact-button" onClick={() => selectPartner(partner.id)}>
-                            Seleziona
+                            <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
                           </button>
                           <button
                             type="button"
@@ -547,7 +577,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
                             }}
                             disabled={partner.deleted}
                           >
-                            Modifica
+                            <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
                           </button>
                         </div>
                       </td>
@@ -570,14 +600,14 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
               <p style={{ margin: '4px 0 0 0', color: '#6f7e8c' }}>{typeLabel(selectedPartnerDetail.type)}</p>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" className="logout-button compact-button" onClick={deselectPartner}>Deseleziona</button>
+              <button type="button" className="logout-button compact-button" onClick={deselectPartner}><ButtonContent icon={<CursorIcon />}>Deseleziona</ButtonContent></button>
               <button
                 type="button"
                 className="primary-button compact-button"
                 onClick={() => setIsEditMode((prev) => !prev)}
                 disabled={selectedPartnerDetail.deleted}
               >
-                {isEditMode ? 'Chiudi modifica' : 'Modifica'}
+                <ButtonContent icon={isEditMode ? <LockIcon /> : <EditIcon />}>{isEditMode ? 'Chiudi modifica' : 'Modifica'}</ButtonContent>
               </button>
               <button
                 type="button"
@@ -586,7 +616,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
                 disabled={selectedPartnerDetail.deleted}
                 style={{ background: '#d32f2f', color: '#fff', borderColor: '#d32f2f' }}
               >
-                Cancella
+                <ButtonContent icon={<DeleteIcon />}>Cancella</ButtonContent>
               </button>
             </div>
           </div>
@@ -622,16 +652,40 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
           </section>
 
           <section>
-            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>CONTABILITA`</h4>
-            <div className="dashboard-card" style={{ paddingTop: 8, paddingBottom: 8 }}>
-              <DetailRows
-                rows={[
-                  { label: 'Note Pagamenti', value: valueOrDash(selectedPartnerDetail.notePagamenti) },
-                  { label: 'Saldo Attuale', value: currencyEur(selectedPartnerDetail.saldoAttuale) },
-                  { label: 'Totale Crediti', value: currencyEur(selectedPartnerDetail.totaleCrediti) },
-                  { label: 'Totale Debiti', value: currencyEur(selectedPartnerDetail.totaleDebiti) }
-                ]}
-              />
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>DASHBOARD CONTABILE</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              {accountingMetricCard({ title: 'Servizi affidati', value: String(selectedPartnerDetail.numeroServiziAffidati) })}
+              {accountingMetricCard({ title: 'Servizi ricevuti', value: String(selectedPartnerDetail.numeroServiziRicevuti) })}
+            </div>
+          </section>
+
+          <section>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>ANALISI ECONOMICA</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+              {accountingMetricCard({ title: 'Margini OUTSOURCED', value: currencyEur(selectedPartnerDetail.totaleMarginiOutsourced), tone: 'positive' })}
+              {accountingMetricCard({ title: 'Ricavi INCOMING', value: currencyEur(selectedPartnerDetail.totaleRicaviIncoming), tone: 'positive' })}
+              {accountingMetricCard({ title: 'Totale guadagni', value: currencyEur(selectedPartnerDetail.totaleGuadagni) })}
+            </div>
+          </section>
+
+          <section>
+            <h4 style={{ margin: '0 0 10px 0', fontSize: 14, letterSpacing: '0.12em', color: '#6f7e8c' }}>GESTIONE FINANZIARIA</h4>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+                {accountingMetricCard({ title: 'Totale crediti', value: currencyEur(selectedPartnerDetail.totaleCrediti), tone: 'positive' })}
+                {accountingMetricCard({ title: 'Totale debiti', value: currencyEur(selectedPartnerDetail.totaleDebiti), tone: 'negative' })}
+                {accountingMetricCard({ title: 'Saldo netto', value: currencyEur(selectedPartnerDetail.saldoAttuale), tone: selectedPartnerDetail.saldoAttuale >= 0 ? 'positive' : 'negative' })}
+              </div>
+              <div className="dashboard-card" style={{ paddingTop: 8, paddingBottom: 8 }}>
+                <DetailRows
+                  rows={[
+                    { label: 'Note Pagamenti', value: valueOrDash(selectedPartnerDetail.notePagamenti) },
+                    { label: 'Crediti (partner paga te)', value: currencyEur(selectedPartnerDetail.totaleCrediti) },
+                    { label: 'Debiti (tu paghi il partner)', value: currencyEur(selectedPartnerDetail.totaleDebiti) },
+                    { label: 'Saldo Netto', value: currencyEur(selectedPartnerDetail.saldoAttuale) }
+                  ]}
+                />
+              </div>
             </div>
           </section>
 
@@ -728,9 +782,9 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
                 Riceve WhatsApp
               </label>
               <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" className="primary-button compact-button">Salva modifiche</button>
+                <button type="submit" className="primary-button compact-button"><ButtonContent icon={<SaveIcon />}>Salva modifiche</ButtonContent></button>
                 <button type="button" className="logout-button compact-button" onClick={() => selectedPartnerId && loadPartnerDetail(selectedPartnerId)}>
-                  Reset
+                  <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
                 </button>
               </div>
             </form>

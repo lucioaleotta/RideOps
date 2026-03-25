@@ -1,11 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CancelIcon, CursorIcon, LockIcon, OpenIcon, PartnerIcon as SharedPartnerIcon, PrintIcon as SharedPrintIcon, ResetIcon, SaveIcon, SelectIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
 
 type ServiceType = 'TRANSFER' | 'TOUR';
 type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'CLOSED';
+type ServiceAssignmentType = 'INTERNAL' | 'OUTSOURCED' | 'INCOMING';
 
 type ServiceItem = {
   id: number;
@@ -28,8 +30,37 @@ type ServiceItem = {
   assignedVehicleId: number | null;
   assignedByUserId: number | null;
   assignedAt: string | null;
+  serviceAssignmentType: ServiceAssignmentType;
+  partnerId: number | null;
+  pricePartner: number | null;
+  margin: number | null;
   createdAt: string;
   updatedAt: string;
+};
+
+type PartnerItem = {
+  id: number;
+  ragioneSociale: string;
+  deleted: boolean;
+};
+
+type ServicePartnerCommunicationItem = {
+  communicationId: number;
+  channel: string;
+  recipient: string;
+  subject: string;
+  createdAt: string;
+};
+
+type ServicePartnerHistoryItem = {
+  serviceId: number;
+  serviceAssignmentType: ServiceAssignmentType;
+  partnerId: number;
+  partnerRagioneSociale: string | null;
+  partnerEmail: string | null;
+  pricePartner: number | null;
+  margin: number | null;
+  communications: ServicePartnerCommunicationItem[];
 };
 
 type DriverItem = {
@@ -58,6 +89,10 @@ type ServiceFormState = {
   clientEmail: string;
   passengersCount: string;
   itinerary: string;
+  serviceAssignmentType: ServiceAssignmentType;
+  partnerId: number | '';
+  pricePartner: string;
+  receivedFromPartner: boolean;
   assignedDriverId: number | '';
   assignedVehicleId: number | '';
 };
@@ -93,6 +128,10 @@ const defaultForm: ServiceFormState = {
   clientEmail: '',
   passengersCount: '',
   itinerary: '',
+  serviceAssignmentType: 'INTERNAL',
+  partnerId: '',
+  pricePartner: '',
+  receivedFromPartner: false,
   assignedDriverId: '',
   assignedVehicleId: ''
 };
@@ -141,6 +180,132 @@ function MobileArrowRightIcon() {
   );
 }
 
+function DetailUserIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="8" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5.5 19c1.4-3.2 4-4.8 6.5-4.8s5.1 1.6 6.5 4.8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DetailCarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6.5 14.5h11l-1.1-3.1a1.8 1.8 0 0 0-1.7-1.2H9.3a1.8 1.8 0 0 0-1.7 1.2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M4.8 16.2c0-1 .8-1.7 1.7-1.7h11c1 0 1.7.8 1.7 1.7v2.2H4.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="7.8" cy="18.4" r="1" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="16.2" cy="18.4" r="1" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function DetailEuroIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M16.5 7.6a5.6 5.6 0 0 0-3.5-1.1c-2.8 0-4.9 1.7-5.5 4.1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M16.5 16.4a5.6 5.6 0 0 1-3.5 1.1c-2.8 0-4.9-1.7-5.5-4.1" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M5.7 10.7h7.5M5.7 13.3h7.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DetailDocumentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M8 4.8h6.8l3.2 3.2v10.6A1.6 1.6 0 0 1 16.4 20H8a1.6 1.6 0 0 1-1.6-1.6V6.4A1.6 1.6 0 0 1 8 4.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M14.8 4.8V8H18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M9.2 11.2h5.6M9.2 14.2h5.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DetailPhoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7 4.8h10a1.5 1.5 0 0 1 1.5 1.5v11.4a1.5 1.5 0 0 1-1.5 1.5H7a1.5 1.5 0 0 1-1.5-1.5V6.3A1.5 1.5 0 0 1 7 4.8Z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M10 7h4M11 17.2h2" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DetailMailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="4.8" y="6.2" width="14.4" height="11.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="m6.4 8 5.6 4.6L17.6 8" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ServiceDetailRow({ icon, label, value }: { icon: ReactNode; label: string; value: ReactNode }) {
+  return (
+    <div className="services-selected-row">
+      <span className="services-selected-icon">{icon}</span>
+      <span className="services-selected-label">{label}</span>
+      <span className="services-selected-value">{value}</span>
+    </div>
+  );
+}
+
+function ActionEditIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m5 16.8 9.9-9.9 3.2 3.2-9.9 9.9L5 20Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="m13.8 8 3.2 3.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ActionDeleteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M5.8 7.4h12.4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M9.4 7.4V5.7h5.2v1.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="M8 7.4l.8 10.1h6.4L16 7.4" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <path d="M10.5 10.2v4.8M13.5 10.2v4.8" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ActionLockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="6.3" y="10.6" width="11.4" height="8.2" rx="1.7" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M8.8 10.6V8.5A3.2 3.2 0 0 1 12 5.3a3.2 3.2 0 0 1 3.2 3.2v2.1" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ActionHandshakeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m7 12.4 3.2 2.8a2 2 0 0 0 2.7-.1l4.3-4.1" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m3.8 11.3 2.6-2.5a2 2 0 0 1 2.7 0l2 1.8" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m20.2 11.3-2.6-2.5a2 2 0 0 0-2.7 0l-2 1.8" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m7.1 14.8-1.8 1.8m3 1.1-1.6 1.6m3-.3-1.5 1.5m3.1-1.2-1.3 1.3" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ActionPrintIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7.1 9.4V5.7h9.8v3.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <rect x="6.1" y="13" width="11.8" height="5.4" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <rect x="4.8" y="9.4" width="14.4" height="5.3" rx="1.4" fill="none" stroke="currentColor" strokeWidth="1.9" />
+    </svg>
+  );
+}
+
+function ActionDeselectIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m6 5 10 7-4 1.2L13.6 19 11 20l-1.6-5.8L6 5Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function ServicesPanel() {
   function driverLabel(driver: DriverItem) {
     const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(' ').trim();
@@ -156,6 +321,7 @@ export function ServicesPanel() {
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
+  const [partners, setPartners] = useState<PartnerItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -167,6 +333,13 @@ export function ServicesPanel() {
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [selectedForPrintIds, setSelectedForPrintIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [outsourceOpen, setOutsourceOpen] = useState(false);
+  const [outsourcePartnerQuery, setOutsourcePartnerQuery] = useState('');
+  const [outsourcePartnerId, setOutsourcePartnerId] = useState<number | ''>('');
+  const [outsourcePricePartner, setOutsourcePricePartner] = useState('');
+  const [partnerHistory, setPartnerHistory] = useState<ServicePartnerHistoryItem | null>(null);
+  const [partnerHistoryLoading, setPartnerHistoryLoading] = useState(false);
+  const [partnerEmailSending, setPartnerEmailSending] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
@@ -211,6 +384,26 @@ export function ServicesPanel() {
     return 'Tour';
   }
 
+  function assignmentTypeLabel(type: ServiceAssignmentType) {
+    if (type === 'OUTSOURCED') {
+      return 'Affidato';
+    }
+    if (type === 'INCOMING') {
+      return 'Ricevuto';
+    }
+    return 'Interno';
+  }
+
+  function assignmentTypeClass(type: ServiceAssignmentType) {
+    if (type === 'OUTSOURCED') {
+      return 'assigned';
+    }
+    if (type === 'INCOMING') {
+      return 'open';
+    }
+    return 'closed';
+  }
+
   function toStartDateTime(dateValue: string) {
     return `${dateValue}T00:00:00`;
   }
@@ -246,6 +439,18 @@ export function ServicesPanel() {
     }
 
     setVehicles(payload as VehicleItem[]);
+  }
+
+  async function loadPartners() {
+    const response = await fetch('/api/partners', { cache: 'no-store' });
+    const payload = (await response.json().catch(() => [])) as PartnerItem[] | { message?: string };
+
+    if (!response.ok) {
+      setError((payload as { message?: string }).message ?? 'Errore caricamento partner');
+      return;
+    }
+
+    setPartners((payload as PartnerItem[]).filter((partner) => !partner.deleted));
   }
 
   async function loadServices() {
@@ -291,6 +496,7 @@ export function ServicesPanel() {
   useEffect(() => {
     loadDrivers();
     loadVehicles();
+    loadPartners();
   }, []);
 
   useEffect(() => {
@@ -326,6 +532,10 @@ export function ServicesPanel() {
   }
 
   function toPayload(status: Exclude<ServiceStatus, 'CLOSED'>) {
+    const assignmentType: ServiceAssignmentType = form.receivedFromPartner
+      ? 'INCOMING'
+      : form.serviceAssignmentType;
+
     return {
       startAt: form.startAt,
       pickupLocation: form.pickupLocation,
@@ -343,6 +553,9 @@ export function ServicesPanel() {
       passengersCount: form.passengersCount.trim() ? Number(form.passengersCount) : null,
       itinerary: form.itinerary.trim() || null,
       status,
+      serviceAssignmentType: assignmentType,
+      partnerId: form.partnerId ? Number(form.partnerId) : null,
+      pricePartner: form.pricePartner.trim() ? Number(form.pricePartner) : null,
       assignedVehicleId: form.assignedVehicleId ? Number(form.assignedVehicleId) : null
     };
   }
@@ -390,6 +603,22 @@ export function ServicesPanel() {
     setSubmitting(true);
     setError(null);
     setSuccess(null);
+
+    const effectiveAssignmentType: ServiceAssignmentType = form.receivedFromPartner
+      ? 'INCOMING'
+      : form.serviceAssignmentType;
+
+    if ((effectiveAssignmentType === 'INCOMING' || effectiveAssignmentType === 'OUTSOURCED') && !form.partnerId) {
+      setSubmitting(false);
+      setError('Seleziona un partner per servizi ricevuti/affidati');
+      return;
+    }
+
+    if (effectiveAssignmentType === 'OUTSOURCED' && !form.pricePartner.trim()) {
+      setSubmitting(false);
+      setError('Inserisci il prezzo partner per servizi affidati');
+      return;
+    }
 
     const targetUrl = editingId ? `/api/services/${editingId}` : '/api/services';
     const method = editingId ? 'PUT' : 'POST';
@@ -496,6 +725,10 @@ export function ServicesPanel() {
       clientEmail: service.clientEmail ?? '',
       passengersCount: service.passengersCount != null ? String(service.passengersCount) : '',
       itinerary: service.itinerary ?? '',
+      serviceAssignmentType: service.serviceAssignmentType,
+      partnerId: service.partnerId ?? '',
+      pricePartner: service.pricePartner != null ? String(service.pricePartner) : '',
+      receivedFromPartner: service.serviceAssignmentType === 'INCOMING',
       assignedDriverId: service.assignedDriverId ?? '',
       assignedVehicleId: service.assignedVehicleId ?? ''
     });
@@ -532,6 +765,97 @@ export function ServicesPanel() {
 
     setSuccess('Servizio chiuso');
     await loadServices();
+  }
+
+  function openOutsourceModal(service: ServiceItem) {
+    setOutsourceOpen(true);
+    setOutsourcePartnerQuery('');
+    setOutsourcePartnerId(service.partnerId ?? '');
+    setOutsourcePricePartner(service.pricePartner != null ? String(service.pricePartner) : '');
+    setError(null);
+    setSuccess(null);
+  }
+
+  function closeOutsourceModal() {
+    setOutsourceOpen(false);
+    setOutsourcePartnerQuery('');
+    setOutsourcePartnerId('');
+    setOutsourcePricePartner('');
+  }
+
+  async function submitOutsource() {
+    if (!selectedService) {
+      return;
+    }
+    if (!outsourcePartnerId) {
+      setError('Seleziona un partner');
+      return;
+    }
+    if (!outsourcePricePartner.trim()) {
+      setError('Inserisci il prezzo partner');
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/services/${selectedService.id}/outsource`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        partnerId: Number(outsourcePartnerId),
+        pricePartner: Number(outsourcePricePartner)
+      })
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as { message?: string };
+    setSubmitting(false);
+
+    if (!response.ok) {
+      setError(payload.message ?? 'Affidamento a partner fallito');
+      return;
+    }
+
+    setSuccess('Servizio affidato a partner');
+    closeOutsourceModal();
+    await loadServices();
+    await loadPartnerHistory(selectedService.id);
+  }
+
+  async function loadPartnerHistory(serviceId: number) {
+    setPartnerHistoryLoading(true);
+    const response = await fetch(`/api/services/${serviceId}/partner-history`, { cache: 'no-store' });
+    const payload = (await response.json().catch(() => ({}))) as ServicePartnerHistoryItem | { message?: string };
+    setPartnerHistoryLoading(false);
+
+    if (!response.ok) {
+      setPartnerHistory(null);
+      return;
+    }
+
+    setPartnerHistory(payload as ServicePartnerHistoryItem);
+  }
+
+  async function sendPartnerEmailFromService(serviceId: number) {
+    setPartnerEmailSending(true);
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/services/${serviceId}/partner-communications/email`, {
+      method: 'POST'
+    });
+
+    const payload = (await response.json().catch(() => ({}))) as { message?: string };
+    setPartnerEmailSending(false);
+
+    if (!response.ok) {
+      setError(payload.message ?? 'Invio email partner fallito');
+      return;
+    }
+
+    setSuccess('Email partner inserita in outbox');
+    await loadPartnerHistory(serviceId);
   }
 
   function openPrint(serviceId: number) {
@@ -599,6 +923,17 @@ export function ServicesPanel() {
     return found.plate;
   }
 
+  function partnerLabel(partnerId: number | null) {
+    if (!partnerId) {
+      return '-';
+    }
+    const found = partners.find((partner) => partner.id === partnerId);
+    if (!found) {
+      return `#${partnerId}`;
+    }
+    return found.ragioneSociale;
+  }
+
   const orderedServices = useMemo(
     () => [...services].sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime()),
     [services]
@@ -622,10 +957,32 @@ export function ServicesPanel() {
     [orderedServices, selectedServiceId]
   );
 
+  const filteredPartners = useMemo(() => {
+    const query = outsourcePartnerQuery.trim().toLowerCase();
+    if (!query) {
+      return partners;
+    }
+    return partners.filter((partner) => partner.ragioneSociale.toLowerCase().includes(query));
+  }, [partners, outsourcePartnerQuery]);
+
+  const outsourceMarginPreview = useMemo(() => {
+    if (!selectedService || !outsourcePricePartner.trim()) {
+      return null;
+    }
+    const servicePrice = selectedService.price;
+    const partnerPrice = Number(outsourcePricePartner);
+    if (servicePrice == null || Number.isNaN(partnerPrice)) {
+      return null;
+    }
+    return servicePrice - partnerPrice;
+  }, [selectedService, outsourcePricePartner]);
+
   useEffect(() => {
     if (!selectedServiceId) {
+      setPartnerHistory(null);
       return;
     }
+    loadPartnerHistory(selectedServiceId);
     if (!orderedServices.some((item) => item.id === selectedServiceId)) {
       setSelectedServiceId(null);
     }
@@ -655,7 +1012,7 @@ export function ServicesPanel() {
               }
             }}
           >
-            {isFormOpen && !editingId ? 'Chiudi form' : 'Nuovo servizio'}
+            <ButtonContent icon={isFormOpen && !editingId ? <LockIcon /> : <AddIcon />}>{isFormOpen && !editingId ? 'Chiudi form' : 'Nuovo servizio'}</ButtonContent>
           </button>
         </div>
         <button
@@ -753,7 +1110,7 @@ export function ServicesPanel() {
               className="logout-button compact-button"
               onClick={() => setFilters(defaultFilters)}
             >
-              Reset filtri
+              <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
             </button>
           </div>
         </div>
@@ -765,7 +1122,7 @@ export function ServicesPanel() {
               className="logout-button compact-button"
               onClick={() => setFilters((prev) => ({ ...prev, onlyUnassigned: false }))}
             >
-              Rimuovi filtro
+              <ButtonContent icon={<CancelIcon />}>Rimuovi filtro</ButtonContent>
             </button>
           </div>
         )}
@@ -776,81 +1133,229 @@ export function ServicesPanel() {
         ) : (
           <>
             {selectedService && (
-              <div className="dashboard-card" style={{ marginTop: 10, background: '#eef6ff' }}>
-                <strong>Servizio selezionato #{selectedService.id}</strong>
-                <p style={{ margin: '6px 0 0' }}>
-                  {new Date(selectedService.startAt).toLocaleString('it-IT')} - {typeLabel(selectedService.type)} - {statusLabel(selectedService.status)}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  {selectedService.pickupLocation} {'->'} {selectedService.destination}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Driver:</strong> {assignedDriverLabel(selectedService)}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Veicolo:</strong> {assignedVehicleLabel(selectedService)}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Prezzo:</strong> {formatCurrencyEUR(selectedService.price)}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Rif. prenotazione esterno:</strong> {selectedService.externalBookingReference ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Rif. prenotazione interno:</strong> {selectedService.internalBookingReference ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Cliente:</strong> {selectedService.clientName ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Telefono cliente:</strong> {selectedService.clientPhone ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Email cliente:</strong> {selectedService.clientEmail ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Numero passeggeri:</strong> {selectedService.passengersCount ?? '-'}
-                </p>
-                <p style={{ margin: '6px 0 0' }}>
-                  <strong>Itinerario:</strong> {selectedService.itinerary ?? '-'}
-                </p>
-                {selectedService.notes && (
-                  <p style={{ margin: '6px 0 0' }}>
-                    <strong>Note:</strong> {selectedService.notes}
-                  </p>
-                )}
-                <div className="table-actions" style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="dashboard-card services-selected-detail" style={{ marginTop: 10 }}>
+                <div className="services-selected-header">
+                  <div className="services-selected-heading">
+                    <strong className="services-selected-title">Servizio #{selectedService.id}</strong>
+                    <span className={`services-selected-chip services-selected-chip-status ${statusClass(selectedService.status)}`}>
+                      {statusLabel(selectedService.status)}
+                    </span>
+                    <span className="services-selected-chip services-selected-chip-type">{typeLabel(selectedService.type)}</span>
+                    <span className={`services-selected-chip services-selected-chip-status ${assignmentTypeClass(selectedService.serviceAssignmentType)}`}>
+                      {assignmentTypeLabel(selectedService.serviceAssignmentType)}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="services-selected-close"
+                    aria-label="Chiudi dettaglio servizio"
+                    onClick={() => setSelectedServiceId(null)}
+                  >
+                    x
+                  </button>
+                </div>
+
+                <div className="services-selected-grid">
+                  <div className="services-selected-column">
+                    <ServiceDetailRow
+                      icon={<MobileClockIcon />}
+                      label="Data e ora"
+                      value={new Date(selectedService.startAt).toLocaleString('it-IT')}
+                    />
+                    <ServiceDetailRow
+                      icon={<MobilePinIcon />}
+                      label="Pickup"
+                      value={selectedService.pickupLocation}
+                    />
+                    <ServiceDetailRow
+                      icon={<MobilePinIcon />}
+                      label="Destinazione"
+                      value={selectedService.destination}
+                    />
+                  </div>
+                  <div className="services-selected-column">
+                    <ServiceDetailRow
+                      icon={<DetailUserIcon />}
+                      label="Driver"
+                      value={assignedDriverLabel(selectedService)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailCarIcon />}
+                      label="Veicolo"
+                      value={assignedVehicleLabel(selectedService)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailEuroIcon />}
+                      label="Prezzo"
+                      value={formatCurrencyEUR(selectedService.price)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailUserIcon />}
+                      label="Partner"
+                      value={partnerLabel(selectedService.partnerId)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailEuroIcon />}
+                      label="Prezzo partner"
+                      value={formatCurrencyEUR(selectedService.pricePartner)}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailEuroIcon />}
+                      label="Margine"
+                      value={formatCurrencyEUR(selectedService.margin)}
+                    />
+                  </div>
+                </div>
+
+                <div className="services-selected-divider" />
+
+                <div className="services-selected-grid">
+                  <div className="services-selected-column">
+                    <ServiceDetailRow
+                      icon={<DetailUserIcon />}
+                      label="Cliente"
+                      value={selectedService.clientName ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailPhoneIcon />}
+                      label="Telefono"
+                      value={selectedService.clientPhone ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailMailIcon />}
+                      label="Email"
+                      value={selectedService.clientEmail ?? '-'}
+                    />
+                  </div>
+                  <div className="services-selected-column">
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Passeggeri"
+                      value={selectedService.passengersCount ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Rif. esterno"
+                      value={selectedService.externalBookingReference ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Rif. interno"
+                      value={selectedService.internalBookingReference ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Itinerario"
+                      value={selectedService.itinerary ?? '-'}
+                    />
+                    <ServiceDetailRow
+                      icon={<DetailDocumentIcon />}
+                      label="Note"
+                      value={selectedService.notes ?? '-'}
+                    />
+                  </div>
+                </div>
+
+                <div className="services-selected-divider" />
+
+                <div className="table-actions services-selected-actions" style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <button type="button" className="primary-button compact-button" onClick={() => onEdit(selectedService)}>
+                    <span className="action-button-icon"><ActionEditIcon /></span>
                     Modifica
                   </button>
                   <button
                     type="button"
-                    className="primary-button compact-button"
-                    style={{ background: '#d32f2f' }}
+                    className="primary-button compact-button services-selected-delete"
                     onClick={() => onDelete(selectedService.id)}
                   >
+                    <span className="action-button-icon"><ActionDeleteIcon /></span>
                     Elimina
                   </button>
                   {selectedService.status === 'ASSIGNED' && (
                     <button
                       type="button"
-                      className="primary-button compact-button"
-                      style={{ background: '#ef6c00' }}
+                      className="compact-button services-selected-close-service"
                       onClick={() => onClose(selectedService.id)}
                     >
+                      <span className="action-button-icon"><ActionLockIcon /></span>
                       Chiudi
                     </button>
                   )}
-                  <button type="button" className="primary-button compact-button" onClick={() => openPrint(selectedService.id)}>
+                  {selectedService.serviceAssignmentType === 'INTERNAL' && selectedService.status !== 'CLOSED' && (
+                    <button
+                      type="button"
+                      className="compact-button services-selected-outsource"
+                      onClick={() => openOutsourceModal(selectedService)}
+                    >
+                      <span className="action-button-icon"><ActionHandshakeIcon /></span>
+                      Affida servizio al partner
+                    </button>
+                  )}
+                  <button type="button" className="compact-button services-selected-print" onClick={() => openPrint(selectedService.id)}>
+                    <span className="action-button-icon"><ActionPrintIcon /></span>
                     Stampa
                   </button>
                   <button
                     type="button"
-                    className="logout-button compact-button"
+                    className="compact-button services-selected-deselect"
                     onClick={() => setSelectedServiceId(null)}
                   >
+                    <span className="action-button-icon"><ActionDeselectIcon /></span>
                     Deseleziona
                   </button>
+                </div>
+
+                <div className="services-selected-divider" />
+                <div style={{ marginTop: 10 }}>
+                  <strong style={{ display: 'block', marginBottom: 8 }}>Storico partner servizio</strong>
+                  {partnerHistoryLoading ? (
+                    <p style={{ margin: 0, color: 'var(--muted)' }}>Caricamento storico...</p>
+                  ) : !partnerHistory ? (
+                    <p style={{ margin: 0, color: 'var(--muted)' }}>Nessuno storico disponibile per questo servizio.</p>
+                  ) : (
+                    <div style={{ display: 'grid', gap: 8 }}>
+                      <p style={{ margin: 0 }}>
+                        <strong>Partner:</strong> {partnerHistory.partnerRagioneSociale ?? '-'} ({partnerHistory.partnerEmail ?? '-'})
+                      </p>
+                      <p style={{ margin: 0 }}>
+                        <strong>Comunicazioni email inviate:</strong> {partnerHistory.communications.length}
+                      </p>
+                      {partnerHistory.communications.length > 0 && (
+                        <div className="table-scroll" style={{ overflowX: 'auto' }}>
+                          <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+                            <thead>
+                              <tr>
+                                <th style={thStyle}>Canale</th>
+                                <th style={thStyle}>Destinatario</th>
+                                <th style={thStyle}>Oggetto</th>
+                                <th style={thStyle}>Data invio</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {partnerHistory.communications.map((communication) => (
+                                <tr key={communication.communicationId}>
+                                  <td style={tdStyle}>{communication.channel}</td>
+                                  <td style={tdStyle}>{communication.recipient}</td>
+                                  <td style={tdStyle}>{communication.subject}</td>
+                                  <td style={tdStyle}>{new Date(communication.createdAt).toLocaleString('it-IT')}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                      <div>
+                        <button
+                          type="button"
+                          className="logout-button compact-button"
+                          onClick={() => sendPartnerEmailFromService(selectedService.id)}
+                          disabled={partnerEmailSending || !selectedService.partnerId}
+                        >
+                          <ButtonContent icon={<SharedPartnerIcon />}>{partnerEmailSending ? 'Invio email...' : 'Invia email al partner'}</ButtonContent>
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -864,7 +1369,7 @@ export function ServicesPanel() {
                   className="primary-button compact-button"
                   onClick={printSelectedServices}
                 >
-                  Stampa selezionati
+                  <ButtonContent icon={<SharedPrintIcon />}>Stampa selezionati</ButtonContent>
                 </button>
                 <button
                   type="button"
@@ -872,7 +1377,7 @@ export function ServicesPanel() {
                   onClick={() => setSelectedForPrintIds([])}
                   disabled={selectedForPrintIds.length === 0}
                 >
-                  Pulisci selezione
+                  <ButtonContent icon={<ResetIcon />}>Pulisci selezione</ButtonContent>
                 </button>
               </div>
             </div>
@@ -959,14 +1464,14 @@ export function ServicesPanel() {
                           className="primary-button compact-button"
                           onClick={() => setSelectedServiceId(service.id)}
                         >
-                          Seleziona
+                          <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
                         </button>
                         <button
                           type="button"
                           className="primary-button compact-button"
                           onClick={() => openPrint(service.id)}
                         >
-                          Stampa
+                          <ButtonContent icon={<SharedPrintIcon />}>Stampa</ButtonContent>
                         </button>
                       </div>
                     </td>
@@ -999,6 +1504,9 @@ export function ServicesPanel() {
                         <span className="service-chip service-chip-type">{typeLabel(service.type)}</span>
                         <span className={`service-chip service-chip-status ${statusClass(service.status)}`}>
                           {statusLabel(service.status)}
+                        </span>
+                        <span className={`service-chip service-chip-status ${assignmentTypeClass(service.serviceAssignmentType)}`}>
+                          {assignmentTypeLabel(service.serviceAssignmentType)}
                         </span>
                       </div>
                       <strong className="service-mobile-price">{formatCurrencyEUR(service.price)}</strong>
@@ -1035,14 +1543,14 @@ export function ServicesPanel() {
                         className="primary-button compact-button"
                         onClick={() => setSelectedServiceId(service.id)}
                       >
-                        Seleziona
+                        <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
                       </button>
                       <button
                         type="button"
                         className="logout-button compact-button"
                         onClick={() => openPrint(service.id)}
                       >
-                        Apri
+                        <ButtonContent icon={<OpenIcon />}>Apri</ButtonContent>
                       </button>
                     </div>
                   </article>
@@ -1062,7 +1570,7 @@ export function ServicesPanel() {
                   aria-label="Pagina precedente"
                   title="Pagina precedente"
                 >
-                  ←
+                  <ButtonContent icon={<ArrowLeftIcon />}>Prec.</ButtonContent>
                 </button>
                 <button
                   type="button"
@@ -1072,7 +1580,7 @@ export function ServicesPanel() {
                   aria-label="Pagina successiva"
                   title="Pagina successiva"
                 >
-                  →
+                  <ButtonContent icon={<ArrowRightIcon />}>Succ.</ButtonContent>
                 </button>
               </div>
             </div>
@@ -1080,13 +1588,96 @@ export function ServicesPanel() {
         )}
       </article>
 
+      {outsourceOpen && selectedService && (
+        <div className="services-modal-overlay" role="dialog" aria-modal="true" aria-label="Affida servizio a partner">
+          <article className="dashboard-card services-modal-card services-outsource-modal-card">
+            <div className="services-outsource-modal-header">
+              <h3 className="services-outsource-modal-title">Affida servizio #{selectedService.id} a partner</h3>
+              <button
+                type="button"
+                className="services-outsource-modal-close"
+                onClick={closeOutsourceModal}
+                aria-label="Chiudi finestra affidamento"
+                title="Chiudi"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="services-outsource-modal-grid">
+              <label className="services-outsource-modal-field">
+                Cerca partner
+                <div className="services-outsource-input-wrap">
+                  <span className="services-outsource-input-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />
+                      <line x1="16" y1="16" x2="21" y2="21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <input
+                    className="form-input services-outsource-input with-icon"
+                    value={outsourcePartnerQuery}
+                    onChange={(event) => setOutsourcePartnerQuery(event.target.value)}
+                    placeholder="Filtra per ragione sociale"
+                  />
+                </div>
+              </label>
+
+              <label className="services-outsource-modal-field">
+                Partner
+                <select
+                  className="form-input services-outsource-input services-outsource-select"
+                  value={outsourcePartnerId}
+                  onChange={(event) => setOutsourcePartnerId(event.target.value ? Number(event.target.value) : '')}
+                >
+                  <option value="">Seleziona partner</option>
+                  {filteredPartners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>{partner.ragioneSociale}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="services-outsource-modal-field">
+                Prezzo partner
+                <div className="services-outsource-input-wrap">
+                  <span className="services-outsource-input-icon" aria-hidden="true">€</span>
+                  <input
+                    className="form-input services-outsource-input with-icon"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.01"
+                    value={outsourcePricePartner}
+                    onChange={(event) => setOutsourcePricePartner(event.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <small className="services-outsource-margin-preview">
+                  Margine previsto: {outsourceMarginPreview == null ? '-' : formatCurrencyEUR(outsourceMarginPreview)}
+                </small>
+              </label>
+
+              <div className="form-actions services-outsource-modal-actions">
+                <button
+                  type="button"
+                  className="primary-button compact-button services-outsource-confirm"
+                  onClick={submitOutsource}
+                  disabled={submitting || !outsourcePartnerId || !outsourcePricePartner.trim()}
+                >
+                  <ButtonContent icon={<SharedPartnerIcon />}>{submitting ? 'Salvataggio...' : 'Conferma affidamento'}</ButtonContent>
+                </button>
+                <button type="button" className="logout-button compact-button services-outsource-cancel" onClick={closeOutsourceModal}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
+              </div>
+            </div>
+          </article>
+        </div>
+      )}
+
       {isFormOpen && (
         <article className="dashboard-card">
           <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <h3>{editingId ? `Modifica servizio #${editingId}` : 'Nuovo servizio'}</h3>
-            <button type="button" className="logout-button" onClick={closeForm}>
-              Chiudi
-            </button>
+            <button type="button" className="logout-button" onClick={closeForm}><ButtonContent icon={<LockIcon />}>Chiudi</ButtonContent></button>
           </div>
           <form className="form-grid" onSubmit={onSubmit}>
             <label>
@@ -1234,6 +1825,58 @@ export function ServicesPanel() {
               />
             </label>
 
+            {!editingId && (
+              <label className="inline-checkbox" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8 }}>
+                <input
+                  type="checkbox"
+                  checked={form.receivedFromPartner}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      receivedFromPartner: event.target.checked,
+                      serviceAssignmentType: event.target.checked ? 'INCOMING' : 'INTERNAL',
+                      pricePartner: event.target.checked ? '' : prev.pricePartner
+                    }))
+                  }
+                />
+                Ricevuto da partner
+              </label>
+            )}
+
+            {(form.receivedFromPartner || form.serviceAssignmentType === 'INCOMING' || form.serviceAssignmentType === 'OUTSOURCED') && (
+              <label>
+                Partner
+                <select
+                  className="form-input"
+                  value={form.partnerId}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      partnerId: event.target.value ? Number(event.target.value) : ''
+                    }))
+                  }
+                  required={form.receivedFromPartner || form.serviceAssignmentType !== 'INTERNAL'}
+                >
+                  <option value="">Seleziona partner</option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>{partner.ragioneSociale}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {editingId && (
+              <label>
+                Modalita` gestione servizio
+                <input
+                  className="form-input"
+                  value={assignmentTypeLabel(form.serviceAssignmentType)}
+                  readOnly
+                  disabled
+                />
+              </label>
+            )}
+
             <label>
               Driver (opzionale)
               <select
@@ -1284,12 +1927,10 @@ export function ServicesPanel() {
 
             <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
-                {submitting ? 'Salvataggio...' : editingId ? 'Aggiorna servizio' : 'Crea servizio'}
+                <ButtonContent icon={editingId ? <SaveIcon /> : <AddIcon />}>{submitting ? 'Salvataggio...' : editingId ? 'Aggiorna servizio' : 'Crea servizio'}</ButtonContent>
               </button>
               {editingId && (
-                <button type="button" className="logout-button" onClick={openCreateForm}>
-                  Nuovo servizio
-                </button>
+                <button type="button" className="logout-button" onClick={openCreateForm}><ButtonContent icon={<AddIcon />}>Nuovo servizio</ButtonContent></button>
               )}
             </div>
           </form>

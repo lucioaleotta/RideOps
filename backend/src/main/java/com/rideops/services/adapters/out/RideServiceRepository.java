@@ -1,7 +1,9 @@
 package com.rideops.services.adapters.out;
 
 import com.rideops.services.domain.ServiceStatus;
+import com.rideops.services.domain.ServiceAssignmentType;
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -40,4 +42,40 @@ public interface RideServiceRepository extends JpaRepository<RideServiceEntity, 
           AND internal_booking_reference ~ '^[0-9]+-[0-9]{2}$'
         """, nativeQuery = true)
     int findMaxInternalBookingSequenceForYear(@Param("yearSuffix") String yearSuffix);
+
+        @Query("""
+                SELECT COALESCE(SUM(s.price), 0)
+                FROM RideServiceEntity s
+                WHERE s.partnerId = :partnerId
+                    AND s.serviceAssignmentType = :assignmentType
+                """)
+        BigDecimal sumPriceByPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
+                                                                                                        @Param("assignmentType") ServiceAssignmentType assignmentType);
+
+        @Query("""
+                SELECT COALESCE(SUM(s.pricePartner), 0)
+                FROM RideServiceEntity s
+                WHERE s.partnerId = :partnerId
+                    AND s.serviceAssignmentType = :assignmentType
+                """)
+        BigDecimal sumPricePartnerByPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
+                                                                                                                     @Param("assignmentType") ServiceAssignmentType assignmentType);
+
+        long countByPartnerIdAndServiceAssignmentType(Long partnerId, ServiceAssignmentType serviceAssignmentType);
+
+        @Query("""
+                SELECT COALESCE(SUM(s.margin), 0)
+                FROM RideServiceEntity s
+                WHERE s.partnerId = :partnerId
+                    AND s.serviceAssignmentType = :assignmentType
+                """)
+        BigDecimal sumMarginByPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
+                                                         @Param("assignmentType") ServiceAssignmentType assignmentType);
+
+        java.util.List<RideServiceEntity> findAllByPartnerIdOrderByStartAtDesc(Long partnerId);
+
+        java.util.List<RideServiceEntity> findAllByServiceAssignmentTypeAndStatusNotOrderByStartAtAsc(
+            ServiceAssignmentType serviceAssignmentType,
+            ServiceStatus status
+        );
 }

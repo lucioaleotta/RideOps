@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from 'react';
+import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, FilterIcon, LockIcon, ResetIcon, SaveIcon, SelectIcon } from './action-icons';
 
 type VehicleType = 'SEDAN' | 'VAN' | 'MINIBUS' | 'SUV' | 'OTHER';
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
@@ -705,7 +706,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                 className="primary-button compact-button"
                 onClick={syncMissingOccurrences}
               >
-                Sync piani
+                <ButtonContent icon={<ResetIcon />}>Sync piani</ButtonContent>
               </button>
             )}
             <button
@@ -713,7 +714,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
               className="primary-button compact-button"
               onClick={() => setShowCreateVehicleForm((prev) => !prev)}
             >
-              {showCreateVehicleForm ? 'Chiudi nuovo veicolo' : 'Nuovo veicolo'}
+              <ButtonContent icon={showCreateVehicleForm ? <LockIcon /> : <AddIcon />}>{showCreateVehicleForm ? 'Chiudi nuovo veicolo' : 'Nuovo veicolo'}</ButtonContent>
             </button>
           </div>
         </div>
@@ -764,13 +765,13 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
               />
             </label>
             <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
-              <button type="submit" className="primary-button compact-button">Crea veicolo</button>
+              <button type="submit" className="primary-button compact-button"><ButtonContent icon={<AddIcon />}>Crea veicolo</ButtonContent></button>
               <button
                 type="button"
                 className="logout-button compact-button"
                 onClick={() => setNewVehicleForm({ plate: '', seats: '', type: 'SEDAN', notes: '' })}
               >
-                Reset
+                <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
               </button>
             </div>
           </form>
@@ -794,7 +795,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                 className="logout-button compact-button"
                 onClick={() => setShowFiltersCard((prev) => !prev)}
               >
-                {showFiltersCard ? 'Chiudi filtri' : 'Apri filtri'}
+                <ButtonContent icon={showFiltersCard ? <LockIcon /> : <FilterIcon />}>{showFiltersCard ? 'Chiudi filtri' : 'Apri filtri'}</ButtonContent>
               </button>
             </div>
 
@@ -849,7 +850,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                         setSeatsFilter('');
                       }}
                     >
-                      Reset filtri
+                      <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
                     </button>
                   </div>
                 </div>
@@ -888,7 +889,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                         <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
                           <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                             <button type="button" className="primary-button compact-button" onClick={() => editVehicle(vehicle)}>
-                              Modifica
+                              <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
                             </button>
                             <button
                               type="button"
@@ -896,7 +897,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                               onClick={() => selectVehicle(vehicle.id)}
                               disabled={selectedVehicleId === vehicle.id}
                             >
-                              {selectedVehicleId === vehicle.id ? 'Selezionato' : 'Seleziona'}
+                              <ButtonContent icon={<SelectIcon />}>{selectedVehicleId === vehicle.id ? 'Selezionato' : 'Seleziona'}</ButtonContent>
                             </button>
                           </div>
                         </td>
@@ -932,7 +933,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                   <input className="form-input" value={vehicleForm.notes} onChange={(e) => setVehicleForm((p) => ({ ...p, notes: e.target.value }))} />
                 </label>
                 <div className="form-actions sticky-mobile fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
-                  <button type="submit" className="primary-button compact-button">Salva dati veicolo</button>
+                  <button type="submit" className="primary-button compact-button"><ButtonContent icon={<SaveIcon />}>Salva dati veicolo</ButtonContent></button>
                   <button
                     type="button"
                     className="logout-button compact-button"
@@ -946,9 +947,9 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                       });
                     }}
                   >
-                    Reset
+                    <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
                   </button>
-                  <button type="button" className="logout-button" onClick={() => setShowVehicleForm(false)}>Annulla</button>
+                  <button type="button" className="logout-button" onClick={() => setShowVehicleForm(false)}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
                 </div>
               </form>
             )}
@@ -974,7 +975,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                   setOccurrenceForm(defaultOccurrenceForm);
                 }}
               >
-                {showOccurrenceForm ? 'Chiudi' : 'Aggiungi scadenza'}
+                <ButtonContent icon={showOccurrenceForm ? <LockIcon /> : <AddIcon />}>{showOccurrenceForm ? 'Chiudi' : 'Aggiungi scadenza'}</ButtonContent>
               </button>
             </div>
 
@@ -1051,7 +1052,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                   <input className="form-input" value={occurrenceForm.notes} onChange={(e) => setOccurrenceForm((p) => ({ ...p, notes: e.target.value }))} />
                 </label>
                 <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
-                  <button type="submit" className="primary-button compact-button">{editingOccurrenceId ? 'Aggiorna scadenza' : 'Crea scadenza'}</button>
+                  <button type="submit" className="primary-button compact-button"><ButtonContent icon={<SaveIcon />}>{editingOccurrenceId ? 'Aggiorna scadenza' : 'Crea scadenza'}</ButtonContent></button>
                   <button
                     type="button"
                     className="logout-button compact-button"
@@ -1060,7 +1061,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                       setOccurrenceForm(defaultOccurrenceForm);
                     }}
                   >
-                    Reset
+                    <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
                   </button>
                 </div>
               </form>
@@ -1115,7 +1116,8 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                                 paymentDate: item.paymentDate ?? '',
                                 executionDate: item.executionDate ?? ''
                               });
-                            }}>Modifica</button>
+                            }}><ButtonContent icon={<EditIcon />}>Modifica</ButtonContent></button>
+
                             {(item.type === 'BOLLO' || item.type === 'ASSICURAZIONE') ? (
                               <button
                                 type="button"
@@ -1123,7 +1125,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                                 onClick={() => quickOccurrenceAction(item.id, 'paid')}
                                 disabled={!canMarkOccurrenceAsPaid(item) || occurrenceActionLoadingId === item.id}
                               >
-                                Segna pagata
+                                <ButtonContent icon={<SaveIcon />}>Segna pagata</ButtonContent>
                               </button>
                             ) : (
                               <button
@@ -1132,7 +1134,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                                 onClick={() => quickOccurrenceAction(item.id, 'completed')}
                                 disabled={!canMarkOccurrenceAsCompleted(item) || occurrenceActionLoadingId === item.id}
                               >
-                                Segna eseguita
+                                <ButtonContent icon={<SaveIcon />}>Segna eseguita</ButtonContent>
                               </button>
                             )}
                             <button
@@ -1141,7 +1143,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                               onClick={() => quickOccurrenceAction(item.id, 'cancel')}
                               disabled={!canCancelOccurrence(item) || occurrenceActionLoadingId === item.id}
                             >
-                              Annulla
+                              <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
                             </button>
                           </div>
                         </td>
@@ -1162,7 +1164,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                 setShowPlanForm((prev) => !prev);
                 setEditingPlanId(null);
                 setPlanForm(defaultPlanForm);
-              }}>{showPlanForm ? 'Chiudi' : 'Aggiungi piano ricorrente'}</button>
+              }}><ButtonContent icon={showPlanForm ? <LockIcon /> : <AddIcon />}>{showPlanForm ? 'Chiudi' : 'Aggiungi piano ricorrente'}</ButtonContent></button>
             </div>
 
             {showPlanForm && (
@@ -1206,7 +1208,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                   <input className="form-input" value={planForm.notes} onChange={(e) => setPlanForm((p) => ({ ...p, notes: e.target.value }))} />
                 </label>
                 <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
-                  <button type="submit" className="primary-button compact-button">{editingPlanId ? 'Aggiorna piano' : 'Crea piano'}</button>
+                  <button type="submit" className="primary-button compact-button"><ButtonContent icon={<SaveIcon />}>{editingPlanId ? 'Aggiorna piano' : 'Crea piano'}</ButtonContent></button>
                   <button
                     type="button"
                     className="logout-button compact-button"
@@ -1215,7 +1217,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                       setPlanForm(defaultPlanForm);
                     }}
                   >
-                    Reset
+                    <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
                   </button>
                 </div>
               </form>
@@ -1265,13 +1267,13 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                                 currency: item.currency,
                                 notes: item.notes ?? ''
                               });
-                            }}>Modifica</button>
+                            }}><ButtonContent icon={<EditIcon />}>Modifica</ButtonContent></button>
                             <button
                               type="button"
                               className="logout-button"
                               onClick={() => togglePlan(item.id, item.active)}
                             >
-                              {item.active ? 'Disattiva piano' : 'Riattiva piano'}
+                              <ButtonContent icon={<ResetIcon />}>{item.active ? 'Disattiva piano' : 'Riattiva piano'}</ButtonContent>
                             </button>
                           </div>
                         </td>
@@ -1295,7 +1297,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                   setUnavailabilityForm(defaultUnavailabilityForm);
                 }}
               >
-                {showUnavailabilityForm ? 'Chiudi' : 'Nuova manutenzione'}
+                <ButtonContent icon={showUnavailabilityForm ? <LockIcon /> : <AddIcon />}>{showUnavailabilityForm ? 'Chiudi' : 'Nuova manutenzione'}</ButtonContent>
               </button>
             </div>
 
@@ -1332,7 +1334,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                 </label>
                 <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
                   <button type="submit" className="primary-button compact-button">
-                    {editingUnavailabilityId ? 'Aggiorna manutenzione' : 'Salva manutenzione'}
+                    <ButtonContent icon={<SaveIcon />}>{editingUnavailabilityId ? 'Aggiorna manutenzione' : 'Salva manutenzione'}</ButtonContent>
                   </button>
                   <button
                     type="button"
@@ -1342,7 +1344,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                       setUnavailabilityForm(defaultUnavailabilityForm);
                     }}
                   >
-                    Reset
+                    <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
                   </button>
                 </div>
               </form>
@@ -1386,14 +1388,14 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
                                 });
                               }}
                             >
-                              Modifica
+                              <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
                             </button>
                             <button
                               type="button"
                               className="logout-button"
                               onClick={() => deleteUnavailability(item.id)}
                             >
-                              Elimina
+                              <ButtonContent icon={<DeleteIcon />}>Elimina</ButtonContent>
                             </button>
                           </div>
                         </td>

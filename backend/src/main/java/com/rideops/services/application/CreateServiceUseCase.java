@@ -1,6 +1,8 @@
 package com.rideops.services.application;
 
 import com.rideops.services.adapters.out.RideServiceEntity;
+import com.rideops.partners.adapters.out.PartnerRepository;
+import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -11,11 +13,14 @@ public class CreateServiceUseCase {
 
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final VehicleAssignmentValidationService vehicleAssignmentValidationService;
+    private final PartnerRepository partnerRepository;
 
     public CreateServiceUseCase(ServiceRepositoryPort serviceRepositoryPort,
-                                VehicleAssignmentValidationService vehicleAssignmentValidationService) {
+                                VehicleAssignmentValidationService vehicleAssignmentValidationService,
+                                PartnerRepository partnerRepository) {
         this.serviceRepositoryPort = serviceRepositoryPort;
         this.vehicleAssignmentValidationService = vehicleAssignmentValidationService;
+        this.partnerRepository = partnerRepository;
     }
 
     public ServiceDto execute(CreateServiceCommand command) {
@@ -30,6 +35,14 @@ public class CreateServiceUseCase {
         vehicleAssignmentValidationService.validateForCreate(command);
 
         ServiceStatus initialStatus = ServiceValidationSupport.sanitizeCreateStatus(command.status());
+        ServiceAssignmentType assignmentType = ServiceValidationSupport
+            .sanitizeCreateAssignmentType(command.serviceAssignmentType());
+        ServiceValidationSupport.validateAssignmentBusinessRules(
+            assignmentType,
+            command.partnerId(),
+            command.pricePartner()
+        );
+        validatePartnerIfPresent(command.partnerId());
 
         RideServiceEntity entity = new RideServiceEntity();
         entity.setStartAt(command.startAt());
@@ -47,6 +60,10 @@ public class CreateServiceUseCase {
         entity.setPassengersCount(command.passengersCount());
         entity.setItinerary(cleanNullable(command.itinerary()));
         entity.setStatus(initialStatus);
+        entity.setServiceAssignmentType(assignmentType);
+        entity.setPartnerId(command.partnerId());
+        entity.setPricePartner(command.pricePartner());
+        entity.setMargin(ServiceValidationSupport.calculateMargin(command.price(), command.pricePartner()));
         entity.setAssignedVehicleId(command.assignedVehicleId());
 
         return ServiceMapper.toDto(serviceRepositoryPort.save(entity));
@@ -70,5 +87,18 @@ public class CreateServiceUseCase {
         String yearSuffix = String.format("%02d", LocalDate.now().getYear() % 100);
         int nextSequence = serviceRepositoryPort.findMaxInternalBookingSequenceForYear(yearSuffix) + 1;
         return nextSequence + "-" + yearSuffix;
+    }
+
+    private void validatePartnerIfPresent(Long partnerId) {
+        if (partnerId == null) {
+            return;
+        }
+
+        boolean partnerValid = partnerRepository.findById(partnerId)
+            .map(partner -> !partner.isDeleted())
+            .orElse(false);
+        if (!partnerValid) {
+            throw new ServiceValidationException("Partner non valido o non attivo");
+        }
     }
 }

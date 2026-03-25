@@ -2,6 +2,7 @@ package com.rideops.services.application;
 
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
+import com.rideops.services.domain.ServiceAssignmentType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -26,6 +27,10 @@ public record ServiceDto(
     Long assignedVehicleId,
     Long assignedByUserId,
     LocalDateTime assignedAt,
+    ServiceAssignmentType serviceAssignmentType,
+    Long partnerId,
+    BigDecimal pricePartner,
+    BigDecimal margin,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {

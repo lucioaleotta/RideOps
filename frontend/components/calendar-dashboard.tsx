@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { ArrowLeftIcon, ArrowRightIcon, ButtonContent, LockIcon, OpenIcon, SelectIcon, TodayIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
 
 type ViewMode = 'month' | 'week' | 'day';
@@ -371,9 +372,11 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
           background: isSelected ? '#d7eafe' : '#e8f2fd'
         }}
       >
-        <strong>{new Date(service.startAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</strong>
-        {' · '}
-        {service.pickupLocation}
+        <ButtonContent icon={<SelectIcon />}>
+          <strong>{new Date(service.startAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</strong>
+          {' · '}
+          {service.pickupLocation}
+        </ButtonContent>
       </button>
     );
   }
@@ -497,16 +500,16 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
       <article className="dashboard-card">
         <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
           <div className="panel-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" className="logout-button" onClick={() => moveRange(-1)}>←</button>
-            <button type="button" className="logout-button" onClick={gotoToday}>Oggi</button>
-            <button type="button" className="logout-button" onClick={() => moveRange(1)}>→</button>
+            <button type="button" className="logout-button" onClick={() => moveRange(-1)}><ButtonContent icon={<ArrowLeftIcon />}>Prec.</ButtonContent></button>
+            <button type="button" className="logout-button" onClick={gotoToday}><ButtonContent icon={<TodayIcon />}>Oggi</ButtonContent></button>
+            <button type="button" className="logout-button" onClick={() => moveRange(1)}><ButtonContent icon={<ArrowRightIcon />}>Succ.</ButtonContent></button>
             <strong style={{ marginLeft: 4 }}>{viewTitle()}</strong>
           </div>
 
           <div className="panel-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" className={view === 'month' ? 'primary-button' : 'logout-button'} onClick={() => setView('month')}>Mese</button>
-            <button type="button" className={view === 'week' ? 'primary-button' : 'logout-button'} onClick={() => setView('week')}>Settimana</button>
-            <button type="button" className={view === 'day' ? 'primary-button' : 'logout-button'} onClick={() => setView('day')}>Giorno</button>
+            <button type="button" className={view === 'month' ? 'primary-button' : 'logout-button'} onClick={() => setView('month')}><ButtonContent icon={<TodayIcon />}>Mese</ButtonContent></button>
+            <button type="button" className={view === 'week' ? 'primary-button' : 'logout-button'} onClick={() => setView('week')}><ButtonContent icon={<TodayIcon />}>Settimana</ButtonContent></button>
+            <button type="button" className={view === 'day' ? 'primary-button' : 'logout-button'} onClick={() => setView('day')}><ButtonContent icon={<TodayIcon />}>Giorno</ButtonContent></button>
           </div>
         </div>
 
@@ -597,7 +600,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                 <div><strong>Passeggeri:</strong> {selectedService.passengersCount ?? '-'}</div>
                 <div><strong>Itinerario:</strong> {selectedService.itinerary ?? '-'}</div>
                 <div className="table-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Link className="logout-button" href={`/services/${selectedService.id}/print`} target="_blank">Apri dettaglio stampa</Link>
+                  <Link className="logout-button" href={`/services/${selectedService.id}/print`} target="_blank"><ButtonContent icon={<OpenIcon />}>Apri dettaglio stampa</ButtonContent></Link>
                   {driverMode && canDriverCloseSelectedService && (
                     <button
                       type="button"
@@ -606,7 +609,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                       onClick={() => onDriverClose(selectedService.id)}
                       disabled={submittingClose}
                     >
-                      {submittingClose ? 'Chiusura...' : 'Chiudi servizio'}
+                      <ButtonContent icon={<LockIcon />}>{submittingClose ? 'Chiusura...' : 'Chiudi servizio'}</ButtonContent>
                     </button>
                   )}
                 </div>

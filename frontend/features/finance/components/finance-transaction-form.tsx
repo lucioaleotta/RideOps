@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { ButtonContent, CancelIcon, SaveIcon } from '../../../components/action-icons';
 import {
   FinancialTransaction,
   FinancialTransactionCategory,
@@ -143,8 +144,8 @@ export function FinanceTransactionForm({ initial, onSubmit, onCancel, submitting
       </label>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button type="submit" className="primary-button" disabled={submitting}>{submitting ? 'Salvataggio...' : 'Salva'}</button>
-        <button type="button" className="logout-button" onClick={onCancel} disabled={submitting}>Cancella</button>
+        <button type="submit" className="primary-button" disabled={submitting}><ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : 'Salva'}</ButtonContent></button>
+        <button type="button" className="logout-button" onClick={onCancel} disabled={submitting}><ButtonContent icon={<CancelIcon />}>Cancella</ButtonContent></button>
       </div>
     </form>
   );

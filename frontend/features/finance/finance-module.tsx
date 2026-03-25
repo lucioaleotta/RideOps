@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { AddIcon, ButtonContent, FilterIcon, ResetIcon } from '../../components/action-icons';
 import { formatCurrencyEUR } from '../../lib/currency';
 import {
   createFinanceTransaction,
@@ -400,7 +401,7 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
                   <option value="asc">Ascendente</option>
                 </select>
               </label>
-              <button type="button" className="primary-button" onClick={loadTransactions}>Applica filtri</button>
+              <button type="button" className="primary-button" onClick={loadTransactions}><ButtonContent icon={<FilterIcon />}>Applica filtri</ButtonContent></button>
               <button
                 type="button"
                 className="logout-button"
@@ -416,7 +417,7 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
                   setTimeout(() => loadTransactions(), 0);
                 }}
               >
-                Reset
+                <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
               </button>
             </div>
           </article>
@@ -432,7 +433,7 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
                   setFormOpen(true);
                 }}
               >
-                Nuovo movimento
+                <ButtonContent icon={<AddIcon />}>Nuovo movimento</ButtonContent>
               </button>
             </div>
 

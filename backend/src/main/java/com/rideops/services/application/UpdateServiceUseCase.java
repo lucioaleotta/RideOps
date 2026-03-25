@@ -1,6 +1,8 @@
 package com.rideops.services.application;
 
 import com.rideops.services.adapters.out.RideServiceEntity;
+import com.rideops.partners.adapters.out.PartnerRepository;
+import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -10,11 +12,14 @@ public class UpdateServiceUseCase {
 
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final VehicleAssignmentValidationService vehicleAssignmentValidationService;
+    private final PartnerRepository partnerRepository;
 
     public UpdateServiceUseCase(ServiceRepositoryPort serviceRepositoryPort,
-                                VehicleAssignmentValidationService vehicleAssignmentValidationService) {
+                                VehicleAssignmentValidationService vehicleAssignmentValidationService,
+                                PartnerRepository partnerRepository) {
         this.serviceRepositoryPort = serviceRepositoryPort;
         this.vehicleAssignmentValidationService = vehicleAssignmentValidationService;
+        this.partnerRepository = partnerRepository;
     }
 
     public ServiceDto execute(@NonNull Long serviceId, UpdateServiceCommand command) {
@@ -40,6 +45,17 @@ public class UpdateServiceUseCase {
 
         ServiceValidationSupport.validateRequestedTransition(entity.getStatus(), command.status());
 
+        ServiceAssignmentType targetAssignmentType = command.serviceAssignmentType() == null
+            ? entity.getServiceAssignmentType()
+            : command.serviceAssignmentType();
+        ServiceValidationSupport.validateAssignmentTransition(entity.getServiceAssignmentType(), targetAssignmentType);
+        ServiceValidationSupport.validateAssignmentBusinessRules(
+            targetAssignmentType,
+            command.partnerId(),
+            command.pricePartner()
+        );
+        validatePartnerIfPresent(command.partnerId());
+
         entity.setStartAt(command.startAt());
         entity.setPickupLocation(command.pickupLocation().trim());
         entity.setDestination(command.destination().trim());
@@ -53,6 +69,10 @@ public class UpdateServiceUseCase {
         entity.setClientEmail(cleanNullable(command.clientEmail()));
         entity.setPassengersCount(command.passengersCount());
         entity.setItinerary(cleanNullable(command.itinerary()));
+        entity.setServiceAssignmentType(targetAssignmentType);
+        entity.setPartnerId(command.partnerId());
+        entity.setPricePartner(command.pricePartner());
+        entity.setMargin(ServiceValidationSupport.calculateMargin(command.price(), command.pricePartner()));
         entity.setAssignedVehicleId(command.assignedVehicleId());
         if (command.status() != null) {
             entity.setStatus(command.status());
@@ -67,5 +87,18 @@ public class UpdateServiceUseCase {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void validatePartnerIfPresent(Long partnerId) {
+        if (partnerId == null) {
+            return;
+        }
+
+        boolean partnerValid = partnerRepository.findById(partnerId)
+            .map(partner -> !partner.isDeleted())
+            .orElse(false);
+        if (!partnerValid) {
+            throw new ServiceValidationException("Partner non valido o non attivo");
+        }
     }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, LockIcon, ResetIcon, SaveIcon } from './action-icons';
 
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
 type DeadlineStatus = 'DA_ESEGUIRE' | 'IN_SCADENZA' | 'SCADUTA' | 'PAGATA' | 'ESEGUITA' | 'ANNULLATA';
@@ -286,7 +287,7 @@ export function FleetDeadlinesPanel() {
               }
             }}
           >
-            {isFormOpen && !editingId ? 'Chiudi form' : 'Nuova voce'}
+            <ButtonContent icon={isFormOpen && !editingId ? <LockIcon /> : <AddIcon />}>{isFormOpen && !editingId ? 'Chiudi form' : 'Nuova voce'}</ButtonContent>
           </button>
         </div>
 
@@ -400,7 +401,7 @@ export function FleetDeadlinesPanel() {
 
             <div className="form-actions fleet-form-actions" style={{ display: 'flex', gap: 8 }}>
               <button type="submit" className="primary-button compact-button" disabled={submitting}>
-                {submitting ? 'Salvataggio...' : editingId ? 'Aggiorna voce' : 'Crea voce'}
+                <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : editingId ? 'Aggiorna voce' : 'Crea voce'}</ButtonContent>
               </button>
               <button
                 type="button"
@@ -410,9 +411,9 @@ export function FleetDeadlinesPanel() {
                   setForm(defaultForm);
                 }}
               >
-                Reset
+                <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
               </button>
-              <button type="button" className="logout-button" onClick={closeForm}>Annulla</button>
+              <button type="button" className="logout-button" onClick={closeForm}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
             </div>
           </form>
         )}
@@ -454,8 +455,8 @@ export function FleetDeadlinesPanel() {
                     <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{item.cost} {item.currency}</td>
                     <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
                       <div className="table-actions" style={{ display: 'flex', gap: 8 }}>
-                        <button type="button" className="primary-button compact-button" onClick={() => onEdit(item)}>Modifica</button>
-                        <button type="button" className="logout-button" onClick={() => onDelete(item.id)}>Elimina</button>
+                        <button type="button" className="primary-button compact-button" onClick={() => onEdit(item)}><ButtonContent icon={<EditIcon />}>Modifica</ButtonContent></button>
+                        <button type="button" className="logout-button" onClick={() => onDelete(item.id)}><ButtonContent icon={<DeleteIcon />}>Elimina</ButtonContent></button>
                       </div>
                     </td>
                   </tr>

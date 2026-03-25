@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ButtonContent, LoginIcon } from './action-icons';
 import { PasswordInput } from './password-input';
 
 export function LoginForm() {
@@ -60,7 +61,7 @@ export function LoginForm() {
       </label>
 
       <button type="submit" disabled={loading} className="primary-button">
-        {loading ? 'Accesso...' : 'Accedi'}
+        <ButtonContent icon={<LoginIcon />}>{loading ? 'Accesso...' : 'Accedi'}</ButtonContent>
       </button>
 
       {error && <p className="error-text">{error}</p>}
