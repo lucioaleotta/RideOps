@@ -72,7 +72,9 @@ public class CloseServiceUseCase {
             saved.getAssignedVehicleId(),
             saved.getAssignedDriverId(),
             saved.getType(),
+            saved.getServiceAssignmentType(),
             saved.getPrice(),
+            saved.getMargin(),
             "EUR",
             LocalDate.now(),
             "Incasso servizio #" + saved.getId()
