@@ -26,8 +26,8 @@ public class UpdateServiceUseCase {
         RideServiceEntity entity = serviceRepositoryPort.findById(serviceId)
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
-        if (entity.getStatus() == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Un servizio chiuso non puo` essere aggiornato");
+        if (entity.getStatus() == ServiceStatus.CLOSED || entity.getStatus() == ServiceStatus.EXECUTED) {
+            throw new ServiceValidationException("Un servizio ESEGUITO/CLOSED non puo` essere aggiornato");
         }
 
         if (command.startAt() == null) {

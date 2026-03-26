@@ -39,21 +39,39 @@ public class CloseServiceUseCase {
 
         Long safeDriverUserId = Objects.requireNonNull(driverUserId, "driverUserId obbligatorio");
         if (!safeDriverUserId.equals(entity.getAssignedDriverId())) {
-            throw new ServiceValidationException("Puoi chiudere solo servizi assegnati a te");
+            throw new ServiceValidationException("Puoi segnare ESEGUITO solo servizi assegnati a te");
         }
         if (entity.getStartAt() == null || entity.getStartAt().isAfter(LocalDateTime.now())) {
-            throw new ServiceValidationException("Puoi chiudere solo servizi con data/ora di inizio gia` raggiunta");
+            throw new ServiceValidationException("Puoi segnare come ESEGUITO solo servizi con data/ora di inizio gia` raggiunta");
         }
 
-        validateCloseableStatus(entity);
+        validateExecutableStatus(entity);
 
-        return closeEntity(entity);
+        return executeEntity(entity);
     }
 
     private void validateCloseableStatus(RideServiceEntity entity) {
-        if (entity.getStatus() != ServiceStatus.ASSIGNED) {
-            throw new ServiceValidationException("Il servizio puo` essere chiuso solo quando e` ASSIGNED");
+        if (entity.getStatus() != ServiceStatus.EXECUTED) {
+            throw new ServiceValidationException("Il servizio puo` essere chiuso solo quando e` ESEGUITO");
         }
+    }
+
+    private void validateExecutableStatus(RideServiceEntity entity) {
+        if (entity.getStatus() != ServiceStatus.ASSIGNED) {
+            throw new ServiceValidationException("Il servizio puo` essere segnato ESEGUITO solo quando e` ASSIGNED");
+        }
+    }
+
+    private ServiceDto executeEntity(RideServiceEntity entity) {
+        RideService service = new RideService(entity.getStatus());
+        try {
+            service.execute();
+        } catch (ServiceDomainException exception) {
+            throw new ServiceValidationException("Transizione di stato non valida");
+        }
+
+        entity.setStatus(service.getStatus());
+        return ServiceMapper.toDto(serviceRepositoryPort.save(entity));
     }
 
     private ServiceDto closeEntity(RideServiceEntity entity) {

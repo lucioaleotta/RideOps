@@ -7,7 +7,7 @@ import { formatCurrencyEUR } from '../lib/currency';
 
 type ViewMode = 'month' | 'week' | 'day';
 type ServiceType = 'TRANSFER' | 'TOUR';
-type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'CLOSED';
+type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
 
 type ServiceItem = {
   id: number;
@@ -463,12 +463,12 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
     const payload = (await response.json().catch(() => ({}))) as { message?: string };
 
     if (!response.ok) {
-      setError(payload.message ?? 'Chiusura servizio fallita');
+      setError(payload.message ?? 'Aggiornamento stato servizio fallito');
       setSubmittingClose(false);
       return;
     }
 
-    setSuccess('Servizio chiuso');
+    setSuccess('Servizio segnato come ESEGUITO');
 
     const query = new URLSearchParams({
       from: toLocalDateTimeParam(range.from),
@@ -540,6 +540,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
               <option value="">Tutti</option>
               <option value="OPEN">OPEN</option>
               <option value="ASSIGNED">ASSIGNED</option>
+              <option value="EXECUTED">EXECUTED</option>
               <option value="CLOSED">CLOSED</option>
             </select>
           </label>
@@ -609,7 +610,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                       onClick={() => onDriverClose(selectedService.id)}
                       disabled={submittingClose}
                     >
-                      <ButtonContent icon={<LockIcon />}>{submittingClose ? 'Chiusura...' : 'Chiudi servizio'}</ButtonContent>
+                      <ButtonContent icon={<LockIcon />}>{submittingClose ? 'Salvataggio...' : 'Segna Eseguito'}</ButtonContent>
                     </button>
                   )}
                 </div>

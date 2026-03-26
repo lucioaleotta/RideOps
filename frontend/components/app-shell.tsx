@@ -177,7 +177,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
           if (!item.startAt) {
             return acc;
           }
-          if (item.status === 'CLOSED') {
+          if (item.status === 'CLOSED' || item.status === 'EXECUTED') {
             return acc;
           }
 

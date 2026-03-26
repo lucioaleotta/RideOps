@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.rideops.services.domain.ServiceAssignmentType;
+import com.rideops.services.domain.ServiceStatus;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
@@ -69,6 +70,26 @@ class ServiceValidationSupportTest {
         );
 
         assertEquals("Un servizio INCOMING non puo` diventare INTERNAL", exception.getMessage());
+    }
+
+    @Test
+    void rejectCreateWithExecutedStatus() {
+        ServiceValidationException exception = assertThrows(
+            ServiceValidationException.class,
+            () -> ServiceValidationSupport.sanitizeCreateStatus(ServiceStatus.EXECUTED)
+        );
+
+        assertEquals("Il servizio non puo` essere creato con stato ESEGUITO/CLOSED", exception.getMessage());
+    }
+
+    @Test
+    void rejectRequestedTransitionToExecutedViaGenericUpdate() {
+        ServiceValidationException exception = assertThrows(
+            ServiceValidationException.class,
+            () -> ServiceValidationSupport.validateRequestedTransition(ServiceStatus.ASSIGNED, ServiceStatus.EXECUTED)
+        );
+
+        assertEquals("Usa gli endpoint dedicati per segnare ESEGUITO o chiudere un servizio", exception.getMessage());
     }
 
     @Test

@@ -1572,6 +1572,11 @@ a:hover {
     color: #65788f;
   }
 
+  .service-chip-status.executed {
+    background: #fff3de;
+    color: #ab5a00;
+  }
+
   .service-chip-status.open {
     background: #ffe8c9;
     color: #aa6200;

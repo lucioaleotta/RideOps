@@ -6,7 +6,7 @@ import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CancelIcon, Curs
 import { formatCurrencyEUR } from '../lib/currency';
 
 type ServiceType = 'TRANSFER' | 'TOUR';
-type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'CLOSED';
+type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
 type ServiceAssignmentType = 'INTERNAL' | 'OUTSOURCED' | 'INCOMING';
 
 type ServiceItem = {
@@ -327,7 +327,7 @@ export function ServicesPanel() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editingInitialStatus, setEditingInitialStatus] = useState<Exclude<ServiceStatus, 'CLOSED'>>('OPEN');
+  const [editingInitialStatus, setEditingInitialStatus] = useState<Exclude<ServiceStatus, 'CLOSED' | 'EXECUTED'>>('OPEN');
   const [editingInitialAssignedDriverId, setEditingInitialAssignedDriverId] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
@@ -364,12 +364,18 @@ export function ServicesPanel() {
     if (status === 'ASSIGNED') {
       return 'Assegnato';
     }
+    if (status === 'EXECUTED') {
+      return 'Eseguito';
+    }
     return 'Chiuso';
   }
 
   function statusClass(status: ServiceStatus) {
     if (status === 'ASSIGNED') {
       return 'assigned';
+    }
+    if (status === 'EXECUTED') {
+      return 'executed';
     }
     if (status === 'CLOSED') {
       return 'closed';
@@ -531,7 +537,7 @@ export function ServicesPanel() {
     setIsFormOpen(false);
   }
 
-  function toPayload(status: Exclude<ServiceStatus, 'CLOSED'>) {
+  function toPayload(status: Exclude<ServiceStatus, 'CLOSED' | 'EXECUTED'>) {
     const assignmentType: ServiceAssignmentType = form.receivedFromPartner
       ? 'INCOMING'
       : form.serviceAssignmentType;
@@ -698,8 +704,8 @@ export function ServicesPanel() {
   }
 
   function onEdit(service: ServiceItem) {
-    if (service.status === 'CLOSED') {
-      setError('Un servizio chiuso non è modificabile');
+    if (service.status === 'CLOSED' || service.status === 'EXECUTED') {
+      setError('Un servizio ESEGUITO/CHIUSO non è modificabile');
       return;
     }
 
@@ -763,7 +769,7 @@ export function ServicesPanel() {
       return;
     }
 
-    setSuccess('Servizio chiuso');
+    setSuccess('Servizio chiuso (pagamento registrato)');
     await loadServices();
   }
 
@@ -939,6 +945,21 @@ export function ServicesPanel() {
     [services]
   );
 
+  const overdueExecutedServices = useMemo(() => {
+    const now = Date.now();
+    const thresholdMs = 20 * 24 * 60 * 60 * 1000;
+    return orderedServices.filter((service) => {
+      if (service.status !== 'EXECUTED') {
+        return false;
+      }
+      const executedAt = new Date(service.updatedAt).getTime();
+      if (Number.isNaN(executedAt)) {
+        return false;
+      }
+      return now - executedAt > thresholdMs;
+    });
+  }, [orderedServices]);
+
   const totalPages = Math.max(1, Math.ceil(orderedServices.length / PAGE_SIZE));
 
   useEffect(() => {
@@ -1039,13 +1060,16 @@ export function ServicesPanel() {
                 setFilters((prev) => ({
                   ...prev,
                   status: nextStatus,
-                  onlyUnassigned: nextStatus === 'ASSIGNED' || nextStatus === 'CLOSED' ? false : prev.onlyUnassigned
+                  onlyUnassigned: nextStatus === 'ASSIGNED' || nextStatus === 'EXECUTED' || nextStatus === 'CLOSED'
+                    ? false
+                    : prev.onlyUnassigned
                 }));
               }}
             >
               <option value="">Tutti</option>
               <option value="OPEN">Aperti</option>
               <option value="ASSIGNED">Assegnati</option>
+              <option value="EXECUTED">Eseguiti</option>
               <option value="CLOSED">Chiusi</option>
             </select>
           </label>
@@ -1124,6 +1148,16 @@ export function ServicesPanel() {
             >
               <ButtonContent icon={<CancelIcon />}>Rimuovi filtro</ButtonContent>
             </button>
+          </div>
+        )}
+        {overdueExecutedServices.length > 0 && (
+          <div style={{ marginTop: 10, marginBottom: 10, padding: 10, borderRadius: 10, background: '#fff4df', border: '1px solid #f2d39a' }}>
+            <strong style={{ display: 'block', color: '#8a4b00' }}>
+              Attenzione: {overdueExecutedServices.length} servizi in stato Eseguito da oltre 20 giorni
+            </strong>
+            <span style={{ color: '#8a4b00' }}>
+              Verifica l'incasso dal partner e chiudi i servizi in sospeso.
+            </span>
           </div>
         )}
         {error && <p className="error-text">{error}</p>}
@@ -1271,7 +1305,7 @@ export function ServicesPanel() {
                     <span className="action-button-icon"><ActionDeleteIcon /></span>
                     Elimina
                   </button>
-                  {selectedService.status === 'ASSIGNED' && (
+                  {selectedService.status === 'EXECUTED' && (
                     <button
                       type="button"
                       className="compact-button services-selected-close-service"
@@ -1281,7 +1315,9 @@ export function ServicesPanel() {
                       Chiudi
                     </button>
                   )}
-                  {selectedService.serviceAssignmentType === 'INTERNAL' && selectedService.status !== 'CLOSED' && (
+                  {selectedService.serviceAssignmentType === 'INTERNAL'
+                    && selectedService.status !== 'CLOSED'
+                    && selectedService.status !== 'EXECUTED' && (
                     <button
                       type="button"
                       className="compact-button services-selected-outsource"
@@ -1443,12 +1479,16 @@ export function ServicesPanel() {
                           background:
                             service.status === 'CLOSED'
                               ? '#eceff3'
+                              : service.status === 'EXECUTED'
+                                ? '#fff3e6'
                               : service.status === 'ASSIGNED'
                                 ? '#e8f5e9'
                                 : '#fff4e5',
                           color:
                             service.status === 'CLOSED'
                               ? '#5f6b7a'
+                              : service.status === 'EXECUTED'
+                                ? '#b45f06'
                               : service.status === 'ASSIGNED'
                                 ? '#2e7d32'
                                 : '#b26a00'

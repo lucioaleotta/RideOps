@@ -66,7 +66,7 @@ class OutsourceServiceUseCaseTest {
             () -> useCase.execute(11L, 20L, new BigDecimal("50"))
         );
 
-        assertEquals("Un servizio chiuso non puo` essere affidato a partner", exception.getMessage());
+        assertEquals("Un servizio ESEGUITO/CLOSED non puo` essere affidato a partner", exception.getMessage());
         verify(serviceRepositoryPort, never()).save(entity);
     }
 

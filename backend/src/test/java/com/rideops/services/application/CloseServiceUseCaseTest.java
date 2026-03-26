@@ -46,7 +46,7 @@ class CloseServiceUseCaseTest {
             () -> useCase.executeByDriver(10L, 42L)
         );
 
-        assertEquals("Puoi chiudere solo servizi assegnati a te", exception.getMessage());
+        assertEquals("Puoi segnare ESEGUITO solo servizi assegnati a te", exception.getMessage());
         verify(repository, never()).save(any(RideServiceEntity.class));
         verify(eventPublisher, never()).publishEvent(any());
     }
@@ -61,18 +61,31 @@ class CloseServiceUseCaseTest {
             () -> useCase.executeByDriver(11L, 42L)
         );
 
-        assertEquals("Puoi chiudere solo servizi con data/ora di inizio gia` raggiunta", exception.getMessage());
+        assertEquals("Puoi segnare come ESEGUITO solo servizi con data/ora di inizio gia` raggiunta", exception.getMessage());
         verify(repository, never()).save(any(RideServiceEntity.class));
         verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void closeDriverServiceWhenAssignedOwnedAndStarted() {
+    void executeDriverServiceWhenAssignedOwnedAndStarted() {
         RideServiceEntity entity = assignedService(LocalDateTime.now().minusMinutes(5), 42L);
         when(repository.findById(12L)).thenReturn(Optional.of(entity));
         when(repository.save(any(RideServiceEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         ServiceDto dto = useCase.executeByDriver(12L, 42L);
+
+        assertEquals(ServiceStatus.EXECUTED, dto.status());
+        verify(repository).save(entity);
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void closeServiceWhenExecuted() {
+        RideServiceEntity entity = executedService();
+        when(repository.findById(13L)).thenReturn(Optional.of(entity));
+        when(repository.save(any(RideServiceEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ServiceDto dto = useCase.execute(13L);
 
         assertEquals(ServiceStatus.CLOSED, dto.status());
         verify(repository).save(entity);
@@ -91,6 +104,12 @@ class CloseServiceUseCaseTest {
         entity.setAssignedVehicleId(7L);
         entity.setCreatedAt(LocalDateTime.now().minusDays(1));
         entity.setUpdatedAt(LocalDateTime.now().minusHours(1));
+        return entity;
+    }
+
+    private RideServiceEntity executedService() {
+        RideServiceEntity entity = assignedService(LocalDateTime.now().minusMinutes(10), 42L);
+        entity.setStatus(ServiceStatus.EXECUTED);
         return entity;
     }
 }

@@ -14,8 +14,8 @@ final class ServiceValidationSupport {
 
     static ServiceStatus sanitizeCreateStatus(ServiceStatus status) {
         ServiceStatus safeStatus = status == null ? ServiceStatus.OPEN : status;
-        if (safeStatus == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Il servizio non puo` essere creato con stato CLOSED");
+        if (safeStatus == ServiceStatus.CLOSED || safeStatus == ServiceStatus.EXECUTED) {
+            throw new ServiceValidationException("Il servizio non puo` essere creato con stato ESEGUITO/CLOSED");
         }
         return safeStatus;
     }
@@ -49,8 +49,8 @@ final class ServiceValidationSupport {
         if (targetStatus == null || currentStatus == targetStatus) {
             return;
         }
-        if (targetStatus == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Usa l'endpoint di chiusura per chiudere un servizio");
+        if (targetStatus == ServiceStatus.EXECUTED || targetStatus == ServiceStatus.CLOSED) {
+            throw new ServiceValidationException("Usa gli endpoint dedicati per segnare ESEGUITO o chiudere un servizio");
         }
         RideService service = new RideService(currentStatus);
         try {
