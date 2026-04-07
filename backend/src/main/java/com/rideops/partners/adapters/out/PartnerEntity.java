@@ -21,6 +21,9 @@ public class PartnerEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "partner_type", nullable = false, length = 20)
     private PartnerType type;
@@ -104,6 +107,14 @@ public class PartnerEntity {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
     }
 
     public PartnerType getType() {

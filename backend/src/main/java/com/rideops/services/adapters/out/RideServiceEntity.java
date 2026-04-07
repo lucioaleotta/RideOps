@@ -24,6 +24,9 @@ public class RideServiceEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(name = "start_at", nullable = false)
     private LocalDateTime startAt;
 
@@ -121,6 +124,14 @@ public class RideServiceEntity {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
     }
 
     public LocalDateTime getStartAt() {

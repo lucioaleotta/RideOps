@@ -16,6 +16,10 @@ import com.rideops.fleet.adapters.out.VehicleRepository;
 import com.rideops.fleet.domain.DeadlineStatus;
 import com.rideops.fleet.domain.DeadlineType;
 import com.rideops.fleet.domain.VehicleType;
+import com.rideops.identity.adapters.out.UserEntity;
+import com.rideops.identity.application.IdentityUserDetails;
+import com.rideops.identity.domain.UserRole;
+import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -26,6 +30,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class VehicleManagementServiceTest {
@@ -46,12 +52,34 @@ class VehicleManagementServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new VehicleManagementService(vehicleRepository, occurrenceRepository, planRepository, eventPublisher);
+        applyTenantAuthentication(1L);
+        service = new VehicleManagementService(
+            vehicleRepository,
+            occurrenceRepository,
+            planRepository,
+            eventPublisher,
+            new TenantContext()
+        );
+    }
+
+    private void applyTenantAuthentication(Long tenantId) {
+        UserEntity user = new UserEntity();
+        user.setUserId("tester");
+        user.setEmail("tester@rideops.local");
+        user.setPasswordHash("hash");
+        user.setRole(UserRole.ADMIN);
+        user.setEnabled(true);
+        user.setTenantId(tenantId);
+
+        IdentityUserDetails principal = new IdentityUserDetails(user);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())
+        );
     }
 
     @Test
     void addOccurrenceRejectsPagataForRevisione() {
-        when(vehicleRepository.findById(10L)).thenReturn(Optional.of(vehicle(10L)));
+        when(vehicleRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(vehicle(10L)));
 
         assertThrows(
             FleetValidationException.class,
@@ -81,9 +109,9 @@ class VehicleManagementServiceTest {
         occurrence.setPlan(plan);
         occurrence.setDueDate(LocalDate.of(2026, 4, 1));
 
-        when(occurrenceRepository.findById(1L)).thenReturn(Optional.of(occurrence));
+        when(occurrenceRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(occurrence));
         when(occurrenceRepository.save(any(VehicleDeadlineOccurrenceEntity.class))).thenReturn(occurrence);
-        when(occurrenceRepository.existsByPlanIdAndDueDate(21L, LocalDate.of(2027, 4, 1))).thenReturn(false);
+        when(occurrenceRepository.existsByPlanIdAndDueDateAndTenantId(21L, LocalDate.of(2027, 4, 1), 1L)).thenReturn(false);
 
         VehicleDeadlineOccurrenceDto dto = service.markOccurrencePaid(1L, LocalDate.of(2026, 4, 1));
 
@@ -97,9 +125,9 @@ class VehicleManagementServiceTest {
         VehicleDeadlinePlanEntity plan = plan(vehicle, 30L);
         plan.setNextDueDate(LocalDate.of(2026, 9, 1));
 
-        when(vehicleRepository.findById(10L)).thenReturn(Optional.of(vehicle));
+        when(vehicleRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(vehicle));
         when(planRepository.save(any(VehicleDeadlinePlanEntity.class))).thenReturn(plan);
-        when(occurrenceRepository.existsByPlanIdAndDueDate(30L, LocalDate.of(2026, 9, 1))).thenReturn(false);
+        when(occurrenceRepository.existsByPlanIdAndDueDateAndTenantId(30L, LocalDate.of(2026, 9, 1), 1L)).thenReturn(false);
 
         VehicleDeadlinePlanDto dto = service.addPlan(
             10L,
@@ -122,7 +150,7 @@ class VehicleManagementServiceTest {
         VehicleDeadlinePlanEntity plan = plan(vehicle(7L), 3L);
         plan.setActive(true);
 
-        when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
+        when(planRepository.findByIdAndTenantId(3L, 1L)).thenReturn(Optional.of(plan));
         when(planRepository.save(any(VehicleDeadlinePlanEntity.class))).thenReturn(plan);
 
         VehicleDeadlinePlanDto off = service.deactivatePlan(3L);
@@ -149,9 +177,9 @@ class VehicleManagementServiceTest {
         overdue.setCostAmount(BigDecimal.ONE);
         overdue.setCurrency("EUR");
 
-        when(vehicleRepository.findById(9L)).thenReturn(Optional.of(vehicle));
-        when(occurrenceRepository.findAllByVehicleIdOrderByDueDateDesc(9L)).thenReturn(List.of(upcoming, overdue));
-        when(planRepository.findAllByVehicleIdOrderByCreatedAtDesc(9L)).thenReturn(List.of());
+        when(vehicleRepository.findByIdAndTenantId(9L, 1L)).thenReturn(Optional.of(vehicle));
+        when(occurrenceRepository.findAllByVehicleIdAndTenantIdOrderByDueDateDesc(9L, 1L)).thenReturn(List.of(upcoming, overdue));
+        when(planRepository.findAllByVehicleIdAndTenantIdOrderByCreatedAtDesc(9L, 1L)).thenReturn(List.of());
 
         VehicleDetailDto dto = service.getVehicleDetail(9L, 30);
 
@@ -175,9 +203,9 @@ class VehicleManagementServiceTest {
         inactive.setActive(false);
         inactive.setNextDueDate(LocalDate.of(2026, 12, 1));
 
-        when(planRepository.findAll()).thenReturn(List.of(activeMissing, activePresent, inactive));
-        when(occurrenceRepository.existsByPlanIdAndDueDate(100L, LocalDate.of(2026, 10, 1))).thenReturn(false);
-        when(occurrenceRepository.existsByPlanIdAndDueDate(101L, LocalDate.of(2026, 11, 1))).thenReturn(true);
+        when(planRepository.findAllByTenantId(1L)).thenReturn(List.of(activeMissing, activePresent, inactive));
+        when(occurrenceRepository.existsByPlanIdAndDueDateAndTenantId(100L, LocalDate.of(2026, 10, 1), 1L)).thenReturn(false);
+        when(occurrenceRepository.existsByPlanIdAndDueDateAndTenantId(101L, LocalDate.of(2026, 11, 1), 1L)).thenReturn(true);
 
         PlanSyncResultDto result = service.syncMissingOccurrencesFromActivePlans();
 

@@ -108,6 +108,7 @@ public class UpdateUserUseCase {
         }
 
         UserAdminAuditLogEntity audit = new UserAdminAuditLogEntity();
+        audit.setTenantId(saved.getTenantId());
         audit.setTargetUserId(saved.getId());
         audit.setTargetUserIdValue(saved.getUserId());
         audit.setAdminUserId(adminUserDbId);

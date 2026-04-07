@@ -3,6 +3,7 @@ package com.rideops.accounting.adapters.out.persistence;
 import com.rideops.accounting.application.FinancialTransactionFilter;
 import com.rideops.accounting.application.FinancialTransactionRepositoryPort;
 import com.rideops.accounting.domain.FinancialTransactionType;
+import com.rideops.multitenancy.TenantContext;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -14,29 +15,37 @@ import org.springframework.stereotype.Component;
 public class FinancialTransactionJpaAdapter implements FinancialTransactionRepositoryPort {
 
     private final FinancialTransactionRepository repository;
+    private final TenantContext tenantContext;
 
-    public FinancialTransactionJpaAdapter(FinancialTransactionRepository repository) {
+    public FinancialTransactionJpaAdapter(FinancialTransactionRepository repository, TenantContext tenantContext) {
         this.repository = repository;
+        this.tenantContext = tenantContext;
     }
 
     @Override
     public FinancialTransactionEntity save(FinancialTransactionEntity entity) {
+        if (entity.getTenantId() == null) {
+            entity.setTenantId(tenantContext.requireTenantId());
+        }
         return repository.save(entity);
     }
 
     @Override
     public Optional<FinancialTransactionEntity> findById(Long id) {
-        return repository.findById(id);
+        return repository.findByIdAndTenantId(id, tenantContext.requireTenantId());
     }
 
     @Override
     public Optional<FinancialTransactionEntity> findBySourceKey(String sourceKey) {
-        return repository.findBySourceKey(sourceKey);
+        return repository.findBySourceKeyAndTenantId(sourceKey, tenantContext.requireTenantId());
     }
 
     @Override
     public List<FinancialTransactionEntity> findByFilter(FinancialTransactionFilter filter) {
         Specification<FinancialTransactionEntity> specification = Specification.where(null);
+        Long tenantId = tenantContext.requireTenantId();
+
+        specification = specification.and((root, query, cb) -> cb.equal(root.get("tenantId"), tenantId));
 
         if (filter.fromDate() != null) {
             specification = specification.and((root, query, cb) -> cb.greaterThanOrEqualTo(
@@ -97,28 +106,28 @@ public class FinancialTransactionJpaAdapter implements FinancialTransactionRepos
 
     @Override
     public List<FinanceTypeTotalProjection> summarizeByTypeInRange(LocalDate fromDate, LocalDate toDate) {
-        return repository.summarizeByTypeInRange(fromDate, toDate);
+        return repository.summarizeByTypeInRange(fromDate, toDate, tenantContext.requireTenantId());
     }
 
     @Override
     public List<FinanceYearMonthTotalProjection> summarizeMonthlyByYear(int year) {
-        return repository.summarizeMonthlyByYear(year);
+        return repository.summarizeMonthlyByYear(year, tenantContext.requireTenantId());
     }
 
     @Override
     public List<FinanceYearTotalProjection> summarizeYearly() {
-        return repository.summarizeYearly();
+        return repository.summarizeYearly(tenantContext.requireTenantId());
     }
 
     @Override
     public List<FinanceCategoryTotalProjection> summarizeByCategoryInRange(FinancialTransactionType type,
                                                                            LocalDate fromDate,
                                                                            LocalDate toDate) {
-        return repository.summarizeByCategoryInRange(type, fromDate, toDate);
+        return repository.summarizeByCategoryInRange(type, fromDate, toDate, tenantContext.requireTenantId());
     }
 
     @Override
     public long countDistinctServicesWithTransactions(LocalDate fromDate, LocalDate toDate) {
-        return repository.countDistinctServicesWithTransactions(fromDate, toDate);
+        return repository.countDistinctServicesWithTransactions(fromDate, toDate, tenantContext.requireTenantId());
     }
 }

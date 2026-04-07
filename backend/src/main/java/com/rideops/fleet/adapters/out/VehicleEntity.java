@@ -21,6 +21,9 @@ public class VehicleEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(nullable = false, unique = true, length = 20)
     private String plate;
 
@@ -56,6 +59,14 @@ public class VehicleEntity {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getPlate() {

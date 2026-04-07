@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record ServiceClosedEvent(
+    Long tenantId,
     Long serviceId,
     Long assignedVehicleId,
     Long assignedDriverId,

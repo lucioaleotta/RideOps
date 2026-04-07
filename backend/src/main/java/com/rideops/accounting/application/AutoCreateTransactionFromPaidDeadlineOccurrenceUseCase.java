@@ -35,6 +35,7 @@ public class AutoCreateTransactionFromPaidDeadlineOccurrenceUseCase {
         }
 
         FinancialTransactionEntity entity = new FinancialTransactionEntity();
+        entity.setTenantId(event.tenantId());
         entity.setTransactionType(FinancialTransactionType.COSTO);
         entity.setCategory(categoryMapper.deadlineCostCategory(event.deadlineType()));
         entity.setDescription(event.description() == null ? "Pagamento scadenza" : event.description());

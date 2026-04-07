@@ -9,6 +9,7 @@ import com.rideops.fleet.adapters.out.VehicleUnavailabilityRepository;
 import com.rideops.fleet.domain.DeadlineStatus;
 import com.rideops.fleet.domain.DeadlineType;
 import com.rideops.fleet.domain.VehicleType;
+import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -21,17 +22,20 @@ public class FleetService {
     private final VehicleRepository vehicleRepository;
     private final VehicleDeadlineRepository vehicleDeadlineRepository;
     private final VehicleUnavailabilityRepository vehicleUnavailabilityRepository;
+    private final TenantContext tenantContext;
 
     public FleetService(VehicleRepository vehicleRepository,
                         VehicleDeadlineRepository vehicleDeadlineRepository,
-                        VehicleUnavailabilityRepository vehicleUnavailabilityRepository) {
+                        VehicleUnavailabilityRepository vehicleUnavailabilityRepository,
+                        TenantContext tenantContext) {
         this.vehicleRepository = vehicleRepository;
         this.vehicleDeadlineRepository = vehicleDeadlineRepository;
         this.vehicleUnavailabilityRepository = vehicleUnavailabilityRepository;
+        this.tenantContext = tenantContext;
     }
 
     public List<VehicleDto> listVehicles() {
-        return vehicleRepository.findAllByOrderByPlateAsc().stream()
+        return vehicleRepository.findAllByTenantIdOrderByPlateAsc(tenantContext.requireTenantId()).stream()
             .map(this::toVehicleDto)
             .toList();
     }
@@ -40,11 +44,13 @@ public class FleetService {
         String normalizedPlate = normalizePlate(plate);
         validateVehicle(normalizedPlate, seats, type);
 
-        if (vehicleRepository.existsByPlateIgnoreCase(normalizedPlate)) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (vehicleRepository.existsByPlateIgnoreCaseAndTenantId(normalizedPlate, tenantId)) {
             throw new FleetValidationException("La targa esiste gia`");
         }
 
         VehicleEntity entity = new VehicleEntity();
+        entity.setTenantId(tenantId);
         entity.setPlate(normalizedPlate);
         entity.setSeats(seats);
         entity.setType(type);
@@ -58,7 +64,7 @@ public class FleetService {
         String normalizedPlate = normalizePlate(plate);
         validateVehicle(normalizedPlate, seats, type);
 
-        if (vehicleRepository.existsByPlateIgnoreCaseAndIdNot(normalizedPlate, vehicleId)) {
+        if (vehicleRepository.existsByPlateIgnoreCaseAndIdNotAndTenantId(normalizedPlate, vehicleId, tenantContext.requireTenantId())) {
             throw new FleetValidationException("La targa esiste gia`");
         }
 
@@ -77,7 +83,7 @@ public class FleetService {
 
     public List<VehicleDeadlineDto> listDeadlines(Long vehicleId) {
         findVehicle(vehicleId);
-        return vehicleDeadlineRepository.findAllByVehicleIdOrderByDueDateAsc(vehicleId).stream()
+        return vehicleDeadlineRepository.findAllByVehicleIdAndTenantIdOrderByDueDateAsc(vehicleId, tenantContext.requireTenantId()).stream()
             .map(this::toDeadlineDto)
             .toList();
     }
@@ -88,7 +94,11 @@ public class FleetService {
         LocalDate deadlineDate = LocalDate.now().plusDays(safeDays);
 
         return vehicleDeadlineRepository
-            .findAllByStatusNotInAndDueDateLessThanEqualOrderByDueDateAsc(closedStatuses(), deadlineDate)
+            .findAllByStatusNotInAndDueDateLessThanEqualAndTenantIdOrderByDueDateAsc(
+                closedStatuses(),
+                deadlineDate,
+                tenantContext.requireTenantId()
+            )
             .stream()
             .filter(item -> !item.getDueDate().isBefore(today))
             .map(this::toDeadlineDto)
@@ -99,7 +109,11 @@ public class FleetService {
         LocalDate today = LocalDate.now();
 
         return vehicleDeadlineRepository
-            .findAllByStatusNotInAndDueDateLessThanOrderByDueDateAsc(closedStatuses(), today)
+            .findAllByStatusNotInAndDueDateLessThanAndTenantIdOrderByDueDateAsc(
+                closedStatuses(),
+                today,
+                tenantContext.requireTenantId()
+            )
             .stream()
             .map(this::toDeadlineDto)
             .toList();
@@ -120,6 +134,7 @@ public class FleetService {
         validateDeadline(type, title, dueDate, status, cost, currency, paymentDate, executionDate);
 
         VehicleDeadlineEntity entity = new VehicleDeadlineEntity();
+        entity.setTenantId(tenantContext.requireTenantId());
         entity.setVehicle(vehicle);
         entity.setType(type);
         entity.setTitle(title.trim());
@@ -146,7 +161,7 @@ public class FleetService {
                                              String notes,
                                              LocalDate paymentDate,
                                              LocalDate executionDate) {
-        VehicleDeadlineEntity entity = vehicleDeadlineRepository.findById(deadlineId)
+        VehicleDeadlineEntity entity = vehicleDeadlineRepository.findByIdAndTenantId(deadlineId, tenantContext.requireTenantId())
             .orElseThrow(() -> new DeadlineNotFoundException(deadlineId));
 
         validateDeadline(type, title, dueDate, status, cost, currency, paymentDate, executionDate);
@@ -166,14 +181,14 @@ public class FleetService {
     }
 
     public void deleteDeadline(Long deadlineId) {
-        VehicleDeadlineEntity entity = vehicleDeadlineRepository.findById(deadlineId)
+        VehicleDeadlineEntity entity = vehicleDeadlineRepository.findByIdAndTenantId(deadlineId, tenantContext.requireTenantId())
             .orElseThrow(() -> new DeadlineNotFoundException(deadlineId));
         vehicleDeadlineRepository.delete(entity);
     }
 
     public List<VehicleUnavailabilityDto> listUnavailabilities(Long vehicleId) {
         findVehicle(vehicleId);
-        return vehicleUnavailabilityRepository.findAllByVehicleIdOrderByStartDateAsc(vehicleId).stream()
+        return vehicleUnavailabilityRepository.findAllByVehicleIdAndTenantIdOrderByStartDateAsc(vehicleId, tenantContext.requireTenantId()).stream()
             .map(this::toUnavailabilityDto)
             .toList();
     }
@@ -186,12 +201,17 @@ public class FleetService {
         validateReason(reason);
         VehicleEntity vehicle = findVehicle(vehicleId);
 
-        if (vehicleUnavailabilityRepository.existsByVehicleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            vehicleId, endDate, startDate)) {
+        if (vehicleUnavailabilityRepository.existsByVehicleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndTenantId(
+            vehicleId,
+            endDate,
+            startDate,
+            tenantContext.requireTenantId()
+        )) {
             throw new FleetValidationException("Esiste gia` un periodo di indisponibilita` sovrapposto per questo veicolo");
         }
 
         VehicleUnavailabilityEntity entity = new VehicleUnavailabilityEntity();
+        entity.setTenantId(tenantContext.requireTenantId());
         entity.setVehicle(vehicle);
         entity.setStartDate(startDate);
         entity.setEndDate(endDate);
@@ -204,15 +224,20 @@ public class FleetService {
                                                          LocalDate startDate,
                                                          LocalDate endDate,
                                                          String reason) {
-        VehicleUnavailabilityEntity entity = vehicleUnavailabilityRepository.findById(unavailabilityId)
+        VehicleUnavailabilityEntity entity = vehicleUnavailabilityRepository.findByIdAndTenantId(unavailabilityId, tenantContext.requireTenantId())
             .orElseThrow(() -> new UnavailabilityNotFoundException(unavailabilityId));
 
         validateUnavailabilityDates(startDate, endDate);
         validateReason(reason);
 
         Long vehicleId = entity.getVehicle().getId();
-        if (vehicleUnavailabilityRepository.existsByVehicleIdAndIdNotAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
-            vehicleId, unavailabilityId, endDate, startDate)) {
+        if (vehicleUnavailabilityRepository.existsByVehicleIdAndIdNotAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndTenantId(
+            vehicleId,
+            unavailabilityId,
+            endDate,
+            startDate,
+            tenantContext.requireTenantId()
+        )) {
             throw new FleetValidationException("Esiste gia` un periodo di indisponibilita` sovrapposto per questo veicolo");
         }
 
@@ -224,13 +249,13 @@ public class FleetService {
     }
 
     public void deleteUnavailability(Long unavailabilityId) {
-        VehicleUnavailabilityEntity entity = vehicleUnavailabilityRepository.findById(unavailabilityId)
+        VehicleUnavailabilityEntity entity = vehicleUnavailabilityRepository.findByIdAndTenantId(unavailabilityId, tenantContext.requireTenantId())
             .orElseThrow(() -> new UnavailabilityNotFoundException(unavailabilityId));
         vehicleUnavailabilityRepository.delete(entity);
     }
 
     private VehicleEntity findVehicle(Long vehicleId) {
-        return vehicleRepository.findById(vehicleId)
+        return vehicleRepository.findByIdAndTenantId(vehicleId, tenantContext.requireTenantId())
             .orElseThrow(() -> new VehicleNotFoundException(vehicleId));
     }
 

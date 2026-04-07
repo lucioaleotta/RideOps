@@ -77,6 +77,7 @@ public class AdminUserController {
                 request.email(),
                 request.password(),
                 request.role(),
+                request.tenantId(),
                 null,
                 null,
                 null,
@@ -149,7 +150,8 @@ public class AdminUserController {
     record CreateUserRequest(@NotBlank String userId,
                              @NotBlank @Email String email,
                              @NotBlank String password,
-                             @NotNull UserRole role) {
+                             @NotNull UserRole role,
+                             Long tenantId) {
     }
 
     record UpdateRoleRequest(@NotNull UserRole role) {

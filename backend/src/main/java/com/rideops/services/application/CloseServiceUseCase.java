@@ -86,6 +86,7 @@ public class CloseServiceUseCase {
         RideServiceEntity saved = serviceRepositoryPort.save(entity);
 
         eventPublisher.publishEvent(new ServiceClosedEvent(
+            saved.getTenantId(),
             saved.getId(),
             saved.getAssignedVehicleId(),
             saved.getAssignedDriverId(),

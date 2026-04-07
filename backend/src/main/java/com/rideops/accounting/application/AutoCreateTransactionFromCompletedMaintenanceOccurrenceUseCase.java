@@ -35,6 +35,7 @@ public class AutoCreateTransactionFromCompletedMaintenanceOccurrenceUseCase {
         }
 
         FinancialTransactionEntity entity = new FinancialTransactionEntity();
+        entity.setTenantId(event.tenantId());
         entity.setTransactionType(FinancialTransactionType.COSTO);
         entity.setCategory(categoryMapper.deadlineCostCategory(event.deadlineType()));
         entity.setDescription(event.description() == null ? "Esecuzione manutenzione" : event.description());

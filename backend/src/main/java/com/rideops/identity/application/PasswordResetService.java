@@ -72,6 +72,7 @@ public class PasswordResetService {
         String rawToken = UUID.randomUUID().toString() + UUID.randomUUID().toString().replace("-", "");
 
         PasswordResetTokenEntity token = new PasswordResetTokenEntity();
+        token.setTenantId(user.getTenantId());
         token.setUser(user);
         token.setTokenHash(hash(rawToken));
         token.setExpiresAt(LocalDateTime.now().plusMinutes(TOKEN_TTL_MINUTES));
@@ -81,6 +82,7 @@ public class PasswordResetService {
         String body = "Link reset password (stub email MVP): " + resetPath;
 
         EmailOutboxEntity outbox = new EmailOutboxEntity();
+        outbox.setTenantId(user.getTenantId());
         outbox.setRecipient(user.getEmail());
         outbox.setSubject("RideOps reimpostazione password");
         outbox.setBody(body);

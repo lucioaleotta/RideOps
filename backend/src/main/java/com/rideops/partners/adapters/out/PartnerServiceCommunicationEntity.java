@@ -17,6 +17,9 @@ public class PartnerServiceCommunicationEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(name = "partner_id", nullable = false)
     private Long partnerId;
 
@@ -47,6 +50,14 @@ public class PartnerServiceCommunicationEntity {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
     }
 
     public Long getPartnerId() {

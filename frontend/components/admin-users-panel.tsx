@@ -13,6 +13,8 @@ type UserItem = {
   role: UserRole;
   enabled: boolean;
   createdAt: string;
+  tenantId: number | null;
+  tenantName: string | null;
 };
 
 type EditFormState = {
@@ -48,6 +50,13 @@ export function AdminUsersPanel() {
   const [journalEntries, setJournalEntries] = useState<JournalItem[]>([]);
   const [journalDateFilter, setJournalDateFilter] = useState('');
   const [journalAdminFilter, setJournalAdminFilter] = useState('');
+
+  // Filtri utenti
+  const [filterUserId, setFilterUserId] = useState('');
+  const [filterEmail, setFilterEmail] = useState('');
+  const [filterRole, setFilterRole] = useState<UserRole | ''>('');
+  const [filterStatus, setFilterStatus] = useState<'ATTIVO' | 'DISABILITATO' | ''>('');
+  const [filterTenant, setFilterTenant] = useState('');
 
   const loadJournal = useCallback(async () => {
     setJournalLoading(true);
@@ -156,10 +165,22 @@ export function AdminUsersPanel() {
     }
   }
 
-  const orderedUsers = useMemo(
-    () => [...users].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [users]
-  );
+  const orderedUsers = useMemo(() => {
+    return [...users]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .filter((u) => {
+        if (filterUserId.trim() && !u.userId.toLowerCase().includes(filterUserId.trim().toLowerCase())) return false;
+        if (filterEmail.trim() && !u.email.toLowerCase().includes(filterEmail.trim().toLowerCase())) return false;
+        if (filterRole && u.role !== filterRole) return false;
+        if (filterStatus === 'ATTIVO' && !u.enabled) return false;
+        if (filterStatus === 'DISABILITATO' && u.enabled) return false;
+        if (filterTenant.trim()) {
+          const tenantMatch = (u.tenantName ?? '').toLowerCase().includes(filterTenant.trim().toLowerCase());
+          if (!tenantMatch) return false;
+        }
+        return true;
+      });
+  }, [users, filterUserId, filterEmail, filterRole, filterStatus, filterTenant]);
 
   return (
     <section style={{ display: 'grid', gap: 16 }}>
@@ -167,6 +188,42 @@ export function AdminUsersPanel() {
         <h3>Elenco utenti</h3>
         {error && <p className="error-text">{error}</p>}
         {success && <p className="success-text">{success}</p>}
+
+        {/* Filtri */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
+          <label>
+            User ID
+            <input className="form-input" value={filterUserId} onChange={(e) => setFilterUserId(e.target.value)} placeholder="cerca..." />
+          </label>
+          <label>
+            Email
+            <input className="form-input" type="email" value={filterEmail} onChange={(e) => setFilterEmail(e.target.value)} placeholder="cerca..." />
+          </label>
+          <label>
+            Ruolo
+            <select className="form-input" value={filterRole} onChange={(e) => setFilterRole(e.target.value as UserRole | '')}>
+              <option value="">Tutti</option>
+              {roles.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </label>
+          <label>
+            Stato
+            <select className="form-input" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'ATTIVO' | 'DISABILITATO' | '')}>
+              <option value="">Tutti</option>
+              <option value="ATTIVO">ATTIVO</option>
+              <option value="DISABILITATO">DISABILITATO</option>
+            </select>
+          </label>
+          <label>
+            Tenant
+            <input className="form-input" value={filterTenant} onChange={(e) => setFilterTenant(e.target.value)} placeholder="cerca..." />
+          </label>
+        </div>
+        <div style={{ marginBottom: 16 }}>
+          <button type="button" className="logout-button" onClick={() => { setFilterUserId(''); setFilterEmail(''); setFilterRole(''); setFilterStatus(''); setFilterTenant(''); }}>
+            <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
+          </button>
+        </div>
 
         {loading ? (
           <p>Caricamento utenti...</p>
@@ -180,6 +237,7 @@ export function AdminUsersPanel() {
                     <th align="left">User ID</th>
                     <th align="left">Email</th>
                     <th align="left">Ruolo</th>
+                    <th align="left">Tenant</th>
                     <th align="left">Stato</th>
                     <th align="left">Data Creazione</th>
                     <th align="left">Azioni</th>
@@ -188,11 +246,20 @@ export function AdminUsersPanel() {
                 <tbody>
                   {orderedUsers.map((user) => (
                     <tr key={user.id}>
-                      <td style={{ padding: '8px 0' }}>{user.userId}</td>
-                      <td style={{ padding: '8px 0' }}>{user.email}</td>
-                      <td style={{ padding: '8px 0' }}>{user.role}</td>
-                      <td style={{ padding: '8px 0' }}>{user.enabled ? 'ATTIVO' : 'DISABILITATO'}</td>
-                      <td style={{ padding: '8px 0' }}>{new Date(user.createdAt).toLocaleString('it-IT')}</td>
+                      <td style={{ padding: '10px 8px 10px 0' }}>{user.userId}</td>
+                      <td style={{ padding: '10px 8px 10px 0' }}>{user.email}</td>
+                      <td style={{ padding: '10px 8px 10px 0' }}>
+                        <span className={`admin-role-chip admin-role-chip-${user.role.toLowerCase()}`}>{user.role}</span>
+                      </td>
+                      <td style={{ padding: '10px 8px 10px 0', color: user.tenantName ? 'inherit' : 'var(--color-text-secondary, #888)', fontStyle: user.tenantName ? 'normal' : 'italic' }}>
+                        {user.tenantName ?? '—'}
+                      </td>
+                      <td style={{ padding: '10px 8px 10px 0' }}>
+                        <span className={`admin-enabled-badge ${user.enabled ? 'is-active' : 'is-disabled'}`}>
+                          {user.enabled ? 'ATTIVO' : 'DISABILITATO'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 8px 10px 0' }}>{new Date(user.createdAt).toLocaleString('it-IT')}</td>
                       <td style={{ padding: '8px 0' }}>
                         <button type="button" className="logout-button" onClick={() => openEdit(user)}>
                           <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
@@ -215,6 +282,9 @@ export function AdminUsersPanel() {
                     </span>
                   </div>
                   <div className="admin-user-email">{user.email}</div>
+                  {user.tenantName && (
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #888)', marginBottom: 4 }}>Tenant: {user.tenantName}</div>
+                  )}
                   <div className="admin-user-card-footer">
                     <div className="admin-user-meta">
                       <span className={`admin-role-chip admin-role-chip-${user.role.toLowerCase()}`}>{user.role}</span>

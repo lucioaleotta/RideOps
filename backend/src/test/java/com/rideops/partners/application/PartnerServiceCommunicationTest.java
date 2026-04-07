@@ -8,6 +8,9 @@ import static org.mockito.Mockito.when;
 
 import com.rideops.identity.adapters.out.EmailOutboxEntity;
 import com.rideops.identity.adapters.out.EmailOutboxRepository;
+import com.rideops.identity.adapters.out.UserEntity;
+import com.rideops.identity.application.IdentityUserDetails;
+import com.rideops.identity.domain.UserRole;
 import com.rideops.partners.adapters.out.PartnerEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
 import com.rideops.partners.adapters.out.PartnerServiceCommunicationEntity;
@@ -17,6 +20,7 @@ import com.rideops.services.adapters.out.RideServiceRepository;
 import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
+import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -25,6 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("null")
@@ -46,7 +52,29 @@ class PartnerServiceCommunicationTest {
 
     @BeforeEach
     void setUp() {
-        service = new PartnerService(partnerRepository, rideServiceRepository, emailOutboxRepository, communicationRepository);
+        applyTenantAuthentication(1L);
+        service = new PartnerService(
+            partnerRepository,
+            rideServiceRepository,
+            emailOutboxRepository,
+            communicationRepository,
+            new TenantContext()
+        );
+    }
+
+    private void applyTenantAuthentication(Long tenantId) {
+        UserEntity user = new UserEntity();
+        user.setUserId("tester");
+        user.setEmail("tester@rideops.local");
+        user.setPasswordHash("hash");
+        user.setRole(UserRole.ADMIN);
+        user.setEnabled(true);
+        user.setTenantId(tenantId);
+
+        IdentityUserDetails principal = new IdentityUserDetails(user);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())
+        );
     }
 
     @Test
@@ -77,8 +105,8 @@ class PartnerServiceCommunicationTest {
         PartnerServiceCommunicationEntity comm = new PartnerServiceCommunicationEntity();
         setField(comm, "id", 50L);
 
-        when(partnerRepository.findById(7L)).thenReturn(Optional.of(partner));
-        when(rideServiceRepository.findById(27L)).thenReturn(Optional.of(rideService));
+        when(partnerRepository.findByIdAndTenantId(7L, 1L)).thenReturn(Optional.of(partner));
+        when(rideServiceRepository.findByIdAndTenantId(27L, 1L)).thenReturn(Optional.of(rideService));
         when(emailOutboxRepository.save(any(EmailOutboxEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(communicationRepository.save(any(PartnerServiceCommunicationEntity.class))).thenReturn(comm);
 
@@ -104,8 +132,8 @@ class PartnerServiceCommunicationTest {
         rideService.setPartnerId(99L);
         setField(rideService, "id", 27L);
 
-        when(partnerRepository.findById(7L)).thenReturn(Optional.of(partner));
-        when(rideServiceRepository.findById(27L)).thenReturn(Optional.of(rideService));
+        when(partnerRepository.findByIdAndTenantId(7L, 1L)).thenReturn(Optional.of(partner));
+        when(rideServiceRepository.findByIdAndTenantId(27L, 1L)).thenReturn(Optional.of(rideService));
 
         PartnerValidationException exception = assertThrows(
             PartnerValidationException.class,

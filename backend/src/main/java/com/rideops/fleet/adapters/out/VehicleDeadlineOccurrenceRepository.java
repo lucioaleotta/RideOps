@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VehicleDeadlineOccurrenceRepository extends JpaRepository<VehicleDeadlineOccurrenceEntity, Long> {
 
-    List<VehicleDeadlineOccurrenceEntity> findAllByVehicleIdOrderByDueDateDesc(Long vehicleId);
+    java.util.Optional<VehicleDeadlineOccurrenceEntity> findByIdAndTenantId(Long id, Long tenantId);
 
-    boolean existsByPlanIdAndDueDate(Long planId, java.time.LocalDate dueDate);
+    List<VehicleDeadlineOccurrenceEntity> findAllByVehicleIdAndTenantIdOrderByDueDateDesc(Long vehicleId, Long tenantId);
+
+    boolean existsByPlanIdAndDueDateAndTenantId(Long planId, java.time.LocalDate dueDate, Long tenantId);
 }

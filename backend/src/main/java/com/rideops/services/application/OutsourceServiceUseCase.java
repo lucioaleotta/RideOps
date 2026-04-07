@@ -4,6 +4,7 @@ import com.rideops.partners.adapters.out.PartnerRepository;
 import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
+import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import org.springframework.stereotype.Service;
 
@@ -12,11 +13,14 @@ public class OutsourceServiceUseCase {
 
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final PartnerRepository partnerRepository;
+    private final TenantContext tenantContext;
 
     public OutsourceServiceUseCase(ServiceRepositoryPort serviceRepositoryPort,
-                                   PartnerRepository partnerRepository) {
+                                   PartnerRepository partnerRepository,
+                                   TenantContext tenantContext) {
         this.serviceRepositoryPort = serviceRepositoryPort;
         this.partnerRepository = partnerRepository;
+        this.tenantContext = tenantContext;
     }
 
     public ServiceDto execute(Long serviceId, Long partnerId, BigDecimal pricePartner) {
@@ -45,7 +49,7 @@ public class OutsourceServiceUseCase {
             throw new ServiceValidationException("Il prezzo partner non puo` essere negativo");
         }
 
-        boolean partnerValid = partnerRepository.findById(partnerId)
+        boolean partnerValid = partnerRepository.findByIdAndTenantId(partnerId, tenantContext.requireTenantId())
             .map(partner -> !partner.isDeleted())
             .orElse(false);
         if (!partnerValid) {

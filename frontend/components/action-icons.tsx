@@ -77,6 +77,10 @@ export function AddIcon() {
   return <Svg><path d="M12 5.5v13M5.5 12h13" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /></Svg>;
 }
 
+export function CopyIcon() {
+  return <Svg><rect x="9" y="9" width="10" height="12" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" /><path d="M15 9V6.5A1.5 1.5 0 0 0 13.5 5h-8A1.5 1.5 0 0 0 4 6.5v11A1.5 1.5 0 0 0 5.5 19H9" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" /></Svg>;
+}
+
 export function UserIcon() {
   return <Svg><circle cx="12" cy="8.3" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.9" /><path d="M5.7 18.5c1.4-3.1 3.9-4.7 6.3-4.7s5 1.6 6.3 4.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" /></Svg>;
 }

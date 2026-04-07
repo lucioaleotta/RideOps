@@ -44,6 +44,8 @@ public class CreateUserUseCase {
 
         DriverProfile profile = validateAndBuildProfile(command);
 
+        validateTenantConsistency(command.role(), command.tenantId());
+
         if (userAdminRepositoryPort.existsByUserIdIgnoreCase(userId)) {
             throw new UserAdminValidationException("Lo user ID esiste gia`");
         }
@@ -58,6 +60,7 @@ public class CreateUserUseCase {
         userEntity.setPasswordHash(passwordEncoder.encode(command.rawPassword()));
         userEntity.setRole(command.role());
         userEntity.setEnabled(true);
+        userEntity.setTenantId(command.tenantId());
         userEntity.setFirstName(profile.firstName());
         userEntity.setLastName(profile.lastName());
         userEntity.setBirthDate(profile.birthDate());
@@ -168,6 +171,18 @@ public class CreateUserUseCase {
     private void validateRole(UserRole role) {
         if (role == null) {
             throw new UserAdminValidationException("Il ruolo e` obbligatorio");
+        }
+    }
+
+    private void validateTenantConsistency(UserRole role, Long tenantId) {
+        if (role == UserRole.ADMIN) {
+            if (tenantId != null) {
+                throw new UserAdminValidationException("Un utente ADMIN non puo` essere associato a un tenant");
+            }
+        } else {
+            if (tenantId == null) {
+                throw new UserAdminValidationException("Gli utenti GESTIONALE e DRIVER devono essere associati a un tenant");
+            }
         }
     }
 

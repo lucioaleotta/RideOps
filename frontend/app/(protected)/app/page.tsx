@@ -1,8 +1,14 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { CalendarDashboard } from '../../../components/calendar-dashboard';
 
 export default function AppHomePage() {
   const role = (cookies().get('user_role')?.value ?? '').toUpperCase();
+
+  if (role === 'ADMIN') {
+    redirect('/app/admin-home');
+  }
+
   const isDriver = role === 'DRIVER';
 
   return (

@@ -8,10 +8,14 @@ import static org.mockito.Mockito.when;
 
 import com.rideops.partners.adapters.out.PartnerEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
+import com.rideops.multitenancy.TenantContext;
 import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
+import com.rideops.identity.adapters.out.UserEntity;
+import com.rideops.identity.application.IdentityUserDetails;
+import com.rideops.identity.domain.UserRole;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -20,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("null")
@@ -35,7 +41,23 @@ class OutsourceServiceUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new OutsourceServiceUseCase(serviceRepositoryPort, partnerRepository);
+        applyTenantAuthentication(1L);
+        useCase = new OutsourceServiceUseCase(serviceRepositoryPort, partnerRepository, new TenantContext());
+    }
+
+    private void applyTenantAuthentication(Long tenantId) {
+        UserEntity user = new UserEntity();
+        user.setUserId("tester");
+        user.setEmail("tester@rideops.local");
+        user.setPasswordHash("hash");
+        user.setRole(UserRole.ADMIN);
+        user.setEnabled(true);
+        user.setTenantId(tenantId);
+
+        IdentityUserDetails principal = new IdentityUserDetails(user);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())
+        );
     }
 
     @Test
@@ -77,7 +99,7 @@ class OutsourceServiceUseCaseTest {
         partner.setDeleted(false);
 
         when(serviceRepositoryPort.findById(12L)).thenReturn(Optional.of(entity));
-        when(partnerRepository.findById(20L)).thenReturn(Optional.of(partner));
+        when(partnerRepository.findByIdAndTenantId(20L, 1L)).thenReturn(Optional.of(partner));
         when(serviceRepositoryPort.save(entity)).thenReturn(entity);
 
         ServiceDto dto = useCase.execute(12L, 20L, new BigDecimal("95.00"));

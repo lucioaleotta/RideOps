@@ -55,7 +55,7 @@ public class AuthController {
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non autorizzato");
         }
-        return new MeResponse(user.getId(), user.getUserId(), user.getEmail(), user.getRole().name());
+        return new MeResponse(user.getId(), user.getUserId(), user.getEmail(), user.getRole().name(), user.getTenantId());
     }
 
     @PostMapping("/forgot-password")
@@ -89,7 +89,7 @@ public class AuthController {
     record LoginResponse(String accessToken, String tokenType, long expiresInSeconds) {
     }
 
-    record MeResponse(Long id, String userId, String email, String role) {
+    record MeResponse(Long id, String userId, String email, String role, Long tenantId) {
     }
 
     record ForgotPasswordRequest(@NotBlank @Email String email) {

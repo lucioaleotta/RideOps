@@ -16,6 +16,9 @@ public class EmailOutboxEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id", nullable = false)
+    private Long tenantId;
+
     @Column(nullable = false, length = 190)
     private String recipient;
 
@@ -30,6 +33,14 @@ public class EmailOutboxEntity {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getRecipient() {

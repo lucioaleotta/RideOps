@@ -4,6 +4,7 @@ import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
 import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
+import com.rideops.multitenancy.TenantContext;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
@@ -14,13 +15,16 @@ public class CreateServiceUseCase {
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final VehicleAssignmentValidationService vehicleAssignmentValidationService;
     private final PartnerRepository partnerRepository;
+    private final TenantContext tenantContext;
 
     public CreateServiceUseCase(ServiceRepositoryPort serviceRepositoryPort,
                                 VehicleAssignmentValidationService vehicleAssignmentValidationService,
-                                PartnerRepository partnerRepository) {
+                                PartnerRepository partnerRepository,
+                                TenantContext tenantContext) {
         this.serviceRepositoryPort = serviceRepositoryPort;
         this.vehicleAssignmentValidationService = vehicleAssignmentValidationService;
         this.partnerRepository = partnerRepository;
+        this.tenantContext = tenantContext;
     }
 
     public ServiceDto execute(CreateServiceCommand command) {
@@ -45,6 +49,7 @@ public class CreateServiceUseCase {
         validatePartnerIfPresent(command.partnerId());
 
         RideServiceEntity entity = new RideServiceEntity();
+        entity.setTenantId(tenantContext.requireTenantId());
         entity.setStartAt(command.startAt());
         entity.setPickupLocation(command.pickupLocation().trim());
         entity.setDestination(command.destination().trim());
@@ -94,7 +99,7 @@ public class CreateServiceUseCase {
             return;
         }
 
-        boolean partnerValid = partnerRepository.findById(partnerId)
+        boolean partnerValid = partnerRepository.findByIdAndTenantId(partnerId, tenantContext.requireTenantId())
             .map(partner -> !partner.isDeleted())
             .orElse(false);
         if (!partnerValid) {

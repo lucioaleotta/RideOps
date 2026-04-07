@@ -1,5 +1,6 @@
 package com.rideops.identity.adapters.in;
 
+import com.rideops.identity.application.IdentityUserDetails;
 import com.rideops.identity.application.admin.CreateUserCommand;
 import com.rideops.identity.application.admin.CreateUserUseCase;
 import com.rideops.identity.application.admin.ListDriversUseCase;
@@ -18,6 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,8 +60,9 @@ public class GestionaleDriverController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserSummaryDto createDriver(@Valid @RequestBody CreateDriverRequest request) {
-        return createUserUseCase.execute(toCreateCommand(request));
+    public UserSummaryDto createDriver(@Valid @RequestBody CreateDriverRequest request,
+                                       @AuthenticationPrincipal IdentityUserDetails principal) {
+        return createUserUseCase.execute(toCreateCommand(request, principal.getTenantId()));
     }
 
     @PutMapping("/{driverId}")
@@ -101,12 +104,13 @@ public class GestionaleDriverController {
         return new ErrorResponse(exception.getMessage());
     }
 
-    private CreateUserCommand toCreateCommand(CreateDriverRequest request) {
+    private CreateUserCommand toCreateCommand(CreateDriverRequest request, Long tenantId) {
         return new CreateUserCommand(
             request.userId(),
             request.email(),
             request.password(),
             UserRole.DRIVER,
+            tenantId,
             request.firstName(),
             request.lastName(),
             request.birthDate(),

@@ -14,68 +14,82 @@ import org.springframework.data.repository.query.Param;
 public interface RideServiceRepository extends JpaRepository<RideServiceEntity, Long>,
     JpaSpecificationExecutor<RideServiceEntity> {
 
-    List<RideServiceEntity> findAllByOrderByStartAtDesc();
+    java.util.Optional<RideServiceEntity> findByIdAndTenantId(Long id, Long tenantId);
 
-    long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status);
+    List<RideServiceEntity> findAllByTenantIdOrderByStartAtDesc(Long tenantId);
 
-    long countByAssignedDriverIdAndStatusIn(Long assignedDriverId, Collection<ServiceStatus> statuses);
+    long countByAssignedDriverIdIsNullAndStatusAndTenantId(ServiceStatus status, Long tenantId);
 
-    long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusIn(
-        Long assignedVehicleId,
-        LocalDateTime from,
-        LocalDateTime to,
-        Collection<ServiceStatus> statuses
-    );
+    long countByAssignedDriverIdAndStatusInAndTenantId(Long assignedDriverId, Collection<ServiceStatus> statuses, Long tenantId);
 
-    long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusInAndIdNot(
+    long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusInAndTenantId(
         Long assignedVehicleId,
         LocalDateTime from,
         LocalDateTime to,
         Collection<ServiceStatus> statuses,
-        Long id
+        Long tenantId
+    );
+
+    long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusInAndIdNotAndTenantId(
+        Long assignedVehicleId,
+        LocalDateTime from,
+        LocalDateTime to,
+        Collection<ServiceStatus> statuses,
+        Long id,
+        Long tenantId
     );
 
     @Query(value = """
         SELECT COALESCE(MAX(CAST(split_part(internal_booking_reference, '-', 1) AS INTEGER)), 0)
         FROM ride_service
         WHERE right(internal_booking_reference, 2) = :yearSuffix
+                    AND tenant_id = :tenantId
           AND internal_booking_reference ~ '^[0-9]+-[0-9]{2}$'
         """, nativeQuery = true)
-    int findMaxInternalBookingSequenceForYear(@Param("yearSuffix") String yearSuffix);
+        int findMaxInternalBookingSequenceForYear(@Param("yearSuffix") String yearSuffix, @Param("tenantId") Long tenantId);
 
         @Query("""
                 SELECT COALESCE(SUM(s.price), 0)
                 FROM RideServiceEntity s
                 WHERE s.partnerId = :partnerId
+                    AND s.tenantId = :tenantId
                     AND s.serviceAssignmentType = :assignmentType
                 """)
         BigDecimal sumPriceByPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
-                                                                                                        @Param("assignmentType") ServiceAssignmentType assignmentType);
+                                                        @Param("assignmentType") ServiceAssignmentType assignmentType,
+                                                        @Param("tenantId") Long tenantId);
 
         @Query("""
                 SELECT COALESCE(SUM(s.pricePartner), 0)
                 FROM RideServiceEntity s
                 WHERE s.partnerId = :partnerId
+                    AND s.tenantId = :tenantId
                     AND s.serviceAssignmentType = :assignmentType
                 """)
         BigDecimal sumPricePartnerByPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
-                                                                                                                     @Param("assignmentType") ServiceAssignmentType assignmentType);
+                                                               @Param("assignmentType") ServiceAssignmentType assignmentType,
+                                                               @Param("tenantId") Long tenantId);
 
-        long countByPartnerIdAndServiceAssignmentType(Long partnerId, ServiceAssignmentType serviceAssignmentType);
+        long countByPartnerIdAndServiceAssignmentTypeAndTenantId(Long partnerId,
+                                                                 ServiceAssignmentType serviceAssignmentType,
+                                                                 Long tenantId);
 
         @Query("""
                 SELECT COALESCE(SUM(s.margin), 0)
                 FROM RideServiceEntity s
                 WHERE s.partnerId = :partnerId
+                    AND s.tenantId = :tenantId
                     AND s.serviceAssignmentType = :assignmentType
                 """)
         BigDecimal sumMarginByPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
-                                                         @Param("assignmentType") ServiceAssignmentType assignmentType);
+                                                         @Param("assignmentType") ServiceAssignmentType assignmentType,
+                                                         @Param("tenantId") Long tenantId);
 
-        java.util.List<RideServiceEntity> findAllByPartnerIdOrderByStartAtDesc(Long partnerId);
+        java.util.List<RideServiceEntity> findAllByPartnerIdAndTenantIdOrderByStartAtDesc(Long partnerId, Long tenantId);
 
-        java.util.List<RideServiceEntity> findAllByServiceAssignmentTypeAndStatusNotOrderByStartAtAsc(
+        java.util.List<RideServiceEntity> findAllByServiceAssignmentTypeAndStatusNotAndTenantIdOrderByStartAtAsc(
             ServiceAssignmentType serviceAssignmentType,
-            ServiceStatus status
+            ServiceStatus status,
+            Long tenantId
         );
 }

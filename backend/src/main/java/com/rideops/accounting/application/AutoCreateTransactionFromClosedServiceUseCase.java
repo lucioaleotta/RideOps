@@ -42,6 +42,7 @@ public class AutoCreateTransactionFromClosedServiceUseCase {
         }
 
         FinancialTransactionEntity entity = new FinancialTransactionEntity();
+        entity.setTenantId(event.tenantId());
         entity.setTransactionType(FinancialTransactionType.RICAVO);
         entity.setCategory(categoryMapper.serviceRevenueCategory(event.serviceType()));
         entity.setDescription(event.description() == null ? "Incasso servizio" : event.description());

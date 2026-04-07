@@ -1156,7 +1156,7 @@ export function ServicesPanel() {
               Attenzione: {overdueExecutedServices.length} servizi in stato Eseguito da oltre 20 giorni
             </strong>
             <span style={{ color: '#8a4b00' }}>
-              Verifica l'incasso dal partner e chiudi i servizi in sospeso.
+              Verifica l&apos;incasso dal partner e chiudi i servizi in sospeso.
             </span>
           </div>
         )}

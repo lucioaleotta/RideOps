@@ -17,6 +17,9 @@ public class UserAdminAuditLogEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "tenant_id")
+    private Long tenantId;
+
     @Column(name = "target_user_id", nullable = false)
     private Long targetUserId;
 
@@ -47,6 +50,14 @@ public class UserAdminAuditLogEntity {
 
     public Long getId() {
         return id;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
     }
 
     public Long getTargetUserId() {

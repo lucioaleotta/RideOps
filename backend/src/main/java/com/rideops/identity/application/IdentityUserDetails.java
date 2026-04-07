@@ -15,6 +15,7 @@ public class IdentityUserDetails implements UserDetails {
     private final String email;
     private final String passwordHash;
     private final UserRole role;
+    private final Long tenantId;
     private final boolean enabled;
 
     public IdentityUserDetails(UserEntity user) {
@@ -23,6 +24,7 @@ public class IdentityUserDetails implements UserDetails {
         this.email = user.getEmail();
         this.passwordHash = user.getPasswordHash();
         this.role = user.getRole();
+        this.tenantId = user.getTenantId();
         this.enabled = user.isEnabled();
     }
 
@@ -40,6 +42,10 @@ public class IdentityUserDetails implements UserDetails {
 
     public UserRole getRole() {
         return role;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
     }
 
     @Override

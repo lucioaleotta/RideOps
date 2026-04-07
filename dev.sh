@@ -79,13 +79,13 @@ backend_start_local() {
   (
     cd "$ROOT_DIR/backend"
     DB_HOST=localhost \
-    DB_PORT=5432 \
+    DB_PORT=5433 \
     DB_NAME="${POSTGRES_DB:-rideops}" \
     DB_USER="${POSTGRES_USER:-rideops}" \
     DB_PASSWORD="${POSTGRES_PASSWORD:-rideops}" \
     SERVER_PORT=8080 \
     SPRING_PROFILES_ACTIVE=dev \
-    nohup mvn spring-boot:run > "$backend_log" 2>&1 &
+    nohup mvn spring-boot:run -Djacoco.skip=true > "$backend_log" 2>&1 &
     echo $! > "$BACKEND_PID_FILE"
   )
 

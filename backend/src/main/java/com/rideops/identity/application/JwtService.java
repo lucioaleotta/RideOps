@@ -30,6 +30,7 @@ public class JwtService {
             .subject(userDetails.getUsername())
             .claim("uid", userDetails.getId())
             .claim("role", userDetails.getRole().name())
+            .claim("tid", userDetails.getTenantId())
             .issuedAt(Date.from(now))
             .expiration(Date.from(expiresAt))
             .signWith(secretKey)
@@ -44,7 +45,18 @@ public class JwtService {
         Claims claims = extractAllClaims(token);
         String subject = claims.getSubject();
         Date expiration = claims.getExpiration();
+        Object tokenTenant = claims.get("tid");
+        boolean tenantMatches;
+        if (tokenTenant == null && userDetails.getTenantId() == null) {
+            // ADMIN: nessun tenant nel token né nell'utente
+            tenantMatches = true;
+        } else if (tokenTenant != null && userDetails.getTenantId() != null) {
+            tenantMatches = Long.parseLong(tokenTenant.toString()) == userDetails.getTenantId().longValue();
+        } else {
+            tenantMatches = false;
+        }
         return subject != null && subject.equalsIgnoreCase(userDetails.getUsername())
+            && tenantMatches
             && expiration != null && expiration.after(new Date());
     }
 

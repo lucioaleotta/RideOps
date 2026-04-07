@@ -16,6 +16,26 @@ Documentazione completa del progetto RideOps. Leggi i file nell'ordine suggerito
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Struttura (layers, DB schema, auth flow, deployment) |
 | [BRANCHING_STRATEGY.md](BRANCHING_STRATEGY.md) | Git workflow e naming conventions |
 
+## 🔒 Multi-Tenant Policy (Backend)
+
+Le regole multi-tenant di RideOps sono obbligatorie per ogni nuova feature backend:
+
+1. **Backend-only enforcement**
+	- L'isolamento tenant viene applicato esclusivamente nel backend (service + repository).
+	- Il frontend non implementa logica di selezione/scoping tenant.
+
+2. **No tenantId nei payload API**
+	- `tenantId` non deve essere accettato in request body/query params/headers custom.
+	- Il tenant corrente deve essere ricavato da autenticazione (`SecurityContext` + JWT claim `tid`).
+
+3. **Repository obbligatoriamente tenant-scoped**
+	- Ogni nuovo metodo repository su entità tenant-aware deve includere filtro tenant (`...AndTenantId(...)`, `@Param("tenantId")`, o query con predicate tenant).
+	- È presente una guardia architetturale in test statico che blocca nuovi metodi non tenant-scoped.
+
+4. **Nessuna query cross-tenant implicita**
+	- Evitare `findAll()`/query aggregate senza filtro tenant su dati tenant-aware.
+	- Le eccezioni legacy devono essere esplicitate e motivate nei test architetturali.
+
 ## 🔧 Developer Guides
 
 | File | Descrizione |

@@ -7,11 +7,19 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VehicleDeadlineRepository extends JpaRepository<VehicleDeadlineEntity, Long> {
 
-    List<VehicleDeadlineEntity> findAllByVehicleIdOrderByDueDateAsc(Long vehicleId);
+    java.util.Optional<VehicleDeadlineEntity> findByIdAndTenantId(Long id, Long tenantId);
 
-    List<VehicleDeadlineEntity> findAllByStatusNotInAndDueDateLessThanEqualOrderByDueDateAsc(List<DeadlineStatus> excludedStatuses,
-                                                                                               LocalDate dueDate);
+    List<VehicleDeadlineEntity> findAllByVehicleIdAndTenantIdOrderByDueDateAsc(Long vehicleId, Long tenantId);
 
-    List<VehicleDeadlineEntity> findAllByStatusNotInAndDueDateLessThanOrderByDueDateAsc(List<DeadlineStatus> excludedStatuses,
-                                                                                          LocalDate dueDate);
+    List<VehicleDeadlineEntity> findAllByStatusNotInAndDueDateLessThanEqualAndTenantIdOrderByDueDateAsc(
+        List<DeadlineStatus> excludedStatuses,
+        LocalDate dueDate,
+        Long tenantId
+    );
+
+    List<VehicleDeadlineEntity> findAllByStatusNotInAndDueDateLessThanAndTenantIdOrderByDueDateAsc(
+        List<DeadlineStatus> excludedStatuses,
+        LocalDate dueDate,
+        Long tenantId
+    );
 }

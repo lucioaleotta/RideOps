@@ -19,14 +19,16 @@ public class AdminSeedConfig {
                                 @Value("${rideops.security.admin.user-id}") String adminUserId,
                                 @Value("${rideops.security.admin.email}") String adminEmail,
                                 @Value("${rideops.security.admin.password}") String adminPassword) {
-        return args -> userRepository.findByEmailIgnoreCase(adminEmail).orElseGet(() -> {
-            UserEntity user = new UserEntity();
-            user.setUserId(adminUserId.trim().toLowerCase(Locale.ROOT));
-            user.setEmail(adminEmail);
-            user.setPasswordHash(passwordEncoder.encode(adminPassword));
-            user.setRole(UserRole.ADMIN);
-            user.setEnabled(true);
-            return userRepository.save(user);
-        });
+        return args -> {
+            userRepository.findByEmailIgnoreCase(adminEmail).orElseGet(() -> {
+                UserEntity user = new UserEntity();
+                user.setUserId(adminUserId.trim().toLowerCase(Locale.ROOT));
+                user.setEmail(adminEmail);
+                user.setPasswordHash(passwordEncoder.encode(adminPassword));
+                user.setRole(UserRole.ADMIN);
+                user.setEnabled(true);
+                return userRepository.save(user);
+            });
+        };
     }
 }
