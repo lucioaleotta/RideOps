@@ -7,6 +7,7 @@ import com.rideops.partners.adapters.out.PartnerRepository;
 import com.rideops.partners.adapters.out.PartnerServiceCommunicationEntity;
 import com.rideops.partners.adapters.out.PartnerServiceCommunicationRepository;
 import com.rideops.services.adapters.out.RideServiceEntity;
+import com.rideops.multitenancy.TenantContext;
 import java.util.List;
 import org.springframework.stereotype.Service;
 
@@ -17,23 +18,27 @@ public class ServicePartnerOperationsUseCase {
     private final PartnerRepository partnerRepository;
     private final EmailOutboxRepository emailOutboxRepository;
     private final PartnerServiceCommunicationRepository communicationRepository;
+    private final TenantContext tenantContext;
 
     public ServicePartnerOperationsUseCase(ServiceRepositoryPort serviceRepositoryPort,
                                            PartnerRepository partnerRepository,
                                            EmailOutboxRepository emailOutboxRepository,
-                                           PartnerServiceCommunicationRepository communicationRepository) {
+                                           PartnerServiceCommunicationRepository communicationRepository,
+                                           TenantContext tenantContext) {
         this.serviceRepositoryPort = serviceRepositoryPort;
         this.partnerRepository = partnerRepository;
         this.emailOutboxRepository = emailOutboxRepository;
         this.communicationRepository = communicationRepository;
+        this.tenantContext = tenantContext;
     }
 
     public ServicePartnerHistoryDto getPartnerHistory(Long serviceId) {
         RideServiceEntity service = findService(serviceId);
         PartnerEntity partner = findPartnerLinkedToService(service);
+        Long tenantId = tenantContext.requireTenantId();
 
         List<ServicePartnerCommunicationDto> communications = communicationRepository
-            .findAllByServiceIdOrderByCreatedAtDesc(service.getId())
+            .findAllByServiceIdAndTenantIdOrderByCreatedAtDesc(service.getId(), tenantId)
             .stream()
             .map(item -> new ServicePartnerCommunicationDto(
                 item.getId(),
@@ -69,14 +74,17 @@ public class ServicePartnerOperationsUseCase {
 
         String subject = "RideOps - Dettaglio servizio " + valueOrDash(service.getInternalBookingReference());
         String body = buildEmailBody(service);
+        Long tenantId = tenantContext.requireTenantId();
 
         EmailOutboxEntity outbox = new EmailOutboxEntity();
+        outbox.setTenantId(tenantId);
         outbox.setRecipient(partner.getEmail());
         outbox.setSubject(subject);
         outbox.setBody(body);
         emailOutboxRepository.save(outbox);
 
         PartnerServiceCommunicationEntity communication = new PartnerServiceCommunicationEntity();
+        communication.setTenantId(tenantId);
         communication.setPartnerId(partner.getId());
         communication.setServiceId(service.getId());
         communication.setChannel("EMAIL");
@@ -108,7 +116,7 @@ public class ServicePartnerOperationsUseCase {
         if (partnerId == null) {
             throw new ServiceValidationException("Il servizio selezionato non e` associato a un partner");
         }
-        return partnerRepository.findById(partnerId)
+        return partnerRepository.findByIdAndTenantId(partnerId, tenantContext.requireTenantId())
             .filter(partner -> !partner.isDeleted())
             .orElseThrow(() -> new ServiceValidationException("Partner non valido o non attivo"));
     }

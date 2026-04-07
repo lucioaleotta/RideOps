@@ -2,6 +2,7 @@ package com.rideops.services.application;
 
 import com.rideops.fleet.adapters.out.VehicleRepository;
 import com.rideops.fleet.adapters.out.VehicleUnavailabilityRepository;
+import com.rideops.multitenancy.TenantContext;
 import com.rideops.services.domain.ServiceStatus;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,13 +22,16 @@ public class VehicleAssignmentValidationService {
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final VehicleRepository vehicleRepository;
     private final VehicleUnavailabilityRepository vehicleUnavailabilityRepository;
+    private final TenantContext tenantContext;
 
     public VehicleAssignmentValidationService(ServiceRepositoryPort serviceRepositoryPort,
                                               VehicleRepository vehicleRepository,
-                                              VehicleUnavailabilityRepository vehicleUnavailabilityRepository) {
+                                              VehicleUnavailabilityRepository vehicleUnavailabilityRepository,
+                                              TenantContext tenantContext) {
         this.serviceRepositoryPort = serviceRepositoryPort;
         this.vehicleRepository = vehicleRepository;
         this.vehicleUnavailabilityRepository = vehicleUnavailabilityRepository;
+        this.tenantContext = tenantContext;
     }
 
     public void validateForCreate(CreateServiceCommand command) {
@@ -56,7 +60,7 @@ public class VehicleAssignmentValidationService {
 
     private void validateVehicleExists(Long vehicleId) {
         Long safeVehicleId = Objects.requireNonNull(vehicleId, "vehicleId obbligatorio");
-        if (!vehicleRepository.existsById(safeVehicleId)) {
+        if (!vehicleRepository.existsByIdAndTenantId(safeVehicleId, tenantContext.requireTenantId())) {
             throw new ServiceValidationException("Veicolo non trovato");
         }
     }
@@ -100,7 +104,12 @@ public class VehicleAssignmentValidationService {
 
     private void validateVehicleMaintenance(Long vehicleId, LocalDate serviceDate, boolean override) {
         boolean inMaintenance = vehicleUnavailabilityRepository
-            .existsByVehicleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(vehicleId, serviceDate, serviceDate);
+            .existsByVehicleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndTenantId(
+                vehicleId,
+                serviceDate,
+                serviceDate,
+                tenantContext.requireTenantId()
+            );
 
         if (inMaintenance && !override) {
             throw new ServiceValidationException(VEHICLE_MAINTENANCE_CONFLICT_MESSAGE);

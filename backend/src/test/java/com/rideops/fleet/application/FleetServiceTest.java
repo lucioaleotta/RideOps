@@ -16,6 +16,10 @@ import com.rideops.fleet.adapters.out.VehicleUnavailabilityRepository;
 import com.rideops.fleet.domain.DeadlineStatus;
 import com.rideops.fleet.domain.DeadlineType;
 import com.rideops.fleet.domain.VehicleType;
+import com.rideops.identity.adapters.out.UserEntity;
+import com.rideops.identity.application.IdentityUserDetails;
+import com.rideops.identity.domain.UserRole;
+import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
@@ -24,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class FleetServiceTest {
@@ -41,18 +47,40 @@ class FleetServiceTest {
 
     @BeforeEach
     void setUp() {
-        fleetService = new FleetService(vehicleRepository, vehicleDeadlineRepository, vehicleUnavailabilityRepository);
+        applyTenantAuthentication(1L);
+        fleetService = new FleetService(
+            vehicleRepository,
+            vehicleDeadlineRepository,
+            vehicleUnavailabilityRepository,
+            new TenantContext()
+        );
+    }
+
+    private void applyTenantAuthentication(Long tenantId) {
+        UserEntity user = new UserEntity();
+        user.setUserId("tester");
+        user.setEmail("tester@rideops.local");
+        user.setPasswordHash("hash");
+        user.setRole(UserRole.ADMIN);
+        user.setEnabled(true);
+        user.setTenantId(tenantId);
+
+        IdentityUserDetails principal = new IdentityUserDetails(user);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())
+        );
     }
 
     @Test
     void createUnavailabilityRejectsOverlappingRange() {
         VehicleEntity vehicle = vehicleEntity(10L);
 
-        when(vehicleRepository.findById(10L)).thenReturn(Optional.of(vehicle));
-        when(vehicleUnavailabilityRepository.existsByVehicleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+        when(vehicleRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(vehicle));
+        when(vehicleUnavailabilityRepository.existsByVehicleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndTenantId(
             10L,
             LocalDate.of(2026, 3, 20),
-            LocalDate.of(2026, 3, 10)
+            LocalDate.of(2026, 3, 10),
+            1L
         )).thenReturn(true);
 
         assertThrows(
@@ -88,7 +116,7 @@ class FleetServiceTest {
         saved.setSeats(7);
         saved.setType(VehicleType.VAN);
 
-        when(vehicleRepository.existsByPlateIgnoreCase("AB123CD")).thenReturn(false);
+        when(vehicleRepository.existsByPlateIgnoreCaseAndTenantId("AB123CD", 1L)).thenReturn(false);
         when(vehicleRepository.save(any(VehicleEntity.class))).thenReturn(saved);
 
         VehicleDto dto = fleetService.createVehicle(" ab123cd ", 7, VehicleType.VAN, null);
@@ -99,7 +127,7 @@ class FleetServiceTest {
 
     @Test
     void createDeadlineRejectsPagataForRevisione() {
-        when(vehicleRepository.findById(10L)).thenReturn(Optional.of(vehicleEntity(10L)));
+        when(vehicleRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(vehicleEntity(10L)));
 
         assertThrows(
             FleetValidationException.class,
@@ -121,7 +149,7 @@ class FleetServiceTest {
 
     @Test
     void createDeadlineRejectsEseguitaWithoutExecutionDate() {
-        when(vehicleRepository.findById(10L)).thenReturn(Optional.of(vehicleEntity(10L)));
+        when(vehicleRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(vehicleEntity(10L)));
 
         assertThrows(
             FleetValidationException.class,
@@ -154,7 +182,7 @@ class FleetServiceTest {
         saved.setCurrency("EUR");
         saved.setPaymentDate(LocalDate.of(2026, 7, 20));
 
-        when(vehicleRepository.findById(10L)).thenReturn(Optional.of(vehicle));
+        when(vehicleRepository.findByIdAndTenantId(10L, 1L)).thenReturn(Optional.of(vehicle));
         when(vehicleDeadlineRepository.save(any(VehicleDeadlineEntity.class))).thenReturn(saved);
 
         VehicleDeadlineDto dto = fleetService.createDeadline(

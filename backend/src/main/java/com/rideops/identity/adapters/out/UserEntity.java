@@ -26,6 +26,9 @@ public class UserEntity {
     @Column(name = "user_id", nullable = false, unique = true, length = 80)
     private String userId;
 
+    @Column(name = "tenant_id")
+    private Long tenantId;
+
     @Column(name = "password_hash", nullable = false, length = 120)
     private String passwordHash;
 
@@ -81,6 +84,14 @@ public class UserEntity {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
     }
 
     public String getPasswordHash() {

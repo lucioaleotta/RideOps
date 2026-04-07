@@ -16,6 +16,10 @@ public class RideService {
         transitionTo(ServiceStatus.ASSIGNED);
     }
 
+    public void execute() {
+        transitionTo(ServiceStatus.EXECUTED);
+    }
+
     public void close() {
         transitionTo(ServiceStatus.CLOSED);
     }

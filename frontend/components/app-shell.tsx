@@ -12,14 +12,16 @@ type AppShellProps = {
 type Role = 'ADMIN' | 'GESTIONALE' | 'DRIVER';
 
 const menuItems = [
-  { href: '/app', label: 'Home', icon: '🏠', roles: ['ADMIN', 'GESTIONALE', 'DRIVER'] as Role[] },
+  { href: '/app', label: 'Home', icon: '🏠', roles: ['GESTIONALE', 'DRIVER'] as Role[] },
+  { href: '/app/admin-home', label: 'Dashboard', icon: '📊', roles: ['ADMIN'] as Role[] },
   { href: '/app/admin', label: 'Admin', icon: '🛡️', roles: ['ADMIN'] as Role[] },
-  { href: '/app/services', label: 'Servizi', icon: '🧾', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
-  { href: '/app/finance', label: 'Finanza', icon: '💶', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
-  { href: '/app/fleet', label: 'Parco mezzi', icon: '🚙', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
-  { href: '/app/partners', label: 'Gestione Partner', icon: '🤝', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
-  { href: '/app/gestionale', label: 'Gestione Personale', icon: '📋', roles: ['ADMIN', 'GESTIONALE'] as Role[] },
-  { href: '/app/driver', label: 'Autista', icon: '🚗', roles: ['ADMIN', 'DRIVER'] as Role[] }
+  { href: '/app/admin/tenants', label: 'Tenant', icon: '🏢', roles: ['ADMIN'] as Role[] },
+  { href: '/app/services', label: 'Servizi', icon: '🧾', roles: ['GESTIONALE'] as Role[] },
+  { href: '/app/finance', label: 'Finanza', icon: '💶', roles: ['GESTIONALE'] as Role[] },
+  { href: '/app/fleet', label: 'Parco mezzi', icon: '🚙', roles: ['GESTIONALE'] as Role[] },
+  { href: '/app/partners', label: 'Gestione Partner', icon: '🤝', roles: ['GESTIONALE'] as Role[] },
+  { href: '/app/gestionale', label: 'Gestione Personale', icon: '📋', roles: ['GESTIONALE'] as Role[] },
+  { href: '/app/driver', label: 'Autista', icon: '🚗', roles: ['DRIVER'] as Role[] }
 ];
 
 export function AppShell({ userId, userRole, children }: AppShellProps) {
@@ -35,7 +37,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
   const initials = useMemo(() => userName.slice(0, 2).toUpperCase(), [userName]);
 
   useEffect(() => {
-    const canSeeFleetAlerts = normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE';
+    const canSeeFleetAlerts = normalizedRole === 'GESTIONALE';
     if (!canSeeFleetAlerts) {
       return;
     }
@@ -148,7 +150,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
   const serviceHasAlerts = serviceAlertCounts.total > 0;
 
   useEffect(() => {
-    const canSeeServiceAlerts = normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER';
+    const canSeeServiceAlerts = normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER';
     if (!canSeeServiceAlerts) {
       return;
     }
@@ -177,7 +179,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
           if (!item.startAt) {
             return acc;
           }
-          if (item.status === 'CLOSED') {
+          if (item.status === 'CLOSED' || item.status === 'EXECUTED') {
             return acc;
           }
 
@@ -310,7 +312,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
           </div>
 
           <div className="topbar-actions">
-            {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE') && (
+            {(normalizedRole === 'GESTIONALE') && (
               <Link
                 href="/app/fleet"
                 className={`logout-button mobile-alert-chip mobile-alert-chip-fleet ${fleetHasAlerts ? 'is-alert' : 'is-clear'}`}
@@ -321,7 +323,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
               </Link>
             )}
 
-            {(normalizedRole === 'ADMIN' || normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER') && (
+            {(normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER') && (
               <Link
                 href={serviceAlertHref}
                 className={`logout-button mobile-alert-chip mobile-alert-chip-service ${serviceHasAlerts ? 'is-alert' : 'is-clear'}`}

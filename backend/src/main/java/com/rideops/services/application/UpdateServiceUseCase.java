@@ -4,6 +4,7 @@ import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
 import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
+import com.rideops.multitenancy.TenantContext;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -13,21 +14,24 @@ public class UpdateServiceUseCase {
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final VehicleAssignmentValidationService vehicleAssignmentValidationService;
     private final PartnerRepository partnerRepository;
+    private final TenantContext tenantContext;
 
     public UpdateServiceUseCase(ServiceRepositoryPort serviceRepositoryPort,
                                 VehicleAssignmentValidationService vehicleAssignmentValidationService,
-                                PartnerRepository partnerRepository) {
+                                PartnerRepository partnerRepository,
+                                TenantContext tenantContext) {
         this.serviceRepositoryPort = serviceRepositoryPort;
         this.vehicleAssignmentValidationService = vehicleAssignmentValidationService;
         this.partnerRepository = partnerRepository;
+        this.tenantContext = tenantContext;
     }
 
     public ServiceDto execute(@NonNull Long serviceId, UpdateServiceCommand command) {
         RideServiceEntity entity = serviceRepositoryPort.findById(serviceId)
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
-        if (entity.getStatus() == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Un servizio chiuso non puo` essere aggiornato");
+        if (entity.getStatus() == ServiceStatus.CLOSED || entity.getStatus() == ServiceStatus.EXECUTED) {
+            throw new ServiceValidationException("Un servizio ESEGUITO/CLOSED non puo` essere aggiornato");
         }
 
         if (command.startAt() == null) {
@@ -94,7 +98,7 @@ public class UpdateServiceUseCase {
             return;
         }
 
-        boolean partnerValid = partnerRepository.findById(partnerId)
+        boolean partnerValid = partnerRepository.findByIdAndTenantId(partnerId, tenantContext.requireTenantId())
             .map(partner -> !partner.isDeleted())
             .orElse(false);
         if (!partnerValid) {

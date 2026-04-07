@@ -7,7 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 public interface PartnerServiceCommunicationRepository extends JpaRepository<PartnerServiceCommunicationEntity, Long> {
 
-    long countByPartnerIdAndServiceIdAndChannel(Long partnerId, Long serviceId, String channel);
+  long countByPartnerIdAndServiceIdAndChannelAndTenantId(Long partnerId, Long serviceId, String channel, Long tenantId);
 
     @Query("""
         SELECT MAX(c.createdAt)
@@ -15,10 +15,13 @@ public interface PartnerServiceCommunicationRepository extends JpaRepository<Par
         WHERE c.partnerId = :partnerId
           AND c.serviceId = :serviceId
           AND c.channel = :channel
+      AND c.tenantId = :tenantId
         """)
     LocalDateTime findLastCommunicationAt(@Param("partnerId") Long partnerId,
                                           @Param("serviceId") Long serviceId,
-                                          @Param("channel") String channel);
+                      @Param("channel") String channel,
+                      @Param("tenantId") Long tenantId);
 
-    java.util.List<PartnerServiceCommunicationEntity> findAllByServiceIdOrderByCreatedAtDesc(Long serviceId);
+  java.util.List<PartnerServiceCommunicationEntity> findAllByServiceIdAndTenantIdOrderByCreatedAtDesc(Long serviceId,
+                                                      Long tenantId);
 }

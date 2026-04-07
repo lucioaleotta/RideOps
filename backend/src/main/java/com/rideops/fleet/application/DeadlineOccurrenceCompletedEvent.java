@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record DeadlineOccurrenceCompletedEvent(
+    Long tenantId,
     Long occurrenceId,
     Long vehicleId,
     DeadlineType deadlineType,

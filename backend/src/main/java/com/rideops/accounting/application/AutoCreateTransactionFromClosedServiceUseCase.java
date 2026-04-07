@@ -3,6 +3,7 @@ package com.rideops.accounting.application;
 import com.rideops.accounting.adapters.out.persistence.FinancialTransactionEntity;
 import com.rideops.accounting.domain.FinancialTransactionType;
 import com.rideops.services.application.ServiceClosedEvent;
+import com.rideops.services.domain.ServiceAssignmentType;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.springframework.stereotype.Service;
@@ -24,17 +25,24 @@ public class AutoCreateTransactionFromClosedServiceUseCase {
             return;
         }
 
+        // INCOMING services are not recorded as company revenue (partner owns the revenue)
+        if (event.serviceAssignmentType() == ServiceAssignmentType.INCOMING) {
+            return;
+        }
+
         String sourceKey = "SERVICE_CLOSED:" + event.serviceId();
         if (repository.findBySourceKey(sourceKey).isPresent()) {
             return;
         }
 
-        BigDecimal amount = event.amount() == null ? BigDecimal.ZERO : event.amount();
-        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+        // For OUTSOURCED, use margin; for INTERNAL or others, use full price
+        BigDecimal amount = determineAmount(event);
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             return;
         }
 
         FinancialTransactionEntity entity = new FinancialTransactionEntity();
+        entity.setTenantId(event.tenantId());
         entity.setTransactionType(FinancialTransactionType.RICAVO);
         entity.setCategory(categoryMapper.serviceRevenueCategory(event.serviceType()));
         entity.setDescription(event.description() == null ? "Incasso servizio" : event.description());
@@ -49,5 +57,14 @@ public class AutoCreateTransactionFromClosedServiceUseCase {
         entity.setVoided(false);
 
         repository.save(entity);
+    }
+
+    private BigDecimal determineAmount(ServiceClosedEvent event) {
+        if (event.serviceAssignmentType() == ServiceAssignmentType.OUTSOURCED) {
+            // For outsourced services, record the margin
+            return event.margin() == null ? BigDecimal.ZERO : event.margin();
+        }
+        // For INTERNAL and others, use the full price
+        return event.amount() == null ? BigDecimal.ZERO : event.amount();
     }
 }

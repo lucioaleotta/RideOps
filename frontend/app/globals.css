@@ -67,6 +67,24 @@ a:hover {
   margin-top: 6px;
 }
 
+.form-input.is-invalid {
+  border-color: #e53935;
+  background-color: #fff8f8;
+}
+
+.required-asterisk {
+  color: #e53935;
+  margin-left: 2px;
+  font-weight: 700;
+}
+
+.tenant-field-error {
+  color: #e53935;
+  font-size: 0.78rem;
+  margin-top: 3px;
+  display: block;
+}
+
 .password-input-wrap {
   position: relative;
   margin-top: 6px;
@@ -558,6 +576,487 @@ a:hover {
   border-radius: 12px;
   padding: 14px;
   background: #f9fcff;
+}
+
+.tenant-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.tenant-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tenant-title-wrap {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.tenant-title-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #e8f1fb;
+  color: #245788;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+
+.tenant-title {
+  margin: 0;
+}
+
+.tenant-subtitle {
+  margin: 2px 0 0;
+  color: #607996;
+}
+
+.tenant-search {
+  width: min(700px, 100%);
+}
+
+.tenant-search-field {
+  position: relative;
+  display: block;
+}
+
+.tenant-search-field .form-input {
+  min-height: 52px;
+  border-radius: 12px;
+  padding-left: 48px;
+}
+
+.tenant-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: #67819d;
+  width: 20px;
+  height: 20px;
+}
+
+.tenant-search-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.tenant-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.tenant-table th,
+.tenant-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #dce8f5;
+}
+
+.tenant-table th {
+  color: #5c7491;
+  font-size: 18px;
+}
+
+.tenant-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tenant-empty {
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  color: #607996;
+  font-size: 38px;
+  text-align: center;
+  padding: 18px;
+}
+
+.tenant-status-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tenant-status-badge.is-active {
+  background: #e6f7ee;
+  color: #1b8a3f;
+  border: 1px solid #a8dcbf;
+}
+
+.tenant-status-badge.is-suspended {
+  background: #fff2eb;
+  color: #bd4e1a;
+  border: 1px solid #f4c6b3;
+}
+
+.tenant-provisioning-card {
+  border-radius: 12px;
+  border: 1px solid #c8d9ec;
+  background: #edf3fa;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.tenant-provisioning-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tenant-provisioning-icon {
+  font-size: 1.1rem;
+  color: #2d6bbd;
+  line-height: 1;
+}
+
+.tenant-provisioning-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1a3a5c;
+}
+
+.tenant-provisioning-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-left: 26px;
+}
+
+.tenant-provisioning-label {
+  font-size: 0.85rem;
+  color: #5a7a9a;
+}
+
+.tenant-provisioning-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0d2b4a;
+}
+
+.tenant-provisioning-sep {
+  color: #9ab4cc;
+  font-size: 0.85rem;
+  margin: 0 2px;
+}
+
+.tenant-provisioning-copy {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #5a7a9a;
+  padding: 2px 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.15s, background 0.15s;
+}
+
+.tenant-provisioning-copy:hover {
+  color: #1e88e5;
+  background: #d6e8f8;
+}
+
+/* ── Tenant plan badge ───────────────────────────────────────── */
+.tenant-plan-badge {
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #e8eef5;
+  color: #0f4c81;
+  border: 1px solid #c3d4e7;
+}
+
+/* ── Tenant actions cell ─────────────────────────────────────── */
+.tenant-actions-cell {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+/* ── Selected row highlight ──────────────────────────────────── */
+.responsive-table tbody tr.is-selected-row {
+  background: #e8f1fa;
+}
+
+/* ── Tenant detail card ──────────────────────────────────────── */
+.tenant-detail-card {
+  border-radius: 14px;
+  border: 1px solid #c3d4e7;
+  background: #f7fafd;
+  padding: 18px 22px 22px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(15, 76, 129, 0.08);
+}
+
+.tenant-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.tenant-detail-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tenant-detail-icon {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.tenant-detail-title {
+  margin: 0 0 5px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0d2b4a;
+}
+
+.tenant-detail-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tenant-detail-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tenant-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tenant-detail-section {
+  border-top: 1px solid #d8e6f2;
+  padding-top: 12px;
+}
+
+.tenant-detail-section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6b8bac;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.tenant-detail-grid {
+  display: grid;
+  gap: 10px 20px;
+}
+
+.tenant-detail-grid.four-col { grid-template-columns: repeat(4, 1fr); }
+.tenant-detail-grid.three-col { grid-template-columns: repeat(3, 1fr); }
+
+.tenant-detail-info-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tenant-detail-info-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #8aabcb;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tenant-detail-info-value {
+  font-size: 0.9rem;
+  color: #1e3a56;
+  word-break: break-all;
+}
+
+.tenant-detail-address {
+  color: #1e3a56;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.tenant-detail-notify-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tenant-notify-badge {
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border: 1px solid #c3d4e7;
+  background: #edf2f8;
+  color: #6b8bac;
+}
+
+.tenant-notify-badge.is-on {
+  background: #e6f7ee;
+  color: #1b8a3f;
+  border-color: #a8dcbf;
+}
+
+.tenant-detail-colors {
+  display: flex;
+  gap: 10px;
+}
+
+.tenant-color-swatch {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 2px solid #d0dde9;
+}
+
+@media (max-width: 768px) {
+  .tenant-detail-grid.four-col { grid-template-columns: repeat(2, 1fr); }
+  .tenant-detail-grid.three-col { grid-template-columns: repeat(2, 1fr); }
+}
+
+.tenant-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(14, 39, 68, 0.35);
+  display: grid;
+  place-items: center;
+  padding: 22px;
+}
+
+.tenant-modal-card {
+  width: min(980px, 100%);
+  max-height: min(92vh, 860px);
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid #d4e1ef;
+  background: #ffffff;
+  box-shadow: 0 14px 32px rgba(15, 76, 129, 0.2);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.tenant-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tenant-modal-header h3 {
+  margin: 0;
+  font-size: 34px;
+}
+
+.tenant-modal-header p {
+  margin: 6px 0 0;
+  color: #607996;
+}
+
+.tenant-modal-close {
+  border: none;
+  background: transparent;
+  color: #5f7693;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tenant-modal-close:hover {
+  color: #0f4c81;
+  background: #edf5ff;
+}
+
+.tenant-modal-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.tenant-tab {
+  border: 1px solid #d7e4f2;
+  background: #f6faff;
+  color: #57718f;
+  border-radius: 10px;
+  min-height: 40px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tenant-tab.is-active {
+  border-color: #c6d8ec;
+  background: #ffffff;
+  color: #183b61;
+}
+
+.tenant-form {
+  display: grid;
+  gap: 16px;
+}
+
+.tenant-form-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.tenant-form-grid.two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.tenant-form-grid.one-col {
+  grid-template-columns: 1fr;
+}
+
+.tenant-field {
+  display: grid;
+  gap: 6px;
+  color: #1b3554;
+  font-weight: 600;
+}
+
+.tenant-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.tenant-modal-actions {
+  border-top: 1px solid #dce8f5;
+  padding-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .services-selected-detail {
@@ -1123,6 +1622,31 @@ a:hover {
     justify-content: flex-start;
   }
 
+  .tenant-table th {
+    font-size: 15px;
+  }
+
+  .tenant-empty {
+    min-height: 170px;
+    font-size: 30px;
+  }
+
+  .tenant-modal-card {
+    padding: 14px;
+  }
+
+  .tenant-modal-header h3 {
+    font-size: 24px;
+  }
+
+  .tenant-modal-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .tenant-form-grid.two-col {
+    grid-template-columns: 1fr;
+  }
+
   .calendar-layout {
     grid-template-columns: 1fr;
   }
@@ -1164,6 +1688,90 @@ a:hover {
   .dashboard-card {
     padding: 12px;
   }
+}
+
+/* === Admin page header === */
+.admin-page-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-page-header-icon {
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #e0ecfb;
+  color: #1a5fa8;
+  display: grid;
+  place-items: center;
+}
+
+.admin-page-header-text {
+  flex: 1;
+}
+
+.admin-page-title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #162741;
+  line-height: 1.2;
+}
+
+.admin-page-subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #5f7693;
+  line-height: 1.4;
+}
+
+/* === Admin role chips and status badges (desktop + mobile global) === */
+.admin-role-chip {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  background: #e0ecf7;
+  color: #2c5a8a;
+}
+
+.admin-role-chip-admin {
+  background: #e3f0fd;
+  color: #1565a8;
+}
+
+.admin-role-chip-gestionale {
+  background: #e2f5ec;
+  color: #1a7a46;
+}
+
+.admin-role-chip-driver {
+  background: #eef0f3;
+  color: #4a5568;
+}
+
+.admin-enabled-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.admin-enabled-badge.is-active {
+  background: #2ea55f;
+  color: #ffffff;
+}
+
+.admin-enabled-badge.is-disabled {
+  background: #e53935;
+  color: #ffffff;
 }
 
 @media (max-width: 640px) {
@@ -1230,6 +1838,43 @@ a:hover {
   .services-selected-deselect {
     font-size: 14px;
     margin-left: auto;
+  }
+
+  .tenant-title {
+    font-size: 32px;
+  }
+
+  .tenant-subtitle {
+    font-size: 15px;
+  }
+
+  .tenant-modal-overlay {
+    padding: 10px;
+    align-items: end;
+  }
+
+  .tenant-modal-card {
+    width: 100%;
+    max-height: min(90vh, 780px);
+    border-radius: 12px;
+  }
+
+  .tenant-modal-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tenant-modal-actions {
+    justify-content: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .tenant-modal-actions .primary-button,
+  .tenant-modal-actions .logout-button {
+    width: 100%;
+  }
+
+  .tenant-empty {
+    font-size: 26px;
   }
 
   .services-modal-overlay {
@@ -1570,6 +2215,11 @@ a:hover {
   .service-chip-status.closed {
     background: #e7edf3;
     color: #65788f;
+  }
+
+  .service-chip-status.executed {
+    background: #fff3de;
+    color: #ab5a00;
   }
 
   .service-chip-status.open {

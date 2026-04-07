@@ -24,8 +24,17 @@ class RideServiceTest {
     }
 
     @Test
-    void assignedCanBeClosed() {
+    void assignedCanBeExecuted() {
         RideService service = new RideService(ServiceStatus.ASSIGNED);
+
+        service.execute();
+
+        assertEquals(ServiceStatus.EXECUTED, service.getStatus());
+    }
+
+    @Test
+    void executedCanBeClosed() {
+        RideService service = new RideService(ServiceStatus.EXECUTED);
 
         service.close();
 

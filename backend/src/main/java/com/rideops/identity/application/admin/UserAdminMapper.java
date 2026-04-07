@@ -8,6 +8,10 @@ public final class UserAdminMapper {
     }
 
     public static UserSummaryDto toDto(UserEntity userEntity) {
+        return toDto(userEntity, null);
+    }
+
+    public static UserSummaryDto toDto(UserEntity userEntity, String tenantName) {
         return new UserSummaryDto(
             userEntity.getId(),
             userEntity.getUserId(),
@@ -22,7 +26,9 @@ public final class UserAdminMapper {
             DriverProfileJson.readStringList(userEntity.getLicenseTypesJson()),
             DriverProfileJson.readStringList(userEntity.getResidentialAddressesJson()),
             userEntity.getMobilePhone(),
-            userEntity.getLicenseExpiryDate()
+            userEntity.getLicenseExpiryDate(),
+            userEntity.getTenantId(),
+            tenantName
         );
     }
 }

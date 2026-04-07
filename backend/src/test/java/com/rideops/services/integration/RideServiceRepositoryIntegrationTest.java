@@ -61,6 +61,7 @@ class RideServiceRepositoryIntegrationTest {
     service.setStatus(ServiceStatus.OPEN);
     service.setStartAt(LocalDateTime.now().plusHours(2));
     service.setType(ServiceType.TRANSFER);
+    service.setTenantId(1L);
 
     // Act
     RideServiceEntity saved = repository.save(service);
@@ -84,6 +85,7 @@ class RideServiceRepositoryIntegrationTest {
     service.setStatus(ServiceStatus.OPEN);
     service.setStartAt(LocalDateTime.now().plusHours(2));
     service.setType(ServiceType.TRANSFER);
+    service.setTenantId(1L);
     RideServiceEntity saved = repository.save(service);
 
     // Act
@@ -106,6 +108,7 @@ class RideServiceRepositoryIntegrationTest {
     service1.setStartAt(LocalDateTime.now().plusHours(1));
     service1.setType(ServiceType.TRANSFER);
     service1.setStatus(ServiceStatus.OPEN);
+    service1.setTenantId(1L);
     RideServiceEntity service2 = new RideServiceEntity();
     service2.setPickupLocation("Location 2");
     service2.setDestination("Destination 2");
@@ -113,6 +116,7 @@ class RideServiceRepositoryIntegrationTest {
     service2.setStartAt(LocalDateTime.now().plusHours(3));
     service2.setType(ServiceType.TRANSFER);
     service2.setStatus(ServiceStatus.CLOSED);
+    service2.setTenantId(1L);
 
     repository.save(service1);
     repository.save(service2);
@@ -134,6 +138,7 @@ class RideServiceRepositoryIntegrationTest {
     service.setNotes("Test Service");
     service.setStartAt(LocalDateTime.now().plusHours(2));
     service.setType(ServiceType.TRANSFER);
+    service.setTenantId(1L);
     RideServiceEntity saved = repository.save(service);
     entityManager.flush();
 

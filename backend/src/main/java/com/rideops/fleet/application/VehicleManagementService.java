@@ -8,6 +8,7 @@ import com.rideops.fleet.adapters.out.VehicleEntity;
 import com.rideops.fleet.adapters.out.VehicleRepository;
 import com.rideops.fleet.domain.DeadlineStatus;
 import com.rideops.fleet.domain.DeadlineType;
+import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -22,20 +23,24 @@ public class VehicleManagementService {
     private final VehicleDeadlineOccurrenceRepository occurrenceRepository;
     private final VehicleDeadlinePlanRepository planRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final TenantContext tenantContext;
 
     public VehicleManagementService(VehicleRepository vehicleRepository,
                                     VehicleDeadlineOccurrenceRepository occurrenceRepository,
                                     VehicleDeadlinePlanRepository planRepository,
-                                    ApplicationEventPublisher eventPublisher) {
+                                    ApplicationEventPublisher eventPublisher,
+                                    TenantContext tenantContext) {
         this.vehicleRepository = vehicleRepository;
         this.occurrenceRepository = occurrenceRepository;
         this.planRepository = planRepository;
         this.eventPublisher = eventPublisher;
+        this.tenantContext = tenantContext;
     }
 
     public VehicleDetailDto getVehicleDetail(Long vehicleId, int withinDays) {
         VehicleEntity vehicle = findVehicle(vehicleId);
-        List<VehicleDeadlineOccurrenceDto> occurrences = occurrenceRepository.findAllByVehicleIdOrderByDueDateDesc(vehicleId)
+        List<VehicleDeadlineOccurrenceDto> occurrences = occurrenceRepository
+            .findAllByVehicleIdAndTenantIdOrderByDueDateDesc(vehicleId, tenantContext.requireTenantId())
             .stream()
             .map(this::toOccurrenceDto)
             .toList();
@@ -53,7 +58,8 @@ public class VehicleManagementService {
             .filter(item -> item.dueDate().isBefore(today))
             .count();
 
-        List<VehicleDeadlinePlanDto> plans = planRepository.findAllByVehicleIdOrderByCreatedAtDesc(vehicleId)
+        List<VehicleDeadlinePlanDto> plans = planRepository
+            .findAllByVehicleIdAndTenantIdOrderByCreatedAtDesc(vehicleId, tenantContext.requireTenantId())
             .stream()
             .map(this::toPlanDto)
             .toList();
@@ -93,6 +99,7 @@ public class VehicleManagementService {
         validateOccurrence(type, title, dueDate, status, cost, currency, paymentDate, executionDate);
 
         VehicleDeadlineOccurrenceEntity entity = new VehicleDeadlineOccurrenceEntity();
+        entity.setTenantId(tenantContext.requireTenantId());
         entity.setVehicle(vehicle);
         entity.setPlan(plan);
         entity.setType(type);
@@ -155,6 +162,7 @@ public class VehicleManagementService {
         }
 
         eventPublisher.publishEvent(new DeadlineOccurrencePaidEvent(
+            saved.getTenantId(),
             saved.getId(),
             saved.getVehicle().getId(),
             saved.getType(),
@@ -187,6 +195,7 @@ public class VehicleManagementService {
         }
 
         eventPublisher.publishEvent(new DeadlineOccurrenceCompletedEvent(
+            saved.getTenantId(),
             saved.getId(),
             saved.getVehicle().getId(),
             saved.getType(),
@@ -223,6 +232,7 @@ public class VehicleManagementService {
         validatePlan(type, title, recurrenceMonths, nextDueDate, standardCost, currency);
 
         VehicleDeadlinePlanEntity entity = new VehicleDeadlinePlanEntity();
+        entity.setTenantId(tenantContext.requireTenantId());
         entity.setVehicle(vehicle);
         entity.setType(type);
         entity.setTitle(title.trim());
@@ -278,7 +288,7 @@ public class VehicleManagementService {
     }
 
     public PlanSyncResultDto syncMissingOccurrencesFromActivePlans() {
-        List<VehicleDeadlinePlanEntity> allPlans = planRepository.findAll();
+        List<VehicleDeadlinePlanEntity> allPlans = planRepository.findAllByTenantId(tenantContext.requireTenantId());
         int plansScanned = allPlans.size();
         int plansActive = 0;
         int occurrencesCreated = 0;
@@ -290,7 +300,11 @@ public class VehicleManagementService {
             }
 
             plansActive += 1;
-            if (occurrenceRepository.existsByPlanIdAndDueDate(plan.getId(), plan.getNextDueDate())) {
+            if (occurrenceRepository.existsByPlanIdAndDueDateAndTenantId(
+                plan.getId(),
+                plan.getNextDueDate(),
+                tenantContext.requireTenantId()
+            )) {
                 occurrencesAlreadyPresent += 1;
                 continue;
             }
@@ -312,11 +326,12 @@ public class VehicleManagementService {
     }
 
     private void generateOccurrenceForPlanIfMissing(VehicleDeadlinePlanEntity plan, LocalDate dueDate) {
-        if (occurrenceRepository.existsByPlanIdAndDueDate(plan.getId(), dueDate)) {
+        if (occurrenceRepository.existsByPlanIdAndDueDateAndTenantId(plan.getId(), dueDate, tenantContext.requireTenantId())) {
             return;
         }
 
         VehicleDeadlineOccurrenceEntity occurrence = new VehicleDeadlineOccurrenceEntity();
+        occurrence.setTenantId(tenantContext.requireTenantId());
         occurrence.setVehicle(plan.getVehicle());
         occurrence.setPlan(plan);
         occurrence.setType(plan.getType());
@@ -331,17 +346,17 @@ public class VehicleManagementService {
     }
 
     private VehicleEntity findVehicle(Long vehicleId) {
-        return vehicleRepository.findById(vehicleId)
+        return vehicleRepository.findByIdAndTenantId(vehicleId, tenantContext.requireTenantId())
             .orElseThrow(() -> new VehicleNotFoundException(vehicleId));
     }
 
     private VehicleDeadlineOccurrenceEntity findOccurrence(Long occurrenceId) {
-        return occurrenceRepository.findById(occurrenceId)
+        return occurrenceRepository.findByIdAndTenantId(occurrenceId, tenantContext.requireTenantId())
             .orElseThrow(() -> new DeadlineOccurrenceNotFoundException(occurrenceId));
     }
 
     private VehicleDeadlinePlanEntity findPlan(Long planId) {
-        return planRepository.findById(planId)
+        return planRepository.findByIdAndTenantId(planId, tenantContext.requireTenantId())
             .orElseThrow(() -> new DeadlinePlanNotFoundException(planId));
     }
 

@@ -6,11 +6,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface PartnerRepository extends JpaRepository<PartnerEntity, Long> {
 
-  List<PartnerEntity> findAllByOrderByRagioneSocialeAsc();
+  java.util.Optional<PartnerEntity> findByIdAndTenantId(Long id, Long tenantId);
 
-  List<PartnerEntity> findAllByTypeOrderByRagioneSocialeAsc(PartnerType type);
+  List<PartnerEntity> findAllByTenantIdOrderByRagioneSocialeAsc(Long tenantId);
 
-    boolean existsByRagioneSocialeIgnoreCaseAndDeletedFalse(String ragioneSociale);
+  List<PartnerEntity> findAllByTypeAndTenantIdOrderByRagioneSocialeAsc(PartnerType type, Long tenantId);
 
-    boolean existsByRagioneSocialeIgnoreCaseAndDeletedFalseAndIdNot(String ragioneSociale, Long id);
+    boolean existsByRagioneSocialeIgnoreCaseAndDeletedFalseAndTenantId(String ragioneSociale, Long tenantId);
+
+    boolean existsByRagioneSocialeIgnoreCaseAndDeletedFalseAndIdNotAndTenantId(String ragioneSociale,
+                                                                                Long id,
+                                                                                Long tenantId);
 }

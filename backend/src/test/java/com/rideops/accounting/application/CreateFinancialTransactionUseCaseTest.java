@@ -8,6 +8,10 @@ import static org.mockito.Mockito.when;
 import com.rideops.accounting.adapters.out.persistence.FinancialTransactionEntity;
 import com.rideops.accounting.domain.FinancialTransactionCategory;
 import com.rideops.accounting.domain.FinancialTransactionType;
+import com.rideops.identity.adapters.out.UserEntity;
+import com.rideops.identity.application.IdentityUserDetails;
+import com.rideops.identity.domain.UserRole;
+import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class CreateFinancialTransactionUseCaseTest {
@@ -26,7 +32,23 @@ class CreateFinancialTransactionUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new CreateFinancialTransactionUseCase(repository, new FinancialTransactionValidation());
+        applyTenantAuthentication(1L);
+        useCase = new CreateFinancialTransactionUseCase(repository, new FinancialTransactionValidation(), new TenantContext());
+    }
+
+    private void applyTenantAuthentication(Long tenantId) {
+        UserEntity user = new UserEntity();
+        user.setUserId("tester");
+        user.setEmail("tester@rideops.local");
+        user.setPasswordHash("hash");
+        user.setRole(UserRole.ADMIN);
+        user.setEnabled(true);
+        user.setTenantId(tenantId);
+
+        IdentityUserDetails principal = new IdentityUserDetails(user);
+        SecurityContextHolder.getContext().setAuthentication(
+            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())
+        );
     }
 
     @Test

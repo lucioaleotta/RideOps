@@ -18,7 +18,7 @@ type ServiceDetail = {
   clientEmail: string | null;
   passengersCount: number | null;
   itinerary: string | null;
-  status: 'OPEN' | 'ASSIGNED' | 'CLOSED';
+  status: 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
 };
 
 export default async function ServicePrintPage({ params }: { params: { id: string } }) {

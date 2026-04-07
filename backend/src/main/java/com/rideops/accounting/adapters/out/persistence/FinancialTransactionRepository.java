@@ -13,18 +13,22 @@ import org.springframework.data.repository.query.Param;
 public interface FinancialTransactionRepository
     extends JpaRepository<FinancialTransactionEntity, Long>, JpaSpecificationExecutor<FinancialTransactionEntity> {
 
-    Optional<FinancialTransactionEntity> findBySourceKey(String sourceKey);
+  Optional<FinancialTransactionEntity> findByIdAndTenantId(Long id, Long tenantId);
+
+  Optional<FinancialTransactionEntity> findBySourceKeyAndTenantId(String sourceKey, Long tenantId);
 
     @Query("""
         select t.transactionType as transactionType, coalesce(sum(t.amount), 0) as totalAmount
         from FinancialTransactionEntity t
         where t.voided = false
+          and t.tenantId = :tenantId
           and t.transactionDate >= :fromDate
           and t.transactionDate < :toDate
         group by t.transactionType
         """)
     List<FinanceTypeTotalProjection> summarizeByTypeInRange(@Param("fromDate") LocalDate fromDate,
-                                                            @Param("toDate") LocalDate toDate);
+                                                            @Param("toDate") LocalDate toDate,
+                                                            @Param("tenantId") Long tenantId);
 
     @Query("""
         select
@@ -34,13 +38,15 @@ public interface FinancialTransactionRepository
           coalesce(sum(t.amount), 0) as totalAmount
         from FinancialTransactionEntity t
         where t.voided = false
+          and t.tenantId = :tenantId
           and year(t.transactionDate) = :year
         group by year(t.transactionDate),
                  month(t.transactionDate),
                  t.transactionType
         order by month(t.transactionDate)
         """)
-    List<FinanceYearMonthTotalProjection> summarizeMonthlyByYear(@Param("year") int year);
+    List<FinanceYearMonthTotalProjection> summarizeMonthlyByYear(@Param("year") int year,
+                                   @Param("tenantId") Long tenantId);
 
     @Query("""
         select
@@ -49,15 +55,17 @@ public interface FinancialTransactionRepository
           coalesce(sum(t.amount), 0) as totalAmount
         from FinancialTransactionEntity t
         where t.voided = false
+          and t.tenantId = :tenantId
         group by year(t.transactionDate), t.transactionType
         order by year(t.transactionDate)
         """)
-    List<FinanceYearTotalProjection> summarizeYearly();
+      List<FinanceYearTotalProjection> summarizeYearly(@Param("tenantId") Long tenantId);
 
     @Query("""
         select t.category as category, coalesce(sum(t.amount), 0) as totalAmount
         from FinancialTransactionEntity t
         where t.voided = false
+          and t.tenantId = :tenantId
           and t.transactionType = :type
           and t.transactionDate >= :fromDate
           and t.transactionDate < :toDate
@@ -66,30 +74,35 @@ public interface FinancialTransactionRepository
         """)
     List<FinanceCategoryTotalProjection> summarizeByCategoryInRange(@Param("type") FinancialTransactionType type,
                                                                     @Param("fromDate") LocalDate fromDate,
-                                                                    @Param("toDate") LocalDate toDate);
+                                    @Param("toDate") LocalDate toDate,
+                                    @Param("tenantId") Long tenantId);
 
-    long countByVoidedFalseAndServiceIdIsNotNullAndTransactionDateGreaterThanEqualAndTransactionDateLessThan(
+    long countByVoidedFalseAndServiceIdIsNotNullAndTransactionDateGreaterThanEqualAndTransactionDateLessThanAndTenantId(
         LocalDate fromDate,
-        LocalDate toDate
+      LocalDate toDate,
+      Long tenantId
     );
 
     @Query("""
       select count(distinct t.serviceId)
       from FinancialTransactionEntity t
       where t.voided = false
+        and t.tenantId = :tenantId
         and t.serviceId is not null
         and t.transactionDate >= :fromDate
         and t.transactionDate < :toDate
       """)
     long countDistinctServicesWithTransactions(@Param("fromDate") LocalDate fromDate,
-                           @Param("toDate") LocalDate toDate);
+                                               @Param("toDate") LocalDate toDate,
+                                               @Param("tenantId") Long tenantId);
 
-    List<FinancialTransactionEntity> findAllByTransactionDateGreaterThanEqualAndTransactionDateLessThanAndVoidedFalse(
+    List<FinancialTransactionEntity> findAllByTransactionDateGreaterThanEqualAndTransactionDateLessThanAndVoidedFalseAndTenantId(
         LocalDate fromDate,
         LocalDate toDate,
+        Long tenantId,
         Sort sort
     );
 
-    List<FinancialTransactionEntity> findAllByVoidedFalse(Sort sort);
+    List<FinancialTransactionEntity> findAllByVoidedFalseAndTenantId(Long tenantId, Sort sort);
 
 }

@@ -26,8 +26,8 @@ public class AssignServiceUseCase {
         RideServiceEntity service = serviceRepositoryPort.findById(serviceId)
             .orElseThrow(() -> new ServiceNotFoundException(serviceId));
 
-        if (service.getStatus() == ServiceStatus.CLOSED) {
-            throw new ServiceValidationException("Non e` possibile assegnare un servizio CLOSED");
+        if (service.getStatus() == ServiceStatus.CLOSED || service.getStatus() == ServiceStatus.EXECUTED) {
+            throw new ServiceValidationException("Non e` possibile assegnare un servizio ESEGUITO/CLOSED");
         }
 
         Long safeDriverId = Objects.requireNonNull(driverId, "driverId obbligatorio");

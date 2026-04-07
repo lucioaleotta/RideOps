@@ -5,9 +5,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VehicleRepository extends JpaRepository<VehicleEntity, Long> {
 
-    List<VehicleEntity> findAllByOrderByPlateAsc();
+    java.util.Optional<VehicleEntity> findByIdAndTenantId(Long id, Long tenantId);
 
-    boolean existsByPlateIgnoreCase(String plate);
+    List<VehicleEntity> findAllByTenantIdOrderByPlateAsc(Long tenantId);
 
-    boolean existsByPlateIgnoreCaseAndIdNot(String plate, Long id);
+    boolean existsByPlateIgnoreCaseAndTenantId(String plate, Long tenantId);
+
+    boolean existsByPlateIgnoreCaseAndIdNotAndTenantId(String plate, Long id, Long tenantId);
+
+    boolean existsByIdAndTenantId(Long id, Long tenantId);
 }

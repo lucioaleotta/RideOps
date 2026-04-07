@@ -9,6 +9,7 @@ public record CreateUserCommand(
     String email,
     String rawPassword,
     UserRole role,
+    Long tenantId,
     String firstName,
     String lastName,
     LocalDate birthDate,

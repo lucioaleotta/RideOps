@@ -5,5 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VehicleDeadlinePlanRepository extends JpaRepository<VehicleDeadlinePlanEntity, Long> {
 
-    List<VehicleDeadlinePlanEntity> findAllByVehicleIdOrderByCreatedAtDesc(Long vehicleId);
+    java.util.Optional<VehicleDeadlinePlanEntity> findByIdAndTenantId(Long id, Long tenantId);
+
+    List<VehicleDeadlinePlanEntity> findAllByVehicleIdAndTenantIdOrderByCreatedAtDesc(Long vehicleId, Long tenantId);
+
+    List<VehicleDeadlinePlanEntity> findAllByTenantId(Long tenantId);
 }

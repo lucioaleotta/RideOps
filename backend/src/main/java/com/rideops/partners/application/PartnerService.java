@@ -11,6 +11,7 @@ import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.adapters.out.RideServiceRepository;
 import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
+import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,15 +25,18 @@ public class PartnerService {
     private final RideServiceRepository rideServiceRepository;
     private final EmailOutboxRepository emailOutboxRepository;
     private final PartnerServiceCommunicationRepository communicationRepository;
+    private final TenantContext tenantContext;
 
     public PartnerService(PartnerRepository partnerRepository,
                           RideServiceRepository rideServiceRepository,
                           EmailOutboxRepository emailOutboxRepository,
-                          PartnerServiceCommunicationRepository communicationRepository) {
+                          PartnerServiceCommunicationRepository communicationRepository,
+                          TenantContext tenantContext) {
         this.partnerRepository = partnerRepository;
         this.rideServiceRepository = rideServiceRepository;
         this.emailOutboxRepository = emailOutboxRepository;
         this.communicationRepository = communicationRepository;
+        this.tenantContext = tenantContext;
     }
 
     public List<PartnerAssignableServiceDto> listAssignableServices(Long partnerId) {
@@ -42,7 +46,11 @@ public class PartnerService {
         }
 
         return rideServiceRepository
-            .findAllByServiceAssignmentTypeAndStatusNotOrderByStartAtAsc(ServiceAssignmentType.INTERNAL, ServiceStatus.CLOSED)
+            .findAllByServiceAssignmentTypeAndStatusNotAndTenantIdOrderByStartAtAsc(
+                ServiceAssignmentType.INTERNAL,
+                ServiceStatus.CLOSED,
+                tenantContext.requireTenantId()
+            )
             .stream()
             .map(this::toAssignableDto)
             .toList();
@@ -51,7 +59,7 @@ public class PartnerService {
     public List<PartnerCollaborationDto> listCollaborations(Long partnerId) {
         PartnerEntity partner = findPartner(partnerId);
 
-        return rideServiceRepository.findAllByPartnerIdOrderByStartAtDesc(partner.getId())
+        return rideServiceRepository.findAllByPartnerIdAndTenantIdOrderByStartAtDesc(partner.getId(), tenantContext.requireTenantId())
             .stream()
             .map(service -> toCollaborationDto(partner.getId(), service))
             .toList();
@@ -76,7 +84,7 @@ public class PartnerService {
             throw new PartnerValidationException("Email partner non configurata");
         }
 
-        RideServiceEntity service = rideServiceRepository.findById(serviceId)
+        RideServiceEntity service = rideServiceRepository.findByIdAndTenantId(serviceId, tenantContext.requireTenantId())
             .orElseThrow(() -> new PartnerValidationException("Servizio non trovato: id=" + serviceId));
 
         if (!partner.getId().equals(service.getPartnerId())) {
@@ -85,14 +93,17 @@ public class PartnerService {
 
         String subject = "RideOps - Dettaglio servizio " + valueOrDash(service.getInternalBookingReference());
         String body = buildPartnerServiceEmailBody(service);
+        Long tenantId = tenantContext.requireTenantId();
 
         EmailOutboxEntity outbox = new EmailOutboxEntity();
+        outbox.setTenantId(tenantId);
         outbox.setRecipient(partner.getEmail());
         outbox.setSubject(subject);
         outbox.setBody(body);
         emailOutboxRepository.save(outbox);
 
         PartnerServiceCommunicationEntity communication = new PartnerServiceCommunicationEntity();
+        communication.setTenantId(tenantId);
         communication.setPartnerId(partner.getId());
         communication.setServiceId(service.getId());
         communication.setChannel("EMAIL");
@@ -116,8 +127,8 @@ public class PartnerService {
         String lowerFilter = normalized == null ? null : normalized.toLowerCase(Locale.ROOT);
 
         List<PartnerEntity> base = type == null
-            ? partnerRepository.findAllByOrderByRagioneSocialeAsc()
-            : partnerRepository.findAllByTypeOrderByRagioneSocialeAsc(type);
+            ? partnerRepository.findAllByTenantIdOrderByRagioneSocialeAsc(tenantContext.requireTenantId())
+            : partnerRepository.findAllByTypeAndTenantIdOrderByRagioneSocialeAsc(type, tenantContext.requireTenantId());
 
         return base.stream()
             .filter(entity -> includeDeleted || !entity.isDeleted())
@@ -156,11 +167,13 @@ public class PartnerService {
                              String noteOperative) {
         validateInput(type, ragioneSociale);
 
-        if (partnerRepository.existsByRagioneSocialeIgnoreCaseAndDeletedFalse(ragioneSociale.trim())) {
+        Long tenantId = tenantContext.requireTenantId();
+        if (partnerRepository.existsByRagioneSocialeIgnoreCaseAndDeletedFalseAndTenantId(ragioneSociale.trim(), tenantId)) {
             throw new PartnerValidationException("Esiste gia` un partner attivo con la stessa ragione sociale");
         }
 
         PartnerEntity entity = new PartnerEntity();
+        entity.setTenantId(tenantId);
         entity.setType(type);
         entity.setRagioneSociale(ragioneSociale.trim());
         entity.setNomeReferente(cleanNullable(nomeReferente));
@@ -211,7 +224,11 @@ public class PartnerService {
             throw new PartnerValidationException("Il partner e` cancellato: non puo` essere modificato");
         }
 
-        if (partnerRepository.existsByRagioneSocialeIgnoreCaseAndDeletedFalseAndIdNot(ragioneSociale.trim(), partnerId)) {
+        if (partnerRepository.existsByRagioneSocialeIgnoreCaseAndDeletedFalseAndIdNotAndTenantId(
+            ragioneSociale.trim(),
+            partnerId,
+            tenantContext.requireTenantId()
+        )) {
             throw new PartnerValidationException("Esiste gia` un partner attivo con la stessa ragione sociale");
         }
 
@@ -259,7 +276,7 @@ public class PartnerService {
         if (partnerId == null) {
             throw new PartnerValidationException("Partner id obbligatorio");
         }
-        return partnerRepository.findById(partnerId)
+        return partnerRepository.findByIdAndTenantId(partnerId, tenantContext.requireTenantId())
             .orElseThrow(() -> new PartnerNotFoundException(partnerId));
     }
 
@@ -272,23 +289,26 @@ public class PartnerService {
     }
 
     private PartnerDto toDto(PartnerEntity entity) {
-        long numeroServiziAffidati = rideServiceRepository.countByPartnerIdAndServiceAssignmentType(
+        Long tenantId = tenantContext.requireTenantId();
+        long numeroServiziAffidati = rideServiceRepository.countByPartnerIdAndServiceAssignmentTypeAndTenantId(
             entity.getId(),
-            ServiceAssignmentType.OUTSOURCED
+            ServiceAssignmentType.OUTSOURCED,
+            tenantId
         );
-        long numeroServiziRicevuti = rideServiceRepository.countByPartnerIdAndServiceAssignmentType(
+        long numeroServiziRicevuti = rideServiceRepository.countByPartnerIdAndServiceAssignmentTypeAndTenantId(
             entity.getId(),
-            ServiceAssignmentType.INCOMING
+            ServiceAssignmentType.INCOMING,
+            tenantId
         );
         BigDecimal totaleMarginiOutsourced = rideServiceRepository
-            .sumMarginByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.OUTSOURCED);
+            .sumMarginByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.OUTSOURCED, tenantId);
         BigDecimal totaleRicaviIncoming = rideServiceRepository
-            .sumPriceByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.INCOMING);
+            .sumPriceByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.INCOMING, tenantId);
         BigDecimal totaleGuadagni = totaleMarginiOutsourced.add(totaleRicaviIncoming);
         BigDecimal totaleCrediti = rideServiceRepository
-            .sumPriceByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.INCOMING);
+            .sumPriceByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.INCOMING, tenantId);
         BigDecimal totaleDebiti = rideServiceRepository
-            .sumPricePartnerByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.OUTSOURCED);
+            .sumPricePartnerByPartnerIdAndAssignmentType(entity.getId(), ServiceAssignmentType.OUTSOURCED, tenantId);
         BigDecimal saldoAttuale = totaleCrediti.subtract(totaleDebiti);
 
         return new PartnerDto(
@@ -344,8 +364,14 @@ public class PartnerService {
     }
 
     private PartnerCollaborationDto toCollaborationDto(Long partnerId, RideServiceEntity service) {
-        long emailCount = communicationRepository.countByPartnerIdAndServiceIdAndChannel(partnerId, service.getId(), "EMAIL");
-        LocalDateTime lastEmailAt = communicationRepository.findLastCommunicationAt(partnerId, service.getId(), "EMAIL");
+        Long tenantId = tenantContext.requireTenantId();
+        long emailCount = communicationRepository.countByPartnerIdAndServiceIdAndChannelAndTenantId(
+            partnerId,
+            service.getId(),
+            "EMAIL",
+            tenantId
+        );
+        LocalDateTime lastEmailAt = communicationRepository.findLastCommunicationAt(partnerId, service.getId(), "EMAIL", tenantId);
 
         return new PartnerCollaborationDto(
             service.getId(),

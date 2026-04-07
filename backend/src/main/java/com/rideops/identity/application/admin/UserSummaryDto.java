@@ -18,6 +18,8 @@ public record UserSummaryDto(
     List<String> licenseTypes,
     List<String> residentialAddresses,
     String mobilePhone,
-    LocalDate licenseExpiryDate
+    LocalDate licenseExpiryDate,
+    Long tenantId,
+    String tenantName
 ) {
 }

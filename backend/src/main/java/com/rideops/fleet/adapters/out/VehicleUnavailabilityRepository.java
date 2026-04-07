@@ -6,14 +6,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VehicleUnavailabilityRepository extends JpaRepository<VehicleUnavailabilityEntity, Long> {
 
-    List<VehicleUnavailabilityEntity> findAllByVehicleIdOrderByStartDateAsc(Long vehicleId);
+    java.util.Optional<VehicleUnavailabilityEntity> findByIdAndTenantId(Long id, Long tenantId);
 
-    boolean existsByVehicleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqual(Long vehicleId,
-                                                                                  LocalDate endDate,
-                                                                                  LocalDate startDate);
+    List<VehicleUnavailabilityEntity> findAllByVehicleIdAndTenantIdOrderByStartDateAsc(Long vehicleId, Long tenantId);
 
-    boolean existsByVehicleIdAndIdNotAndStartDateLessThanEqualAndEndDateGreaterThanEqual(Long vehicleId,
-                                                                                           Long id,
-                                                                                           LocalDate endDate,
-                                                                                           LocalDate startDate);
+    boolean existsByVehicleIdAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndTenantId(Long vehicleId,
+                                                                                             LocalDate endDate,
+                                                                                             LocalDate startDate,
+                                                                                             Long tenantId);
+
+    boolean existsByVehicleIdAndIdNotAndStartDateLessThanEqualAndEndDateGreaterThanEqualAndTenantId(Long vehicleId,
+                                                                                                      Long id,
+                                                                                                      LocalDate endDate,
+                                                                                                      LocalDate startDate,
+                                                                                                      Long tenantId);
 }
