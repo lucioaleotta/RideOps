@@ -17,6 +17,9 @@ echo "[$(date)] Deploy tag=${IMAGE_TAG}"
 # Aggiorna il tag nelle variabili d'ambiente
 export IMAGE_TAG="${IMAGE_TAG}"
 
+echo "--- Login a GHCR ---"
+echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
+
 echo "--- Pull immagini ---"
 docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" pull backend frontend
 

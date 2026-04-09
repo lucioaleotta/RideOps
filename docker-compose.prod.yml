@@ -19,7 +19,7 @@ services:
     # Postgres non è mai esposto alla rete host in produzione
 
   backend:
-    image: ${DOCKER_HUB_USERNAME}/rideops-backend:${IMAGE_TAG:-latest}
+    image: ${GHCR_IMAGE_PREFIX}/rideops-backend:${IMAGE_TAG:-latest}
     container_name: rideops-backend
     restart: unless-stopped
     depends_on:
@@ -49,7 +49,7 @@ services:
       start_period: 60s
 
   frontend:
-    image: ${DOCKER_HUB_USERNAME}/rideops-frontend:${IMAGE_TAG:-latest}
+    image: ${GHCR_IMAGE_PREFIX}/rideops-frontend:${IMAGE_TAG:-latest}
     container_name: rideops-frontend
     restart: unless-stopped
     depends_on:
