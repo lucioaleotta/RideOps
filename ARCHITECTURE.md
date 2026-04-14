@@ -1158,6 +1158,51 @@ FareCalculator calculator = isUrbanArea()
 
 ---
 
+
+## Esempio configurazione Nginx HTTPS
+
+Per abilitare HTTPS su rideops.it con certificato Let's Encrypt:
+
+```nginx
+server {
+  listen 80;
+  server_name rideops.it www.rideops.it;
+  return 301 https://$host$request_uri;
+}
+
+server {
+  listen 443 ssl;
+  server_name rideops.it www.rideops.it;
+
+  ssl_certificate /etc/letsencrypt/live/rideops.it/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/rideops.it/privkey.pem;
+  ssl_protocols TLSv1.2 TLSv1.3;
+  ssl_ciphers HIGH:!aNULL:!MD5;
+
+  root /percorso/alla/tuapp; # Cambia con il path reale
+  index index.html;
+
+  location / {
+    try_files $uri $uri/ =404;
+    # oppure proxy_pass http://localhost:8080; per backend
+  }
+
+  # Esempio reverse proxy per backend Java
+  # location /api/ {
+  #     proxy_pass http://localhost:8080;
+  #     proxy_set_header Host $host;
+  #     proxy_set_header X-Real-IP $remote_addr;
+  #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+  #     proxy_set_header X-Forwarded-Proto $scheme;
+  # }
+}
+```
+
+**Note:**
+- Aggiorna i percorsi dei certificati se il dominio cambia.
+- Riavvia Nginx dopo ogni modifica: `systemctl restart nginx` o equivalente.
+
+---
 ## Conventions & Best Practices
 
 ### Naming Conventions
