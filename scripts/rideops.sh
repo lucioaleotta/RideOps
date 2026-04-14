@@ -1,3 +1,14 @@
+# ---------------------------------------------------------------------------
+# Comando: sync-config — copia tutti i file di configurazione dal repo al server
+# Uso: ./scripts/rideops.sh sync-config
+# ---------------------------------------------------------------------------
+cmd_sync_config() {
+  _header "Sincronizzazione file di configurazione Nginx sul server"
+  rsync -avz -e "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no" \
+    ./nginx/nginx.conf ./nginx/conf.d/ \
+    ${SSH_USER}@${SSH_HOST}:${RIDEOPS_DIR}/nginx/
+  _ok "Configurazione aggiornata!"
+}
 #!/usr/bin/env bash
 # =============================================================================
 # RideOps – CLI per gestione del server di produzione
@@ -266,6 +277,7 @@ case "${1:-help}" in
   cron:backup)  cmd_cron_backup ;;
   ssl)          cmd_ssl ;;
   shell)        cmd_shell ;;
+  sync-config)  cmd_sync_config ;;
   help|--help|-h) cmd_help ;;
   *)
     _err "Comando sconosciuto: ${1}"
