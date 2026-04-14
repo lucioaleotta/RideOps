@@ -100,15 +100,6 @@ jobs:
     environment: production
     steps:
 
-      - name: Copia file di configurazione Nginx su Hetzner
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: root
-          key: ${{ secrets.HETZNER_SSH_KEY }}
-          port: 22
-          source: "nginx/nginx.conf,nginx/conf.d"
-          target: "/opt/rideops/nginx/"
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
