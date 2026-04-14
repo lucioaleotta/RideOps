@@ -107,7 +107,7 @@ jobs:
           username: root
           key: ${{ secrets.HETZNER_SSH_KEY }}
           port: 22
-          source: "nginx/nginx.conf,nginx/conf.d/*.conf"
+          source: "nginx/nginx.conf,nginx/conf.d"
           target: "/opt/rideops/nginx/"
 
       - name: Deploy via SSH
