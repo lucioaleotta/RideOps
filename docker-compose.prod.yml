@@ -72,8 +72,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       # Decommentare dopo aver ottenuto il certificato SSL:
-      # - /etc/letsencrypt:/etc/letsencrypt:ro
-      # - /var/www/certbot:/var/www/certbot:ro
+        - /etc/letsencrypt:/etc/letsencrypt:ro
+        - /var/www/certbot:/var/www/certbot:ro
     depends_on:
       - frontend
       - backend
