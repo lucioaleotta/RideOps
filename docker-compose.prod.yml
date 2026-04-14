@@ -71,13 +71,9 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      # Monta tutte le directory necessarie per i symlink Certbot
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /etc/letsencrypt/live:/etc/letsencrypt/live:ro
-      - /etc/letsencrypt/archive:/etc/letsencrypt/archive:ro
+      - /opt/rideops/certs:/etc/ssl/certs:ro
       - /var/www/certbot:/var/www/certbot:ro
-      - /etc/letsencrypt/archive:/etc/letsencrypt/archive:ro
-      - /etc/letsencrypt/live:/etc/letsencrypt/live:ro
+
     depends_on:
       - frontend
       - backend
