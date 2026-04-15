@@ -221,6 +221,29 @@ REMOTE
 }
 
 # ---------------------------------------------------------------------------
+# Comando: db:restore — ripristino interattivo da un backup
+# Uso: ./scripts/rideops.sh db:restore [percorso_backup.sql.gz]
+# ---------------------------------------------------------------------------
+cmd_db_restore() {
+  local backup_arg="${1:-}"
+  _header "Ripristino database da backup"
+  _warn "Verrà aperta una sessione SSH interattiva sul server."
+  if [[ -n "${backup_arg}" ]]; then
+    # File passato in locale → lo copiamo sul server prima del ripristino
+    local remote_tmp="/tmp/$(basename "${backup_arg}")"
+    _header "Upload backup su server..."
+    rsync -avz -e "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no" \
+      "${backup_arg}" "${SSH_USER}@${SSH_HOST}:${remote_tmp}"
+    ${SSH_CMD} "bash ${RIDEOPS_DIR}/scripts/server/restore.sh ${remote_tmp}"
+    ${SSH_CMD} "rm -f ${remote_tmp}"
+  else
+    # Sessione interattiva — mostra lista backup sul server
+    ${SSH} -t "bash ${RIDEOPS_DIR}/scripts/server/restore.sh"
+  fi
+  _ok "Ripristino completato."
+}
+
+# ---------------------------------------------------------------------------
 # Comando: shell — shell bash sul server
 # ---------------------------------------------------------------------------
 cmd_shell() {
@@ -259,6 +282,7 @@ cmd_help() {
   echo -e "  ${BOLD}db${RESET}                     Shell psql interattiva"
   echo -e "  ${BOLD}db:query${RESET} \"<SQL>\"       Esegui una query SQL"
   echo -e "  ${BOLD}db:backup${RESET}              Backup manuale del database"
+  echo -e "  ${BOLD}db:restore${RESET} [file]       Ripristino interattivo da backup (default: lista server)"
   echo -e "  ${BOLD}cron:backup${RESET}            Installa cron backup notturno (ore 02:00)"
   echo -e "  ${BOLD}ssl${RESET}                    Ottieni certificato Let's Encrypt + abilita HTTPS"
   echo -e "  ${BOLD}shell${RESET}                  Shell bash remota"
@@ -284,6 +308,7 @@ case "${1:-help}" in
   db)           cmd_db ;;
   db:query)     cmd_db_query "${2:-}" ;;
   db:backup)    cmd_db_backup ;;
+  db:restore)   cmd_db_restore "${2:-}" ;;
   cron:backup)  cmd_cron_backup ;;
   ssl)          cmd_ssl ;;
   shell)        cmd_shell ;;
