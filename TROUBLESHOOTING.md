@@ -17,6 +17,7 @@ Guida per diagnosticare e risolvere problemi comuni durante sviluppo, testing, e
 9. [SSL & Nginx](#ssl--nginx)
 10. [Git & CI/CD](#git--cicd)
 11. [Performance Issues](#performance-issues)
+12. [Backup & Restore](#backup--restore)
 
 ---
 
@@ -481,11 +482,8 @@ psql -h localhost -U rideops -d rideops -c "SELECT COUNT(*) FROM rides;"
 # - Data type conversions won't truncate
 # - All NULL handling is explicit
 
-# 4. Rebuild from backup
-# Restore database from backup
-# Re-run migrations from start
-./dev.sh db-restore-backup
-./dev.sh db-migrate
+# 4. Rebuild from backup (produzione)
+./scripts/rideops.sh db:restore
 ```
 
 ### Problem: `Cannot log in to database locally`
@@ -1127,7 +1125,87 @@ ssh -T git@github.com
 
 ---
 
-## Performance Issues
+## Backup & Restore
+
+### Problem: `Nessun backup trovato in /opt/rideops/backups`
+
+**Symptoms:** Lo script restore.sh mostra "Nessun backup trovato".
+
+**Cause:** Il cron non era configurato oppure backup.sh ha fallito silenziosamente.
+
+**Solution:**
+```bash
+# 1. Verifica cron installato
+./scripts/rideops.sh shell
+crontab -l
+# Deve mostrare: 0 2 * * * /opt/rideops/scripts/server/backup.sh ...
+
+# 2. Se mancante, reinstalla
+./scripts/rideops.sh cron:backup
+
+# 3. Esegui un backup manuale ora
+./scripts/rideops.sh db:backup
+
+# 4. Verifica il log
+ssh root@91.98.196.151 "tail -30 /opt/rideops/logs/backup.log"
+```
+
+### Problem: `restore.sh: source: /opt/rideops/.env: No such file or directory`
+
+**Symptoms:** Lo script restore si arresta all'avvio.
+
+**Cause:** File `.env` assente o percorso errato.
+
+**Solution:**
+```bash
+ssh root@91.98.196.151 "ls -la /opt/rideops/.env"
+# Se mancante, ricrealo dalle variabili d'ambiente note:
+ssh root@91.98.196.151 "cat /opt/rideops/.env"
+```
+
+### Problem: `gunzip: rideops_YYYYMMDD.sql.gz: not in gzip format`
+
+**Symptoms:** Il ripristino fallisce con errore di decompressione.
+
+**Cause:** File di backup corrotto o troncato (es. disco pieno durante la scrittura).
+
+**Solution:**
+```bash
+# 1. Verifica integrità del file
+ssh root@91.98.196.151 "gunzip -t /opt/rideops/backups/rideops_YYYYMMDD_HHMMSS.sql.gz"
+# Se fallisce: file corrotto
+
+# 2. Scegli un backup precedente
+./scripts/rideops.sh db:restore
+# Seleziona un file più vecchio dalla lista
+
+# 3. Verifica spazio disco
+./scripts/rideops.sh health
+# Se disco pieno: pulisci backup vecchi
+ssh root@91.98.196.151 "ls -lht /opt/rideops/backups/ | tail -20"
+ssh root@91.98.196.151 "rm /opt/rideops/backups/rideops_VECCHIO.sql.gz"
+```
+
+### Problem: `FATAL: database is being accessed by other users` durante restore
+
+**Symptoms:** psql si rifiuta di eseguire DROP/TRUNCATE perché ci sono connessioni attive.
+
+**Cause:** I container backend/frontend sono connessi al DB durante il restore.
+
+**Solution:**
+```bash
+# restore.sh termina le sessioni automaticamente, ma in caso di errore:
+ssh root@91.98.196.151 "docker exec rideops-postgres psql -U rideops -d postgres -c \
+  \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='rideops' AND pid <> pg_backend_pid();\""
+
+# Poi riprova il restore
+./scripts/rideops.sh db:restore
+
+# In alternativa ferma temporaneamente backend e frontend
+ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env stop backend frontend"
+./scripts/rideops.sh db:restore
+ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env start backend frontend"
+```
 
 ### Problem: `Frontend build takes > 5 minutes`
 

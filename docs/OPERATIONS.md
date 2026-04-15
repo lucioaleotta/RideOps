@@ -52,9 +52,12 @@ chmod +x scripts/rideops.sh
 | `./scripts/rideops.sh health` | Health check completo |
 | `./scripts/rideops.sh db` | Shell psql interattiva |
 | `./scripts/rideops.sh db:query "SELECT ..."` | Query SQL rapida |
-| `./scripts/rideops.sh db:backup` | Backup manuale |
-| `./scripts/rideops.sh cron:backup` | Installa cron backup notturno |
+| `./scripts/rideops.sh db:backup` | Backup manuale del database |
+| `./scripts/rideops.sh db:restore` | Ripristino interattivo da backup (lista backup sul server) |
+| `./scripts/rideops.sh db:restore /path/file.sql.gz` | Ripristino da file locale (lo carica sul server) |
+| `./scripts/rideops.sh cron:backup` | Installa cron backup notturno (02:00) |
 | `./scripts/rideops.sh ssl` | Ottieni certificato SSL (dopo DNS) |
+| `./scripts/rideops.sh sync-config` | Sincronizza nginx config dal repo al server |
 | `./scripts/rideops.sh shell` | Shell bash remota |
 
 ---
@@ -162,17 +165,52 @@ docker exec rideops-postgres psql -U rideops -d rideops -c "SELECT id, email FRO
 ### Backup manuale
 
 ```bash
+# Tramite CLI locale (raccomandato)
+./scripts/rideops.sh db:backup
+
+# Oppure direttamente sul server
 bash /opt/rideops/scripts/server/backup.sh
-# I backup vengono salvati in /opt/rideops/backups/
-ls -lh /opt/rideops/backups/
 ```
+
+I backup vengono salvati in `/opt/rideops/backups/rideops_YYYYMMDD_HHMMSS.sql.gz`, con retention di **7 giorni**.  
+Il cron automatico gira ogni notte alle **02:00** (configurato con `./scripts/rideops.sh cron:backup`).
 
 ### Restore da backup
 
+**Metodo 1 – Interattivo (raccomandato)**
+
+Mostra la lista dei backup disponibili sul server e guida passo passo:
+
 ```bash
-# Sostituisci il nome file con quello che vuoi ripristinare
-gunzip -c /opt/rideops/backups/rideops_YYYYMMDD_HHMMSS.sql.gz \
-  | docker exec -i rideops-postgres psql -U rideops -d rideops
+./scripts/rideops.sh db:restore
+```
+
+Lo script:
+1. Elenca i backup disponibili con dimensione e data
+2. Chiede quale numero ripristinare
+3. Richiede conferma esplicita prima di sovrascrivere
+4. Termina le connessioni attive al DB
+5. Esegue il ripristino e mostra una verifica delle tabelle
+
+**Metodo 2 – Da file locale**
+
+Se hai scaricato un backup in locale (es. per ripristino cross-ambiente):
+
+```bash
+./scripts/rideops.sh db:restore /path/to/rideops_20260415_020000.sql.gz
+```
+
+Lo script carica il file sul server, lo ripristina e poi lo cancella.
+
+**Metodo manuale (solo emergenza)**
+
+```bash
+# SSH sul server + ripristino diretto
+ssh root@91.98.196.151
+bash /opt/rideops/scripts/server/restore.sh
+
+# Oppure passando il file direttamente
+bash /opt/rideops/scripts/server/restore.sh /opt/rideops/backups/rideops_YYYYMMDD_HHMMSS.sql.gz
 ```
 
 ---
@@ -309,9 +347,10 @@ docker system prune -f --volumes
 │       ├── rideops.conf        # Config HTTPS (attiva dopo SSL)
 │       └── rideops-http.conf   # Config HTTP temporanea
 ├── scripts/server/
-│   ├── backup.sh               # Backup pg_dump
+│   ├── backup.sh               # Backup pg_dump (cron 02:00)
+│   ├── restore.sh              # Ripristino interattivo da backup
 │   ├── obtain-cert.sh          # Certbot
-│   └── pull-and-restart.sh     # Deploy
+│   └── pull-and-restart.sh     # Deploy (chiamato dalla pipeline CI/CD)
 ├── backups/                    # Backup database
 ├── logs/                       # Log cron e script
 └── src/                        # Repo clonato da GitHub
@@ -319,9 +358,11 @@ docker system prune -f --volumes
 
 ---
 
-## Checklist pendenti
+## Checklist infrastruttura
 
-- [ ] Propagazione DNS `rideops.it` → SSL con `./scripts/rideops.sh ssl`
-- [ ] Cron backup notturno → `./scripts/rideops.sh cron:backup`
-- [ ] GitHub Actions secrets: `HETZNER_HOST`, `HETZNER_SSH_KEY`
-- [ ] Disabilitare/eliminare vecchi workflow GCP (`.github/workflows/backend-cd.yml`, `frontend-cd.yml`)
+- [x] SSL Let's Encrypt attivo su `rideops.it` (certbot + deploy hook)
+- [x] Cron backup notturno alle 02:00 configurato sul server
+- [x] GitHub Actions secrets configurati: `HETZNER_HOST`, `HETZNER_SSH_KEY`, `GHCR_TOKEN`
+- [x] Script `restore.sh` disponibile in `/opt/rideops/scripts/server/restore.sh`
+- [x] Pipeline `deploy-hetzner.yml` operativa (scp-action + ssh-action)
+- [x] Workflow GCP obsoleti rimossi (`backend-cd.yml`, `frontend-cd.yml`)
