@@ -37,7 +37,20 @@ else
     echo "ATTENZIONE: certificati non trovati in ${LE_LIVE}. Nginx potrebbe non avviarsi."
 fi
 
-echo "--- Riavvio container (zero-downtime: postgres non tocca) ---"
+echo "--- Verifica e avvio postgres (se non in esecuzione) ---"
+docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" up -d --no-deps postgres
+echo "Attendo che postgres sia healthy..."
+for i in {1..20}; do
+    STATUS=$(docker inspect --format '{{.State.Health.Status}}' rideops-postgres 2>/dev/null || echo "unknown")
+    if [[ "${STATUS}" == "healthy" ]]; then
+        echo "Postgres healthy."
+        break
+    fi
+    echo "  attempt ${i}/20: ${STATUS}..."
+    sleep 5
+done
+
+echo "--- Riavvio container backend, frontend, nginx ---"
 docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
     up -d --no-deps backend frontend nginx
 
