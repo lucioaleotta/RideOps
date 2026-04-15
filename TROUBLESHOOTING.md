@@ -941,20 +941,27 @@ log.error("User not found for ID: {}", userId);
 
 ## Production (Hetzner VPS)
 
+> **Prima di qualsiasi intervento manuale**, esegui la diagnostica automatica:
+> ```bash
+> ./scripts/rideops.sh dr:check
+> ```
+> Controlla server, container, DB, HTTPS e disco in sequenza e indica il comando correttivo.
+
 ### Problem: Container in crash loop (`restarting`)
 
 **Symptoms:** `docker ps` mostra status `Restarting`.
 
 **Solution:**
 ```bash
-# 1. Ferma il container per poter leggere i log
-ssh root@91.98.196.151 "docker compose -f /opt/rideops/docker-compose.prod.yml --env-file /opt/rideops/.env stop nginx"
+# Diagnostica automatica (raccomandato)
+./scripts/rideops.sh dr:check
 
-# 2. Leggi i log
-ssh root@91.98.196.151 "docker logs rideops-nginx --tail 50"
+# Oppure manualmente:
+# 1. Leggi i log del servizio
+./scripts/rideops.sh logs nginx 50
 
-# 3. Riavvia dopo fix
-ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps nginx"
+# 2. Riavvia dopo fix
+./scripts/rideops.sh restart nginx
 ```
 
 ### Problem: Postgres in stato `Created` (non avviato)
@@ -963,9 +970,13 @@ ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod
 
 **Solution:**
 ```bash
-ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env up -d postgres"
-# Attendi ~15 secondi, poi riavvia il backend
-ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps backend"
+# Diagnostica automatica
+./scripts/rideops.sh dr:check
+
+# Oppure manualmente:
+./scripts/rideops.sh restart postgres
+# Attendi ~30s poi riavvia il backend
+./scripts/rideops.sh restart backend
 ```
 
 ### Problem: Variabili GHCR_TOKEN/GHCR_USER non definite nello script
@@ -993,14 +1004,18 @@ ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod
 
 **Solution:**
 ```bash
+# dr:check rileva questo problema automaticamente e suggerisce il fix
+./scripts/rideops.sh dr:check
+
+# Fix manuale:
 ssh root@91.98.196.151 "
   mkdir -p /opt/rideops/certs && \
   cp -fL /etc/letsencrypt/live/rideops.it/fullchain.pem /opt/rideops/certs/ && \
   cp -fL /etc/letsencrypt/live/rideops.it/privkey.pem /opt/rideops/certs/ && \
   chmod 644 /opt/rideops/certs/fullchain.pem && \
-  chmod 600 /opt/rideops/certs/privkey.pem && \
-  cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env up -d --force-recreate --no-deps nginx
+  chmod 600 /opt/rideops/certs/privkey.pem
 "
+./scripts/rideops.sh restart nginx
 ```
 
 > **Nota:** Il flag `-L` è fondamentale — i file in `/etc/letsencrypt/live/` sono symlink. Senza `-L` si copia il symlink invece del file reale.

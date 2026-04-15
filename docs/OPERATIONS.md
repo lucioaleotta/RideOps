@@ -61,6 +61,8 @@ chmod +x scripts/rideops.sh
 | `./scripts/rideops.sh ssl` | Ottieni certificato SSL (dopo DNS) |
 | `./scripts/rideops.sh sync-config` | Sincronizza nginx config dal repo al server |
 | `./scripts/rideops.sh shell` | Shell bash remota |
+| **`./scripts/rideops.sh dr:check`** | **Diagnostica automatica: server, container, DB, HTTPS, disco** |
+| **`./scripts/rideops.sh dr:rebuild <IP>`** | **Rebuild completo stack su un nuovo server Hetzner** |
 
 ---
 
@@ -368,3 +370,30 @@ docker system prune -f --volumes
 - [x] Script `restore.sh` disponibile in `/opt/rideops/scripts/server/restore.sh`
 - [x] Pipeline `deploy-hetzner.yml` operativa (scp-action + ssh-action)
 - [x] Workflow GCP obsoleti rimossi (`backend-cd.yml`, `frontend-cd.yml`)
+- [x] `dr:check` e `dr:rebuild` disponibili nella CLI per disaster recovery automatizzato
+
+---
+
+## Disaster Recovery (emergenza)
+
+In caso di emergenza usa la diagnostica automatica prima di intervenire manualmente:
+
+```bash
+# Diagnostica completa in un colpo solo
+./scripts/rideops.sh dr:check
+```
+
+Controlla automaticamente: ping server → stato container → postgres healthy → HTTPS → spazio disco.  
+Per ogni problema trovato stampa il comando correttivo esatto.
+
+**Se il server è irrecuperabile** (distrutto/irraggiungibile da Hetzner Console):
+
+```bash
+# Dopo aver creato un nuovo server CX23 su Hetzner:
+./scripts/rideops.sh dr:rebuild <NUOVO_IP>
+```
+
+Esegue in automatico: install.sh, struttura directory, copia config, avvio stack, ripristino DB da backup, cron backup.  
+Step rimasti manuali: aggiornare DNS + GitHub Secret `HETZNER_HOST`.
+
+> Guida completa: [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md)
