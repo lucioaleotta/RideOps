@@ -267,6 +267,232 @@ REMOTE
 }
 
 # ---------------------------------------------------------------------------
+# Comando: dr:check — diagnostica automatica disaster recovery
+# Controlla server, container, DB, SSL e suggerisce l'azione corretta
+# ---------------------------------------------------------------------------
+cmd_dr_check() {
+  _header "Diagnostica Disaster Recovery"
+  local issues=0
+
+  # ── 1. Raggiungibilità server ────────────────────────────────────────────
+  echo -n "[1/5] Server raggiungibile... "
+  if ! ping -c 1 -W 3 "${SSH_HOST}" &>/dev/null; then
+    echo -e "${RED}NON RAGGIUNGIBILE${RESET}"
+    echo ""
+    _err "Il server non risponde al ping."
+    echo "→ Controlla Hetzner Cloud Console: https://console.hetzner.cloud"
+    echo "→ Se 'Off': fai Power On dalla console"
+    echo "→ Se 'Running' ma non risponde: usa la Console web Hetzner per accedere"
+    echo "→ Se irrecuperabile: lancia: ./scripts/rideops.sh dr:rebuild <NUOVO_IP>"
+    exit 1
+  fi
+  echo -e "${GREEN}OK${RESET}"
+
+  # ── 2. Stato container ───────────────────────────────────────────────────
+  echo -n "[2/5] Container in esecuzione... "
+  local ps_out
+  ps_out=$(${SSH_CMD} "docker ps --format '{{.Names}}|{{.Status}}'" 2>/dev/null)
+  local all_up=true
+  for svc in rideops-postgres rideops-backend rideops-frontend rideops-nginx; do
+    if ! echo "${ps_out}" | grep -q "^${svc}|Up"; then
+      echo -e "${RED}PROBLEMA${RESET}"
+      _warn "Container non healthy: ${svc}"
+      echo "→ Stato:"
+      ${SSH_CMD} "docker ps -a --format 'table {{.Names}}\t{{.Status}}' | grep rideops"
+      echo ""
+      echo "→ Azione rapida:"
+      echo "   ./scripts/rideops.sh restart ${svc##rideops-}"
+      echo "   ./scripts/rideops.sh logs ${svc##rideops-} 50"
+      all_up=false
+      issues=$((issues+1))
+    fi
+  done
+  [[ "${all_up}" == true ]] && echo -e "${GREEN}OK${RESET}"
+
+  # ── 3. Health database ───────────────────────────────────────────────────
+  echo -n "[3/5] Database healthy... "
+  local db_status
+  db_status=$(${SSH_CMD} "docker inspect --format '{{.State.Health.Status}}' rideops-postgres 2>/dev/null || echo 'missing'")
+  if [[ "${db_status}" != "healthy" ]]; then
+    echo -e "${RED}${db_status}${RESET}"
+    _warn "Postgres non è healthy (stato: ${db_status})"
+    echo "→ Leggi i log: ./scripts/rideops.sh logs postgres 80"
+    echo "→ Ripristino da backup: ./scripts/rideops.sh db:restore"
+    issues=$((issues+1))
+  else
+    echo -e "${GREEN}OK${RESET}"
+  fi
+
+  # ── 4. HTTPS risponde ────────────────────────────────────────────────────
+  echo -n "[4/5] HTTPS risponde (rideops.it)... "
+  local http_code
+  http_code=$(curl -o /dev/null -s -w "%{http_code}" --max-time 8 "https://rideops.it/" 2>/dev/null || echo "000")
+  if [[ "${http_code}" != "200" && "${http_code}" != "301" && "${http_code}" != "302" ]]; then
+    echo -e "${RED}HTTP ${http_code}${RESET}"
+    _warn "Il sito non risponde correttamente (codice: ${http_code})"
+    echo "→ Verifica nginx: ./scripts/rideops.sh logs nginx 50"
+    echo "→ Verifica SSL:   ssh root@${SSH_HOST} 'certbot certificates'"
+    echo "→ Fix cert:       ssh root@${SSH_HOST} 'bash /opt/rideops/scripts/copy_ssl_and_reload_nginx.sh'"
+    issues=$((issues+1))
+  else
+    echo -e "${GREEN}HTTP ${http_code}${RESET}"
+  fi
+
+  # ── 5. Spazio disco ──────────────────────────────────────────────────────
+  echo -n "[5/5] Spazio disco... "
+  local disk_pct
+  disk_pct=$(${SSH_CMD} "df / | awk 'NR==2{print \$5}' | tr -d '%'" 2>/dev/null || echo "0")
+  if [[ "${disk_pct}" -ge 85 ]]; then
+    echo -e "${RED}${disk_pct}% usato${RESET}"
+    _warn "Disco quasi pieno (${disk_pct}%)"
+    echo "→ Pulizia immagini: ssh root@${SSH_HOST} 'docker image prune -f'"
+    echo "→ Pulizia backup:   ssh root@${SSH_HOST} 'find /opt/rideops/backups -mtime +3 -delete'"
+    issues=$((issues+1))
+  else
+    echo -e "${GREEN}${disk_pct}% usato${RESET}"
+  fi
+
+  # ── Riepilogo ────────────────────────────────────────────────────────────
+  echo ""
+  if [[ "${issues}" -eq 0 ]]; then
+    _ok "Tutto OK — nessun problema rilevato."
+  else
+    _warn "${issues} problema/i rilevato/i. Segui le istruzioni sopra."
+    echo "   Per la guida completa: docs/DISASTER_RECOVERY.md"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Comando: dr:rebuild <NUOVO_IP> — rebuild completo su un nuovo server Hetzner
+# Eseguire SOLO se il server originale è irrecuperabile.
+# ---------------------------------------------------------------------------
+cmd_dr_rebuild() {
+  local new_ip="${1:-}"
+  if [[ -z "${new_ip}" ]]; then
+    _err "Specifica l'IP del nuovo server: ./scripts/rideops.sh dr:rebuild <NUOVO_IP>"
+    exit 1
+  fi
+
+  local new_ssh="ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no root@${new_ip}"
+  local new_scp="scp -i ${SSH_KEY} -o StrictHostKeyChecking=no"
+  local new_rsync="rsync -avz -e 'ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no'"
+
+  _header "Disaster Recovery — Rebuild su ${new_ip}"
+  _warn   "ATTENZIONE: questo script configura un nuovo server da zero."
+  echo    "Server target: root@${new_ip}"
+  echo ""
+  read -rp "Sei sicuro di voler procedere? [s/N] " confirm
+  [[ "${confirm,,}" != "s" ]] && { echo "Annullato."; exit 0; }
+
+  # ── Step 1: Verifica connessione ────────────────────────────────────────
+  _header "[1/7] Verifica connessione SSH al nuovo server"
+  if ! ${new_ssh} "echo 'SSH OK'" 2>/dev/null; then
+    _err "Impossibile connettersi a root@${new_ip}. Verifica che:"
+    echo "  - Il server sia avviato e raggiungibile"
+    echo "  - La tua chiave SSH (${SSH_KEY}) sia autorizzata sul nuovo server"
+    exit 1
+  fi
+  _ok "Connessione OK"
+
+  # ── Step 2: Installa dipendenze base (Docker, Certbot, UFW) ─────────────
+  _header "[2/7] Installazione dipendenze (Docker, Certbot, UFW, fail2ban)"
+  ${new_scp} scripts/server/install.sh "root@${new_ip}:/tmp/install.sh"
+  ${new_ssh} "bash /tmp/install.sh"
+  _ok "Setup base completato"
+
+  # ── Step 3: Crea struttura directory ────────────────────────────────────
+  _header "[3/7] Creazione struttura /opt/rideops"
+  ${new_ssh} "mkdir -p /opt/rideops/{nginx/conf.d,backups,scripts/server,logs,certs}"
+  _ok "Directory create"
+
+  # ── Step 4: Copia file di configurazione ────────────────────────────────
+  _header "[4/7] Copia file di configurazione dal repository locale"
+  rsync -avz -e "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no" \
+    nginx/ "root@${new_ip}:/opt/rideops/nginx/"
+  rsync -avz -e "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no" \
+    scripts/server/ "root@${new_ip}:/opt/rideops/scripts/server/"
+  rsync -avz -e "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no" \
+    scripts/copy_ssl_and_reload_nginx.sh "root@${new_ip}:/opt/rideops/scripts/"
+  ${new_scp} docker-compose.prod.yml "root@${new_ip}:/opt/rideops/docker-compose.prod.yml"
+  ${new_ssh} "chmod +x /opt/rideops/scripts/server/*.sh /opt/rideops/scripts/*.sh"
+  _ok "File copiati"
+
+  # ── Step 5: File .env ────────────────────────────────────────────────────
+  _header "[5/7] Configurazione .env"
+  echo ""
+  _warn "Devi creare manualmente il file /opt/rideops/.env sul nuovo server."
+  echo "Contiene le credenziali di produzione (DB password, JWT secret, ecc.)."
+  echo ""
+  echo "Template:"
+  cat << 'TEMPLATE'
+POSTGRES_DB=rideops
+POSTGRES_USER=rideops
+POSTGRES_PASSWORD=<SEGRETO>
+JWT_SECRET=<SEGRETO>
+JWT_EXPIRATION_SECONDS=3600
+ADMIN_EMAIL=<EMAIL>
+ADMIN_PASSWORD=<SEGRETO>
+ADMIN_USER_ID=1
+GHCR_IMAGE_PREFIX=ghcr.io/lucioaleotta
+IMAGE_TAG=latest
+TEMPLATE
+  echo ""
+  read -rp "Premi INVIO dopo aver creato /opt/rideops/.env sul server (con 'chmod 600 .env')..." _
+  if ! ${new_ssh} "test -f /opt/rideops/.env"; then
+    _err "File .env non trovato. Crealo prima di continuare."
+    exit 1
+  fi
+  _ok ".env trovato"
+
+  # ── Step 6: Pull immagini e avvio stack ─────────────────────────────────
+  _header "[6/7] Login GHCR, pull immagini, avvio stack"
+  local ghcr_token
+  read -rsp "Inserisci il GHCR_TOKEN (GitHub Personal Access Token con read:packages): " ghcr_token
+  echo ""
+  ${new_ssh} "echo '${ghcr_token}' | docker login ghcr.io -u lucioaleotta --password-stdin"
+  ${new_ssh} "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env pull"
+  ${new_ssh} "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env up -d"
+  _ok "Stack avviato"
+
+  # ── Step 7: Ripristino DB + cron backup ─────────────────────────────────
+  _header "[7/7] Ripristino database e cron backup"
+  echo ""
+  echo "Vuoi ripristinare il database da un backup locale?"
+  read -rp "Percorso backup locale (es. /path/to/rideops_20260415.sql.gz) [lascia vuoto per saltare]: " backup_path
+  if [[ -n "${backup_path}" && -f "${backup_path}" ]]; then
+    local remote_tmp="/tmp/$(basename "${backup_path}")"
+    ${new_scp} "${backup_path}" "root@${new_ip}:${remote_tmp}"
+    ${new_ssh} "bash /opt/rideops/scripts/server/restore.sh ${remote_tmp}"
+    ${new_ssh} "rm -f ${remote_tmp}"
+    _ok "Database ripristinato"
+  else
+    _warn "Nessun backup ripristinato — il DB parte vuoto (Flyway applica le migrazioni al primo avvio)."
+  fi
+
+  # Installa cron backup sul nuovo server
+  SSH_HOST="${new_ip}" ${SSH_CMD/root@${SSH_HOST}/root@${new_ip}} bash << 'REMOTE'
+    CRON_LINE="0 2 * * * /opt/rideops/scripts/server/backup.sh >> /opt/rideops/logs/backup.log 2>&1"
+    mkdir -p /opt/rideops/logs
+    ( crontab -l 2>/dev/null | grep -v "backup.sh"; echo "$CRON_LINE" ) | crontab -
+REMOTE
+  _ok "Cron backup installato"
+
+  # ── Riepilogo finale ─────────────────────────────────────────────────────
+  echo ""
+  echo -e "${BOLD}${GREEN}╔══════════════════════════════════════════════════╗${RESET}"
+  echo -e "${BOLD}${GREEN}║   Rebuild completato su ${new_ip}   ║${RESET}"
+  echo -e "${BOLD}${GREEN}╚══════════════════════════════════════════════════╝${RESET}"
+  echo ""
+  echo "Prossimi step MANUALI:"
+  echo "  1. Aggiorna DNS: record A di rideops.it → ${new_ip}"
+  echo "  2. Dopo propagazione DNS, ottieni SSL:"
+  echo "     SSH_HOST=${new_ip} ./scripts/rideops.sh ssl"
+  echo "  3. Aggiorna GitHub Secrets:"
+  echo "     HETZNER_HOST → ${new_ip}"
+  echo "  4. Verifica il sito: https://rideops.it"
+}
+
+# ---------------------------------------------------------------------------
 # Help
 # ---------------------------------------------------------------------------
 cmd_help() {
@@ -286,6 +512,11 @@ cmd_help() {
   echo -e "  ${BOLD}cron:backup${RESET}            Installa cron backup notturno (ore 02:00)"
   echo -e "  ${BOLD}ssl${RESET}                    Ottieni certificato Let's Encrypt + abilita HTTPS"
   echo -e "  ${BOLD}shell${RESET}                  Shell bash remota"
+  echo -e "  ${BOLD}sync-config${RESET}            Sincronizza nginx config dal repo al server"
+  echo ""
+  echo -e "${BOLD}Disaster Recovery:${RESET}"
+  echo -e "  ${BOLD}dr:check${RESET}               Diagnostica automatica: server, DB, HTTPS, disco"
+  echo -e "  ${BOLD}dr:rebuild${RESET} <IP>        Rebuild completo su nuovo server Hetzner"
   echo ""
   echo -e "Esempi:"
   echo -e "  ${CYAN}./scripts/rideops.sh ps${RESET}"
@@ -313,6 +544,8 @@ case "${1:-help}" in
   ssl)          cmd_ssl ;;
   shell)        cmd_shell ;;
   sync-config)  cmd_sync_config ;;
+  dr:check)     cmd_dr_check ;;
+  dr:rebuild)   cmd_dr_rebuild "${2:-}" ;;
   help|--help|-h) cmd_help ;;
   *)
     _err "Comando sconosciuto: ${1}"
