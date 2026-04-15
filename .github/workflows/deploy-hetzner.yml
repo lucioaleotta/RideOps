@@ -135,7 +135,7 @@ jobs:
           for i in {1..6}; do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://${{ secrets.HETZNER_HOST }}/ 2>/dev/null || echo "000")
             echo "Tentativo $i: HTTP $STATUS"
-            if [[ "$STATUS" == "200" || "$STATUS" == "308" || "$STATUS" == "302" ]]; then
+            if [[ "$STATUS" == "200" || "$STATUS" == "301" || "$STATUS" == "302" || "$STATUS" == "308" ]]; then
               echo "Health check OK"
               exit 0
             fi
