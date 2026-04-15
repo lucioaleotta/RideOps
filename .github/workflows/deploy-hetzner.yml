@@ -3,6 +3,19 @@ name: Deploy to Hetzner
 on:
   push:
     branches: [main]
+    # Ignora push che toccano solo file non-runtime.
+    # Best practice: paths-ignore è preferibile a paths quando la maggioranza
+    # dei file DEVE triggerare il deploy e si vogliono escludere poche eccezioni.
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".github/workflows/docs-ci.yml"
+      - ".github/workflows/backend-ci.yml"
+      - "CONTRIBUTING.md"
+      - "BRANCHING_STRATEGY.md"
+      - "QUICKSTART.md"
+      - "TESTING_STRATEGY.md"
+      - "TROUBLESHOOTING.md"
   workflow_dispatch:
     inputs:
       tag:
@@ -10,17 +23,56 @@ on:
         required: false
         default: ""
 
+# Concurrency guard: se arriva un nuovo push su main mentre il deploy precedente
+# è ancora in corso, lo annulla immediatamente.
+# Questo evita deploy "sovrapposti" e spreco di minuti CI.
+# Il gruppo è per branch, quindi workflow_dispatch manuali non si cancellano a vicenda.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────────
+  # 0. Detect quali parti del codice sono cambiate
+  # ─────────────────────────────────────────────────────────────────────────────
+  changes:
+    name: Detect changed paths
+    runs-on: ubuntu-latest
+    outputs:
+      backend:  ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      infra:    ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+      # dorny/paths-filter legge i file modificati nel commit/push e espone
+      # output booleani per ogni filtro. Consente di saltare job costosi
+      # (build Docker) se la parte corrispondente non è cambiata.
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            infra:
+              - 'nginx/**'
+              - 'docker-compose.prod.yml'
+              - 'scripts/server/**'
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # 1. Test backend
   # ─────────────────────────────────────────────────────────────────────────────
   test-backend:
     name: Test Backend
     runs-on: ubuntu-latest
+    needs: changes
+    # Salta i test se il backend non è cambiato (ma gira sempre su workflow_dispatch)
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -38,7 +90,18 @@ jobs:
   build-and-push:
     name: Build & Push Images
     runs-on: ubuntu-latest
-    needs: test-backend
+    needs: [changes, test-backend]
+    # Gira se almeno una delle due parti (o l'infra) è cambiata, oppure su dispatch.
+    # test-backend è in needs ma potrebbe essere stato skippato: usiamo result != 'failure'.
+    if: |
+      always() &&
+      needs.test-backend.result != 'failure' &&
+      (
+        needs.changes.outputs.backend  == 'true' ||
+        needs.changes.outputs.frontend == 'true' ||
+        needs.changes.outputs.infra    == 'true' ||
+        github.event_name == 'workflow_dispatch'
+      )
     permissions:
       contents: read
       packages: write
@@ -67,6 +130,8 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build & Push Backend
+        # Skippa se solo il frontend è cambiato
+        if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v5
         with:
           context: ./backend
@@ -79,6 +144,8 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Build & Push Frontend
+        # Skippa se solo il backend è cambiato
+        if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v5
         with:
           context: ./frontend

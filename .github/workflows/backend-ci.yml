@@ -12,6 +12,12 @@ on:
       - "backend/**"
       - ".github/workflows/backend-ci.yml"
 
+# Annulla run precedenti sullo stesso branch/PR se arriva un nuovo commit.
+# Su PR questo evita di sprecare minuti su commit intermedi di un force-push.
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
