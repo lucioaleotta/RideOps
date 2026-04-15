@@ -55,9 +55,7 @@ Le regole multi-tenant di RideOps sono obbligatorie per ogni nuova feature backe
 
 | File | Descrizione |
 |------|-------------|
-| [CI_CD_IMPLEMENTATION.md](CI_CD_IMPLEMENTATION.md) | Setup checklist per CI/CD (35 min) |
-| [GITHUB_OIDC_SETUP.md](docs/GITHUB_OIDC_SETUP.md) | OIDC Workload Identity Federation setup |
-| [GITHUB_ACTIONS_SETUP.md](docs/GITHUB_ACTIONS_SETUP.md) | GitHub Secrets & Variables configuration |
+| [CI_CD_IMPLEMENTATION.md](CI_CD_IMPLEMENTATION.md) | Pipeline Hetzner: architettura, secrets, operazioni manuali |
 
 ## 📋 Workflows GitHub Actions
 
@@ -65,10 +63,7 @@ Le regole multi-tenant di RideOps sono obbligatorie per ogni nuova feature backe
 
 | Workflow | Trigger | Azione |
 |----------|---------|--------|
-| `backend-ci.yml` | PR/Push to backend/ | Maven test |
-| `backend-cd.yml` | Merge to main / Manual | Build + Docker + Cloud Run |
-| `frontend-cd.yml` | Merge to main / Manual | Build + Docker + Cloud Run |
-| `docs-ci.yml` | PR to docs/ | Markdown validation |
+| `deploy-hetzner.yml` | Push/merge su `main` + manuale | Test → Build GHCR → SCP config → SSH deploy VPS |
 
 ## 🏗️ Project Structure
 

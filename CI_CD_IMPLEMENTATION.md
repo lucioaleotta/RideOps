@@ -1,6 +1,135 @@
-# CI/CD Implementation Checklist
+# CI/CD Implementation
 
-Implementazione completa di CI/CD con GitHub Actions + Google Cloud.
+Implementazione CI/CD con GitHub Actions + Hetzner VPS + GHCR.
+
+## ✅ Architettura attuale
+
+### Workflow GitHub Actions
+
+| File | Trigger | Azione |
+|------|---------|--------|
+| `.github/workflows/deploy-hetzner.yml` | Push/merge su `main` + `workflow_dispatch` | Test → Build → Push GHCR → Deploy VPS |
+
+### Pipeline Steps (deploy-hetzner.yml)
+
+```
+push a main
+    │
+    ├─ [1] test-backend
+    │       └─ mvn -q test -B (Java 21, Temurin)
+    │
+    ├─ [2] build-and-push  (needs: test-backend)
+    │       ├─ docker/setup-buildx-action
+    │       ├─ docker/login-action → ghcr.io
+    │       ├─ build + push rideops-backend:{sha} + :latest
+    │       └─ build + push rideops-frontend:{sha} + :latest
+    │
+    └─ [3] deploy  (needs: build-and-push, environment: production)
+            ├─ actions/checkout
+            ├─ appleboy/scp-action → /opt/rideops/ (scripts + config)
+            ├─ appleboy/ssh-action → pull-and-restart.sh {sha}
+            │       ├─ docker login ghcr.io  (GHCR_TOKEN + GHCR_USER via envs)
+            │       ├─ docker compose pull backend frontend
+            │       ├─ cp -fL certs da /etc/letsencrypt/live/rideops.it/
+            │       ├─ docker compose up -d --no-deps postgres (+ health wait)
+            │       └─ docker compose up -d --no-deps backend frontend nginx
+            └─ health check (6× curl https://rideops.it)
+```
+
+---
+
+## 🔑 Secrets GitHub richiesti
+
+Vai a: Repository → Settings → Secrets and variables → **Secrets**
+
+| Secret | Valore |
+|--------|--------|
+| `HETZNER_HOST` | `91.98.196.151` |
+| `HETZNER_SSH_KEY` | Chiave SSH privata (root del VPS) |
+
+> `GITHUB_TOKEN` è automatico — usato come `GHCR_TOKEN` per il login al registry.
+
+---
+
+## 📁 File di configurazione sincronizzati ad ogni deploy
+
+La pipeline copia automaticamente sul server i seguenti file prima di eseguire il deploy:
+
+| File locale | Destinazione server |
+|-------------|---------------------|
+| `scripts/server/pull-and-restart.sh` | `/opt/rideops/scripts/server/` |
+| `scripts/copy_ssl_and_reload_nginx.sh` | `/opt/rideops/scripts/` |
+| `nginx/conf.d/rideops.conf` | `/opt/rideops/nginx/conf.d/` |
+| `nginx/nginx.conf` | `/opt/rideops/nginx/` |
+| `docker-compose.prod.yml` | `/opt/rideops/` |
+
+---
+
+## 🔒 SSL / Certificati
+
+- Certificati Let's Encrypt in `/etc/letsencrypt/live/rideops.it/`
+- Copiati in `/opt/rideops/certs/` ad ogni deploy (tramite `pull-and-restart.sh`)
+- Montati in nginx come `/etc/nginx/certs/` (volume read-only)
+- **Rinnovo automatico** via certbot deploy-hook: `/etc/letsencrypt/renewal-hooks/deploy/rideops.sh`
+
+---
+
+## 🛠️ Operazioni manuali sul server
+
+### Riavvio nginx (e.g. dopo modifica config)
+```bash
+ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env restart nginx"
+```
+
+### Rinnovo manuale certificati
+```bash
+ssh root@91.98.196.151 "certbot renew --dry-run"
+```
+
+### Verifica stato container
+```bash
+ssh root@91.98.196.151 "docker ps -a --format 'table {{.Names}}\t{{.Status}}'"
+```
+
+### Log nginx
+```bash
+ssh root@91.98.196.151 "docker logs rideops-nginx --tail 50"
+```
+
+### Log backend
+```bash
+ssh root@91.98.196.151 "docker logs rideops-backend --tail 100"
+```
+
+---
+
+## 📊 Architettura pipeline
+
+```
+GitHub (main branch)
+    │
+    ├─ [PR aperta]
+    │      └─ test-backend (mvn test)
+    │
+    └─ [Merge a main / workflow_dispatch]
+           └─ GitHub Actions (deploy-hetzner.yml)
+                  ├─ test backend ✅
+                  ├─ build + push images → GHCR ✅
+                  ├─ scp scripts/config → Hetzner ✅
+                  ├─ ssh: pull-and-restart.sh ✅
+                  └─ health check https://rideops.it ✅
+
+GHCR (ghcr.io/lucioaleotta/)
+    ├─ rideops-backend:{sha} + :latest
+    └─ rideops-frontend:{sha} + :latest
+
+Hetzner VPS (91.98.196.151)
+    └─ Docker Compose (prod)
+           ├─ nginx:1.27-alpine      ← :80/:443
+           ├─ rideops-frontend:latest ← :3000 (interno)
+           ├─ rideops-backend:latest  ← :8080 (interno)
+           └─ postgres:16-alpine      ← :5432 (interno)
+```
 
 ## ✅ Cosa è stato fatto
 

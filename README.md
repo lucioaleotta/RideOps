@@ -4,12 +4,13 @@ Monorepo con:
 - `backend`: Spring Boot Java 21 + Maven
 - `frontend`: Next.js App Router (login + middleware ruoli)
 
-## CI (GitHub Actions)
+## CI/CD (GitHub Actions → Hetzner VPS)
 
-È attiva una pipeline backend su push e pull request verso `main`.
+Pipeline attiva su push e merge a `main`.
 
-- workflow: `.github/workflows/backend-ci.yml`
-- check principale: build Maven + test (`mvn -B verify`)
+- workflow: `.github/workflows/deploy-hetzner.yml`
+- check: test Maven → build Docker → push GHCR → deploy SSH su VPS
+- produzione: **https://rideops.it**
 
 ## Avvio con Docker Compose (dev)
 

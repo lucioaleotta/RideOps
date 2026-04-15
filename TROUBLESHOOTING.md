@@ -13,9 +13,10 @@ Guida per diagnosticare e risolvere problemi comuni durante sviluppo, testing, e
 5. [Authentication & Authorization](#authentication--authorization)
 6. [Frontend Issues](#frontend-issues)
 7. [Backend Issues](#backend-issues)
-8. [Cloud Deployment](#cloud-deployment)
-9. [Git & CI/CD](#git--cicd)
-10. [Performance Issues](#performance-issues)
+8. [Production (Hetzner VPS)](#production-hetzner-vps)
+9. [SSL & Nginx](#ssl--nginx)
+10. [Git & CI/CD](#git--cicd)
+11. [Performance Issues](#performance-issues)
 
 ---
 
@@ -940,144 +941,108 @@ log.error("User not found for ID: {}", userId);
 
 ---
 
-## Cloud Deployment
+## Production (Hetzner VPS)
 
-### Problem: `gcloud: command not found`
+### Problem: Container in crash loop (`restarting`)
 
-**Symptoms:** Shell says gcloud not installed.
+**Symptoms:** `docker ps` mostra status `Restarting`.
 
 **Solution:**
 ```bash
-# 1. Install Google Cloud CLI
-# macOS:
-brew install --cask google-cloud-sdk
+# 1. Ferma il container per poter leggere i log
+ssh root@91.98.196.151 "docker compose -f /opt/rideops/docker-compose.prod.yml --env-file /opt/rideops/.env stop nginx"
 
-# Linux:
-curl https://sdk.cloud.google.com | bash
+# 2. Leggi i log
+ssh root@91.98.196.151 "docker logs rideops-nginx --tail 50"
 
-# 2. Initialize
-gcloud init
-
-# 3. Verify
-gcloud --version
+# 3. Riavvia dopo fix
+ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps nginx"
 ```
 
-### Problem: `Permission denied: googleapis.com`
+### Problem: Postgres in stato `Created` (non avviato)
 
-**Symptoms:** `gcloud run deploy` says "User does not have 'run.admin' permission"
+**Symptoms:** Backend non si connette al DB, log mostra `UnknownHostException: postgres`.
 
 **Solution:**
 ```bash
-# 1. Verify you're authenticated
-gcloud auth list
-
-# 2. Set correct project
-gcloud config set project rideops-489909
-
-# 3. Verify your role
-gcloud projects get-iam-policy rideops-489909 \
-  --flatten="bindings[].members" \
-  --filter="bindings.members:user:your-email@"
-
-# 4. If missing role, ask admin to grant:
-# - Cloud Run Admin
-# - Service Account User
-
-# 5. Reauth
-gcloud auth login
-gcloud auth application-default login
+ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env up -d postgres"
+# Attendi ~15 secondi, poi riavvia il backend
+ssh root@91.98.196.151 "cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps backend"
 ```
 
-### Problem: `Deployment timeout or fails silently`
+### Problem: Variabili GHCR_TOKEN/GHCR_USER non definite nello script
 
-**Symptoms:** `gcloud run deploy` hangs or exits without error.
+**Symptoms:** `pull-and-restart.sh: GHCR_TOKEN: unbound variable`
+
+**Cause:** Lo script viene eseguito manualmente sul server senza le variabili d'ambiente.
 
 **Solution:**
 ```bash
-# 1. Check deployment status
-gcloud run describe rideops-backend --region europe-west1
-
-# 2. View recent revisions
-gcloud run revisions list --service rideops-backend --region europe-west1
-
-# 3. Check image exists in Artifact Registry
-gcloud artifacts docker images list europe-west1-docker.pkg.dev/rideops-489909/rideops/
-
-# 4. Deploy with more verbose output
-gcloud run deploy rideops-backend \
-  --image ... \
-  --verbosity=debug
-
-# 5. Check Cloud Run quotas
-gcloud compute project-info describe --project rideops-489909 | grep -A 5 "limits"
-
-# 6. Check deployment service limits
-# Cloud Run → Services → rideops-backend → View details
+# Non eseguire pull-and-restart.sh direttamente sul server —
+# è progettato per essere invocato dalla pipeline GitHub Actions.
+# Per un deploy manuale urgente usa workflow_dispatch su GitHub Actions.
 ```
 
-### Problem: `Image not found in Artifact Registry`
+---
 
-**Symptoms:** Deploy fails: "image not found"
+## SSL & Nginx
+
+### Problem: `cannot load certificate /etc/nginx/certs/fullchain.pem`
+
+**Symptoms:** Nginx non parte, log mostra errore SSL BIO_new_file().
+
+**Cause:** I certificati non sono in `/opt/rideops/certs/` sul server host.
 
 **Solution:**
 ```bash
-# 1. Verify image built and pushed
-gcloud artifacts docker images list \
-  europe-west1-docker.pkg.dev/rideops-489909/rideops/
-
-# 2. List tags for specific image
-gcloud artifacts docker images list \
-  europe-west1-docker.pkg.dev/rideops-489909/rideops/backend
-
-# 3. Build and push manually
-docker build -t europe-west1-docker.pkg.dev/rideops-489909/rideops/backend:latest .
-docker push europe-west1-docker.pkg.dev/rideops-489909/rideops/backend:latest
-
-# 4. Verify push succeeded
-# Check Artifact Registry UI
-# Or: gcloud artifacts ... list
-
-# 5. Use full image path in deploy
-gcloud run deploy rideops-backend \
-  --image europe-west1-docker.pkg.dev/rideops-489909/rideops/backend:latest
+ssh root@91.98.196.151 "
+  mkdir -p /opt/rideops/certs && \
+  cp -fL /etc/letsencrypt/live/rideops.it/fullchain.pem /opt/rideops/certs/ && \
+  cp -fL /etc/letsencrypt/live/rideops.it/privkey.pem /opt/rideops/certs/ && \
+  chmod 644 /opt/rideops/certs/fullchain.pem && \
+  chmod 600 /opt/rideops/certs/privkey.pem && \
+  cd /opt/rideops && docker compose -f docker-compose.prod.yml --env-file .env up -d --force-recreate --no-deps nginx
+"
 ```
 
-### Problem: `Service returns 503 Service Unavailable`
+> **Nota:** Il flag `-L` è fondamentale — i file in `/etc/letsencrypt/live/` sono symlink. Senza `-L` si copia il symlink invece del file reale.
 
-**Symptoms:** `https://rideops-backend-*.run.app/actuator/health` returns 503.
+### Problem: Certificato scaduto
+
+**Symptoms:** Browser mostra "certificato non valido", errore `ERR_CERT_DATE_INVALID`.
 
 **Solution:**
 ```bash
-# 1. Check service status
-gcloud run describe rideops-backend --region europe-west1 | grep -i status
+# Verifica scadenza
+ssh root@91.98.196.151 "certbot certificates"
 
-# 2. View recent logs
-gcloud run logs read rideops-backend --region europe-west1 --limit 50
+# Rinnovo manuale
+ssh root@91.98.196.151 "certbot renew"
 
-# 3. Look for error messages
-# Common: database connection failed, missing env vars
-# Look for: DatabaseException, ClassNotFoundException
+# Il deploy-hook si occupa automaticamente di copiare i nuovi cert e riavviare nginx
+# Verifica che il hook esista:
+ssh root@91.98.196.151 "cat /etc/letsencrypt/renewal-hooks/deploy/rideops.sh"
+```
 
-# 4. Check environment variables
-gcloud run services describe rideops-backend --region europe-west1
+### Problem: Nginx risponde in HTTP ma non in HTTPS
 
-# 5. Verify required env vars are set
-# SPRING_DATASOURCE_URL, SPRING_DATASOURCE_PASSWORD, etc.
+**Symptoms:** `curl http://rideops.it` funziona, `curl https://rideops.it` timeout.
 
-# 6. Update env vars if needed
-gcloud run services update rideops-backend \
-  --set-env-vars SPRING_DATASOURCE_URL=... \
-  --region europe-west1
+**Troubleshoot:**
+```bash
+# 1. Verifica porta 443 aperta sul firewall Hetzner (Cloud Console → Firewall)
+# 2. Verifica nginx ascolti su :443
+ssh root@91.98.196.151 "docker exec rideops-nginx nginx -T | grep listen"
 
-# 7. Wait for new revision to deploy
-# Monitor: gcloud run services describe ... --region=...
+# 3. Testa SSL con openssl
+openssl s_client -connect rideops.it:443 -servername rideops.it
 ```
 
 ---
 
 ## Git & CI/CD
 
-### Problem: `GitHub Actions workflow fails without clear error`
+### Problem: GitHub Actions workflow fails without clear error
 
 **Symptoms:** PR shows red X but log is unclear.
 
@@ -1087,12 +1052,12 @@ gcloud run services update rideops-backend \
 # Actions tab → Click failed workflow
 
 # 2. Expand steps to find which failed
-# Usually last step before "Failed"
 
 # 3. Common failures:
 # - Tests failed (scroll to test output)
 # - Docker build failed (look for build error)
-# - Deploy failed (check gcloud error)
+# - scp-action: file path not found (check source paths nel workflow)
+# - ssh-action: GHCR_TOKEN unbound (verifica envs: nel workflow)
 
 # 4. Run locally to reproduce
 npm run test:ci  # Frontend tests

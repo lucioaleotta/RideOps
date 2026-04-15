@@ -130,14 +130,14 @@ RideOps è un sistema completamente distribuito per la gestione del ride sharing
 
 | Layer | Technology | Purpose |
 |:---|:---|:---|
-| Cloud | Google Cloud Platform | Managed services |
-| Compute | Cloud Run | Serverless container execution |
-| Registry | Artifact Registry | Container image storage |
-| Database | Cloud SQL PostgreSQL | Managed relational DB |
-| Auth | Identity Platform | OAuth 2.0 / OIDC |
-| CI/CD | GitHub Actions | Automated testing + deployment |
-| DNS | Cloud DNS | Domain routing |
-| CDN | Cloud CDN | Cache static assets |
+| VPS | Hetzner CX23 (NBG1, EU) | Server host (x86, 4GB RAM, 40GB) |
+| Compute | Docker Compose | Container orchestration |
+| Reverse Proxy | Nginx 1.27-alpine | TLS termination, routing HTTP→HTTPS |
+| Registry | GHCR (GitHub Container Registry) | Container image storage |
+| Database | PostgreSQL 16-alpine (Docker) | Relational DB |
+| SSL | Let's Encrypt + Certbot | Certificati TLS gratuiti (rinnovo auto) |
+| CI/CD | GitHub Actions | Automated testing + deployment via SSH |
+| DNS | Registro dominio | Routing su 91.98.196.151 |
 
 ### Development Stack
 
@@ -807,7 +807,7 @@ public class AuthController {
 
 ---
 
-## Deployment Architecture
+### Deployment Architecture
 
 ### Local Development
 
@@ -829,75 +829,60 @@ public class AuthController {
 │ └─────────────────────────────┘│
 │                                │
 │ npm run dev (Frontend)         │
-│ Browser: http://localhost:5173│
+│ Browser: http://localhost:5173 │
 └────────────────────────────────┘
 ```
 
-### Production (Google Cloud Run)
+### Production (Hetzner VPS)
 
 ```
-┌─────────────────────── Google Cloud Platform ────────────────────────┐
-│                                                                        │
-│  ┌── Cloud Load Balancer (HTTPS/TLS termination) ──┐                │
-│  │ https://rideops-frontend.run.app                │                │
-│  │ https://rideops-backend.run.app                 │                │
-│  └──────────────────────────────────────────────┬──┘                │
-│                                                  │                    │
-│  ┌─────────────────────┐      ┌───────────────────────┐             │
-│  │  Cloud Run:         │       │  Cloud Run:           │             │
-│  │  Frontend Service   │       │  Backend Service      │             │
-│  │  ┌───────────────┐  │       │  ┌─────────────────┐  │             │
-│  │  │ Next.js App  │  │       │  │ Spring Boot App │  │             │
-│  │  │ 4 instances  │  │       │  │ 2 instances     │  │             │
-│  │  │ Auto-scale   │  │       │  │ Auto-scale      │  │             │
-│  │  │ Concurrency:1│  │       │  │ Concurrency:100 │  │             │
-│  │  └───────────────┘  │       │  └────────┬────────┘  │             │
-│  └─────────────────────┘       └───────────┼───────────┘             │
-│           ▲                                │                          │
-│           │ (serves static)                │                          │
-│           │                                ▼                          │
-│  ┌────────────────────────────────────────────────────┐             │
-│  │  Cloud SQL: PostgreSQL 15                         │             │
-│  │  ├─ Managed database                             │             │
-│  │  ├─ Automated backups                            │             │
-│  │  ├─ Read replicas (optional)                     │             │
-│  │  └─ High availability (multi-zone)               │             │
-│  └────────────────────────────────────────────────────┘             │
-│                                                                        │
-│  ┌────────────────────────────────────────────────────┐             │
-│  │ Artifact Registry                                 │             │
-│  │ ├─ rideops/frontend:latest                        │             │
-│  │ └─ rideops/backend:latest                         │             │
-│  └────────────────────────────────────────────────────┘             │
-│                                                                        │
-│  ┌────────────────────────────────────────────────────┐             │
-│  │ Cloud IAM: Workload Identity Federation           │             │
-│  │ GitHub Actions OIDC token → GCP temporary token  │             │
-│  │ (Zero secrets in GitHub)                          │             │
-│  └────────────────────────────────────────────────────┘             │
-└────────────────────────────────────────────────────────────────────┘
+┌─────────────────────── Hetzner VPS (91.98.196.151) ──────────────────────────┐
+│                                                                                │
+│  ┌── Nginx 1.27-alpine ──────────────────────────────────────────────────┐   │
+│  │  :80  → redirect 301 → HTTPS                                          │   │
+│  │  :443 → TLS 1.2/1.3 (Let's Encrypt rideops.it)                       │   │
+│  │         /          → proxy → frontend:3000                            │   │
+│  │         /api/*     → proxy → backend:8080                             │   │
+│  │         /actuator  → 403 (bloccato)                                   │   │
+│  └────────────────────────────────────────────────────────────────────────┘   │
+│                                                                                │
+│  ┌───────────────────┐    ┌──────────────────────┐    ┌─────────────────┐    │
+│  │ Frontend          │    │ Backend               │    │ PostgreSQL 16   │    │
+│  │ Next.js           │    │ Spring Boot 3         │    │                 │    │
+│  │ Container :3000   │    │ Container :8080       │    │ Container :5432 │    │
+│  │ (frontend-net)    │    │ (frontend-net         │    │ (backend-net)   │    │
+│  └───────────────────┘    │  + backend-net)       │    │ Volume: data    │    │
+│                           └──────────────────────┘    └─────────────────┘    │
+│                                                                                │
+│  /opt/rideops/certs/         ← fullchain.pem + privkey.pem (da Let's Encrypt) │
+│  /etc/letsencrypt/           ← Certbot store (rinnovo automatico via hook)    │
+└────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Continuous Deployment Pipeline
 
 ```
-1. Developer pushes to main
+1. Developer fa push/merge su main
    │
    ▼
-2. GitHub Actions triggered
-   ├─ Runs tests (npm test:ci, mvn verify)
-   ├─ Builds Docker images
-   │  ├─ backend:main
-   │  └─ frontend:main
-   └─ Push to Artifact Registry
+2. GitHub Actions (deploy-hetzner.yml) triggered
+   ├─ Job: test-backend   → mvn test
+   ├─ Job: build-and-push → build Docker images
+   │   ├─ rideops-backend:{sha}  → GHCR
+   │   └─ rideops-frontend:{sha} → GHCR
+   └─ Job: deploy
+       ├─ scp-action: sincronizza scripts + config → /opt/rideops/
+       └─ ssh-action: esegue pull-and-restart.sh
+           ├─ docker login ghcr.io
+           ├─ docker compose pull backend frontend
+           ├─ cp -fL certs da /etc/letsencrypt/live/
+           ├─ postgres health check
+           └─ docker compose up -d backend frontend nginx
    │
    ▼
-3. Deploy Frontend Service
-   ├─ Update Cloud Run service
-   ├─ Deploy new image revision
-   └─ Run smoke tests
-   │
-   ▼
+3. Health check (6 tentativi × 10s)
+   └─ curl https://rideops.it → HTTP 200/302/308
+```
 4. Deploy Backend Service
    ├─ Run database migrations (Flyway)
    ├─ Update Cloud Run service

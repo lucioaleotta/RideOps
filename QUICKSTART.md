@@ -148,23 +148,16 @@ git pull origin main
 
 ### Option A: Automatic (Recommended)
 - Merge PR to `main` branch
-- CI/CD pipeline auto-deploys
-- Watch: GitHub Actions tab
+- CI/CD pipeline auto-deploys to Hetzner VPS
+- Watch: GitHub Actions tab → `deploy-hetzner.yml`
 
-### Option B: Manual Deploy
-```bash
-# Backend
-gcloud run deploy rideops-backend \
-  --image europe-west1-docker.pkg.dev/rideops-489909/rideops/backend:latest \
-  --platform managed \
-  --region europe-west1
+### Option B: Manual Deploy via `workflow_dispatch`
+1. Vai a: GitHub → Actions → `Deploy to Hetzner`
+2. Clicca "Run workflow"
+3. Inserisci opzionalmente un image tag specifico
 
-# Frontend
-gcloud run deploy rideops-frontend \
-  --image europe-west1-docker.pkg.dev/rideops-489909/rideops/frontend:latest \
-  --platform managed \
-  --region europe-west1
-```
+### Production URL
+- **https://rideops.it**
 
 ---
 
