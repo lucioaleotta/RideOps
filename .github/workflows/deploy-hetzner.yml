@@ -99,7 +99,18 @@ jobs:
     needs: build-and-push
     environment: production
     steps:
+      - uses: actions/checkout@v4
 
+      - name: Sincronizza script e config sul server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host:     ${{ secrets.HETZNER_HOST }}
+          username: root
+          key:      ${{ secrets.HETZNER_SSH_KEY }}
+          port:     22
+          source:   "scripts/server/pull-and-restart.sh,scripts/copy_ssl_and_reload_nginx.sh,nginx/conf.d/rideops.conf,nginx/nginx.conf,docker-compose.prod.yml"
+          target:   "/opt/rideops"
+          strip_components: 0
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
