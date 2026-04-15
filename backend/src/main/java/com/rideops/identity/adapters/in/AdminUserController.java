@@ -20,8 +20,10 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -127,10 +129,17 @@ public class AdminUserController {
     }
 
     @GetMapping("/journal")
-    public List<UserAdminAuditLogDto> listJournal(String date, String adminUserId) {
+    public List<UserAdminAuditLogDto> listJournal(@RequestParam(required = false) String date,
+                                                   @RequestParam(required = false) String adminUserId) {
         LocalDate dateFilter = null;
         if (date != null && !date.isBlank()) {
-            dateFilter = LocalDate.parse(date.trim());
+            try {
+                dateFilter = LocalDate.parse(date.trim());
+            } catch (DateTimeParseException e) {
+                // SECURITY: non propagare eccezione raw al client (CWE-755 / stack trace leakage)
+                throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Formato data non valido, usare YYYY-MM-DD");
+            }
         }
         return listUserAdminAuditLogUseCase.execute(dateFilter, adminUserId);
     }

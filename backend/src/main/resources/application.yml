@@ -28,7 +28,10 @@ server:
 
 security:
   jwt:
-    secret: ${JWT_SECRET:change-this-secret-change-this-secret-2026}
+    # SECURITY: JWT_SECRET DEVE essere una stringa Base64 di 32 byte casuali (256 bit).
+    # Generare con: openssl rand -base64 32
+    # Nessun fallback: l'applicazione fallisce al boot se la variabile non e' impostata.
+    secret: ${JWT_SECRET}
     expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}
 
 rideops:
@@ -36,4 +39,5 @@ rideops:
     admin:
       user-id: ${ADMIN_USER_ID:admin}
       email: ${ADMIN_EMAIL:admin@rideops.local}
-      password: ${ADMIN_PASSWORD:ChangeMe123!}
+      # SECURITY: nessun default. L'app fallisce al boot se ADMIN_PASSWORD non e' impostata.
+      password: ${ADMIN_PASSWORD}

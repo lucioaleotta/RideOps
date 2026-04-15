@@ -88,7 +88,9 @@ public class PasswordResetService {
         outbox.setBody(body);
         outboxRepository.save(outbox);
 
-        LOGGER.info("Password reset requested for {}. Stub link: {}", user.getEmail(), resetPath);
+        // SECURITY: non loggare mai il token raw né l'email utente per evitare
+        // CWE-532 (token nei log) e CWE-117 (log injection via email).
+        LOGGER.info("Password reset token generated for userId={}", user.getId());
     }
 
     private String hash(String rawToken) {

@@ -28,7 +28,9 @@ public class SecurityConfig {
 
     @Bean
     PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        // SECURITY: cost factor 12 per resistere a hardware moderno (OWASP raccomanda >= 12).
+        // TRADE-OFF: login ~300ms invece di ~100ms su hardware standard. Accettabile.
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
