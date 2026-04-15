@@ -108,10 +108,14 @@ jobs:
           username: root
           key:      ${{ secrets.HETZNER_SSH_KEY }}
           port:     22
+          envs:     GHCR_TOKEN,GHCR_USER,IMAGE_TAG
           script: |
             cd /opt/rideops
             export IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
             bash /opt/rideops/scripts/server/pull-and-restart.sh "$IMAGE_TAG"
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER:  ${{ github.actor }}
 
       - name: Health check
         run: |
