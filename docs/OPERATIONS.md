@@ -2,6 +2,8 @@
 
 Questa guida raccoglie tutti i comandi utili per monitorare, gestire e manutenere il server di produzione RideOps su Hetzner.
 
+> In caso di emergenza, consulta direttamente [DISASTER_RECOVERY.md](DISASTER_RECOVERY.md).
+
 ---
 
 ## Accesso rapido
