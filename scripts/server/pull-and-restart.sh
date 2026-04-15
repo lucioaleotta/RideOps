@@ -23,6 +23,20 @@ echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
 echo "--- Pull immagini ---"
 docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" pull backend frontend
 
+echo "--- Sincronizzazione certificati SSL ---"
+CERT_DIR="${RIDEOPS_DIR}/certs"
+LE_LIVE="/etc/letsencrypt/live/rideops.it"
+mkdir -p "${CERT_DIR}"
+if [[ -f "${LE_LIVE}/fullchain.pem" ]]; then
+    cp -f "${LE_LIVE}/fullchain.pem" "${CERT_DIR}/fullchain.pem"
+    cp -f "${LE_LIVE}/privkey.pem"   "${CERT_DIR}/privkey.pem"
+    chmod 644 "${CERT_DIR}/fullchain.pem"
+    chmod 600 "${CERT_DIR}/privkey.pem"
+    echo "Certificati copiati da ${LE_LIVE} in ${CERT_DIR}."
+else
+    echo "ATTENZIONE: certificati non trovati in ${LE_LIVE}. Nginx potrebbe non avviarsi."
+fi
+
 echo "--- Riavvio container (zero-downtime: postgres non tocca) ---"
 docker compose -f "${COMPOSE_FILE}" --env-file "${ENV_FILE}" \
     up -d --no-deps backend frontend nginx

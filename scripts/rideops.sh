@@ -4,9 +4,19 @@
 # ---------------------------------------------------------------------------
 cmd_sync_config() {
   _header "Sincronizzazione file di configurazione Nginx sul server"
+  # Crea le cartelle di destinazione se non esistono
+  ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no ${SSH_USER}@${SSH_HOST} "mkdir -p ${RIDEOPS_DIR}/nginx/conf.d"
+
+  # Copia nginx.conf nella cartella nginx
   rsync -avz -e "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no" \
-    ./nginx/nginx.conf ./nginx/conf.d/ \
-    ${SSH_USER}@${SSH_HOST}:${RIDEOPS_DIR}/nginx/
+    ./nginx/nginx.conf \
+    ${SSH_USER}@${SSH_HOST}:${RIDEOPS_DIR}/nginx/nginx.conf
+
+  # Copia rideops.conf nella sottocartella conf.d
+  rsync -avz -e "ssh -i ${SSH_KEY} -o StrictHostKeyChecking=no" \
+    ./nginx/conf.d/rideops.conf \
+    ${SSH_USER}@${SSH_HOST}:${RIDEOPS_DIR}/nginx/conf.d/rideops.conf
+
   _ok "Configurazione aggiornata!"
 }
 #!/usr/bin/env bash
