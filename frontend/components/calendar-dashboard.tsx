@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeftIcon, ArrowRightIcon, ButtonContent, LockIcon, OpenIcon, SelectIcon, TodayIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
@@ -27,6 +27,8 @@ type ServiceItem = {
   itinerary: string | null;
   status: ServiceStatus;
   assignedDriverId: number | null;
+  assignedVehicleId: number | null;
+  serviceAssignmentType: 'INTERNAL' | 'OUTSOURCED' | 'INCOMING';
   assignedByUserId: number | null;
   assignedAt: string | null;
   createdAt: string;
@@ -42,6 +44,11 @@ type DriverItem = {
   role: string;
   enabled: boolean;
   createdAt: string;
+};
+
+type VehicleItem = {
+  id: number;
+  plate: string;
 };
 
 type FilterState = {
@@ -116,12 +123,112 @@ type CalendarDashboardProps = {
   driverMode?: boolean;
 };
 
+function CalClockIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" strokeLinecap="round" />
+    </svg>
+  );
+}
+function CalPinIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M12 21C12 21 5 13.5 5 8.5a7 7 0 0 1 14 0C19 13.5 12 21 12 21Z" /><circle cx="12" cy="8.5" r="2.5" />
+    </svg>
+  );
+}
+function CalUserIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" /><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" strokeLinecap="round" />
+    </svg>
+  );
+}
+function CalCarIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <rect x="2" y="11" width="20" height="8" rx="2" /><path d="M5 11l2.5-5h9L19 11" /><circle cx="7" cy="19" r="1.5" fill="currentColor" /><circle cx="17" cy="19" r="1.5" fill="currentColor" />
+    </svg>
+  );
+}
+function CalEuroIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M17 6.5A7 7 0 1 0 17 17.5M5 10h9M5 14h9" strokeLinecap="round" />
+    </svg>
+  );
+}
+function CalDocIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-4-4H8Z" /><path d="M14 4v4h4M9 13h6M9 17h4" strokeLinecap="round" />
+    </svg>
+  );
+}
+function CalPhoneIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.27 19a19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 14 15.91l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function CalMailIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <rect x="2" y="4" width="20" height="16" rx="2" /><path d="m2 7 10 7 10-7" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function CalPeopleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <circle cx="9" cy="7" r="3.5" /><circle cx="17" cy="8" r="2.5" />
+      <path d="M2 20c0-3.3 3.1-6 7-6s7 2.7 7 6" strokeLinecap="round" /><path d="M17 14c2.2.5 4 2.3 4 4" strokeLinecap="round" />
+    </svg>
+  );
+}
+function CalPrintIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
+    </svg>
+  );
+}
+function CalClipboardIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M9 12h6M9 16h4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CalDetailRow({ icon, label, value, bold = false }: { icon: ReactNode; label: string; value: ReactNode; bold?: boolean }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+      <span style={{ color: 'var(--color-primary, #1565c0)', marginTop: 2, flexShrink: 0, width: 18, display: 'flex', justifyContent: 'center' }}>
+        {icon}
+      </span>
+      <div>
+        <div style={{ fontSize: '0.68rem', color: 'var(--color-text-secondary, #7f8ea3)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1.2 }}>
+          {label}
+        </div>
+        <div style={{ fontSize: '0.88rem', fontWeight: bold ? 700 : 400, marginTop: 2, lineHeight: 1.4 }}>
+          {value}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const calDetailDivider = <hr style={{ border: 'none', borderTop: '1px solid #dce8f5', margin: '10px 0' }} />;
+
 export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps) {
   const [view, setView] = useState<ViewMode>('month');
   const [cursorDate, setCursorDate] = useState(() => startOfDay(new Date()));
   const [filters, setFilters] = useState<FilterState>(filtersDefault);
 
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
+  const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
 
@@ -167,6 +274,23 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
     }
 
     loadDrivers();
+  }, [driverMode]);
+
+  useEffect(() => {
+    if (driverMode) {
+      return;
+    }
+
+    async function loadVehicles() {
+      const response = await fetch('/api/gestionale/vehicles', { cache: 'no-store' });
+      const payload = (await response.json().catch(() => [])) as VehicleItem[] | { message?: string };
+      if (!response.ok) {
+        return;
+      }
+      setVehicles(payload as VehicleItem[]);
+    }
+
+    loadVehicles();
   }, [driverMode]);
 
   useEffect(() => {
@@ -327,6 +451,30 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
 
   function gotoToday() {
     setCursorDate(startOfDay(new Date()));
+  }
+
+  function statusLabel(status: ServiceStatus) {
+    if (status === 'OPEN') return 'Aperto';
+    if (status === 'ASSIGNED') return 'Assegnato';
+    if (status === 'EXECUTED') return 'Eseguito';
+    return 'Chiuso';
+  }
+
+  function statusClass(status: ServiceStatus) {
+    if (status === 'OPEN') return 'open';
+    if (status === 'ASSIGNED') return 'assigned';
+    if (status === 'EXECUTED') return 'executed';
+    return 'closed';
+  }
+
+  function typeLabel(type: ServiceType) {
+    return type === 'TRANSFER' ? 'Transfer' : 'Tour';
+  }
+
+  function vehicleLabel(vehicleId: number | null) {
+    if (!vehicleId) return '—';
+    const found = vehicles.find((v) => v.id === vehicleId);
+    return found ? found.plate : `#${vehicleId}`;
   }
 
   function moveRange(direction: -1 | 1) {
@@ -573,35 +721,80 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
           </article>
 
           <article className="dashboard-card calendar-detail">
-            <h3 style={{ marginTop: 0 }}>Dettaglio servizio</h3>
-            {!selectedService && <p>Seleziona un servizio dal calendario.</p>}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <span style={{ color: 'var(--color-primary, #1565c0)', display: 'flex' }}><CalClipboardIcon /></span>
+              <strong style={{ fontSize: '1.05rem' }}>Dettaglio servizio</strong>
+            </div>
+
+            {!selectedService && (
+              <p style={{ color: 'var(--color-text-secondary, #7f8ea3)', fontSize: '0.88rem' }}>
+                Seleziona un servizio dal calendario.
+              </p>
+            )}
+
             {selectedService && (
-              <div style={{ display: 'grid', gap: 8 }}>
-                <div><strong>Quando:</strong> {new Date(selectedService.startAt).toLocaleString('it-IT')}</div>
-                <div><strong>Pickup:</strong> {selectedService.pickupLocation}</div>
-                <div><strong>Destinazione:</strong> {selectedService.destination}</div>
-                <div><strong>Tipologia:</strong> {selectedService.type}</div>
-                <div><strong>Stato:</strong> {selectedService.status}</div>
-                <div>
-                  <strong>Driver:</strong>{' '}
-                  {selectedServiceDriverLabel === 'Non Assegnato a Driver' ? (
-                    <span style={{ background: '#ffd8a8', padding: '2px 6px', borderRadius: 6 }}>
-                      {selectedServiceDriverLabel}
+              <div>
+                {/* Chips stato / tipo / rif */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                  <span className={`services-selected-chip services-selected-chip-status ${statusClass(selectedService.status)}`}>
+                    {statusLabel(selectedService.status)}
+                  </span>
+                  <span className="services-selected-chip services-selected-chip-type">
+                    {typeLabel(selectedService.type)}
+                  </span>
+                  {selectedService.internalBookingReference && (
+                    <span className="services-selected-chip" style={{ background: '#f0f4f9', color: '#4a5568', border: '1px solid #dce8f5' }}>
+                      {selectedService.internalBookingReference}
                     </span>
-                  ) : (
-                    selectedServiceDriverLabel
                   )}
                 </div>
-                <div><strong>Prezzo:</strong> {formatCurrencyEUR(selectedService.price)}</div>
-                <div><strong>Rif. int.:</strong> {selectedService.internalBookingReference ?? '-'}</div>
-                <div><strong>Rif. est.:</strong> {selectedService.externalBookingReference ?? '-'}</div>
-                <div><strong>Cliente:</strong> {selectedService.clientName ?? '-'}</div>
-                <div><strong>Tel.:</strong> {selectedService.clientPhone ?? '-'}</div>
-                <div><strong>Email:</strong> {selectedService.clientEmail ?? '-'}</div>
-                <div><strong>Passeggeri:</strong> {selectedService.passengersCount ?? '-'}</div>
-                <div><strong>Itinerario:</strong> {selectedService.itinerary ?? '-'}</div>
-                <div className="table-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <Link className="logout-button" href={`/services/${selectedService.id}/print`} target="_blank"><ButtonContent icon={<OpenIcon />}>Apri dettaglio stampa</ButtonContent></Link>
+
+                {/* Sezione logistica */}
+                <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
+                  <CalDetailRow icon={<CalClockIcon />} label="Quando" value={new Date(selectedService.startAt).toLocaleString('it-IT')} />
+                  <CalDetailRow icon={<CalPinIcon />} label="Pickup" value={selectedService.pickupLocation} />
+                  <CalDetailRow icon={<CalPinIcon />} label="Destinazione" value={selectedService.destination} />
+                </div>
+
+                {calDetailDivider}
+
+                {/* Sezione assegnazione */}
+                <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
+                  <CalDetailRow icon={<CalUserIcon />} label="Driver" value={selectedServiceDriverLabel} />
+                  <CalDetailRow icon={<CalCarIcon />} label="Veicolo" value={vehicleLabel(selectedService.assignedVehicleId)} />
+                  <CalDetailRow icon={<CalEuroIcon />} label="Prezzo" value={formatCurrencyEUR(selectedService.price)} bold />
+                </div>
+
+                {calDetailDivider}
+
+                {/* Sezione riferimenti */}
+                <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
+                  <CalDetailRow icon={<CalDocIcon />} label="Rif. interno" value={selectedService.internalBookingReference ?? '—'} />
+                  <CalDetailRow icon={<CalDocIcon />} label="Rif. esterno" value={selectedService.externalBookingReference != null ? String(selectedService.externalBookingReference) : '—'} />
+                </div>
+
+                {calDetailDivider}
+
+                {/* Sezione cliente */}
+                <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
+                  <CalDetailRow icon={<CalUserIcon />} label="Cliente" value={selectedService.clientName ?? '—'} />
+                  <CalDetailRow icon={<CalPhoneIcon />} label="Telefono" value={selectedService.clientPhone ?? '—'} />
+                  <CalDetailRow icon={<CalMailIcon />} label="Email" value={selectedService.clientEmail ?? '—'} />
+                  <CalDetailRow icon={<CalPeopleIcon />} label="Passeggeri" value={selectedService.passengersCount != null ? String(selectedService.passengersCount) : '—'} />
+                </div>
+
+                {calDetailDivider}
+
+                {/* Azioni */}
+                <div style={{ display: 'grid', gap: 8 }}>
+                  <Link
+                    className="logout-button"
+                    href={`/services/${selectedService.id}/print`}
+                    target="_blank"
+                    style={{ display: 'flex', justifyContent: 'center' }}
+                  >
+                    <ButtonContent icon={<CalPrintIcon />}>Apri dettaglio stampa</ButtonContent>
+                  </Link>
                   {driverMode && canDriverCloseSelectedService && (
                     <button
                       type="button"

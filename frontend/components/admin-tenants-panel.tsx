@@ -365,7 +365,7 @@ export function AdminTenantsPanel() {
     setSubmitting(false);
 
     if (!response.ok) {
-      setError((payload as { message?: string }).message ?? (isEdit ? 'Aggiornamento fallito' : 'Creazione tenant fallita'));
+      setError((payload as { message?: string }).message ?? (isEdit ? 'Aggiornamento fallito' : 'Creazione cliente fallita'));
       return;
     }
 
@@ -373,11 +373,11 @@ export function AdminTenantsPanel() {
       const updated = payload as TenantItem;
       setTenants((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
       setSelectedTenant(updated);
-      setSuccess(`Tenant ${updated.businessName} aggiornato`);
+      setSuccess(`Cliente ${updated.businessName} aggiornato`);
     } else {
       const provisioning = payload as ProvisioningPayload;
       setLastProvisioning(provisioning);
-      setSuccess(`Tenant ${provisioning.tenant.businessName} creato correttamente`);
+      setSuccess(`Cliente ${provisioning.tenant.businessName} creato correttamente`);
     }
 
     setIsModalOpen(false);
@@ -404,7 +404,7 @@ export function AdminTenantsPanel() {
     const updated = payload as TenantItem;
     setTenants((prev) => prev.map((tenant) => (tenant.id === updated.id ? updated : tenant)));
     if (selectedTenant?.id === updated.id) setSelectedTenant(updated);
-    setSuccess(`Tenant ${updated.businessName}: stato aggiornato a ${updated.status}`);
+    setSuccess(`Cliente ${updated.businessName}: stato aggiornato a ${updated.status}`);
   }
 
   return (
@@ -413,13 +413,13 @@ export function AdminTenantsPanel() {
         <div className="tenant-title-wrap">
           <div className="tenant-title-icon" aria-hidden="true">🏢</div>
           <div>
-            <h2 className="tenant-title">Gestione Tenant</h2>
-            <p className="tenant-subtitle">{tenants.length} tenant registrati</p>
+            <h2 className="tenant-title">Gestione Clienti</h2>
+            <p className="tenant-subtitle">{tenants.length} clienti registrati</p>
           </div>
         </div>
 
         <button type="button" className="primary-button" onClick={openCreateModal}>
-          <ButtonContent icon={<AddIcon />}>Nuovo Tenant</ButtonContent>
+          <ButtonContent icon={<AddIcon />}>Nuovo Cliente</ButtonContent>
         </button>
       </header>
 
@@ -543,12 +543,12 @@ export function AdminTenantsPanel() {
       </article>
 
       {isModalOpen && (
-        <div className="tenant-modal-overlay" role="dialog" aria-modal="true" aria-label={editingTenantId !== null ? 'Modifica Tenant' : 'Nuovo Tenant'}>
+        <div className="tenant-modal-overlay" role="dialog" aria-modal="true" aria-label={editingTenantId !== null ? 'Modifica Cliente' : 'Nuovo Cliente'}>
           <article className="tenant-modal-card">
             <header className="tenant-modal-header">
               <div>
-                <h3>{editingTenantId !== null ? 'Modifica Tenant' : 'Nuovo Tenant'}</h3>
-                <p>{editingTenantId !== null ? 'Modifica i dati del tenant selezionato.' : 'Compila i dati per creare un nuovo tenant. Un utente gestionale verra creato automaticamente.'}</p>
+                <h3>{editingTenantId !== null ? 'Modifica Cliente' : 'Nuovo Cliente'}</h3>
+                <p>{editingTenantId !== null ? 'Modifica i dati del cliente selezionato.' : 'Compila i dati per creare un nuovo cliente. Un utente gestionale verrà creato automaticamente.'}</p>
               </div>
               <button type="button" className="tenant-modal-close" onClick={closeModal} aria-label="Chiudi modal">x</button>
             </header>
@@ -729,7 +729,7 @@ export function AdminTenantsPanel() {
                   <ButtonContent icon={<SaveIcon />}>
                     {submitting
                       ? (editingTenantId !== null ? 'Salvataggio...' : 'Creazione...')
-                      : (editingTenantId !== null ? 'Salva Modifiche' : 'Crea Tenant')}
+                      : (editingTenantId !== null ? 'Salva Modifiche' : 'Crea Cliente')}
                   </ButtonContent>
                 </button>
               </footer>

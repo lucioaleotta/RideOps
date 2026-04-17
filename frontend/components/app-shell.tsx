@@ -14,8 +14,8 @@ type Role = 'ADMIN' | 'GESTIONALE' | 'DRIVER';
 const menuItems = [
   { href: '/app', label: 'Home', icon: '🏠', roles: ['GESTIONALE', 'DRIVER'] as Role[] },
   { href: '/app/admin-home', label: 'Dashboard', icon: '📊', roles: ['ADMIN'] as Role[] },
-  { href: '/app/admin', label: 'Admin', icon: '🛡️', roles: ['ADMIN'] as Role[] },
-  { href: '/app/admin/tenants', label: 'Tenant', icon: '🏢', roles: ['ADMIN'] as Role[] },
+  { href: '/app/admin', label: 'User Admin', icon: '🛡️', roles: ['ADMIN'] as Role[] },
+  { href: '/app/admin/tenants', label: 'Clienti', icon: '🏢', roles: ['ADMIN'] as Role[] },
   { href: '/app/services', label: 'Servizi', icon: '🧾', roles: ['GESTIONALE'] as Role[] },
   { href: '/app/finance', label: 'Finanza', icon: '💶', roles: ['GESTIONALE'] as Role[] },
   { href: '/app/fleet', label: 'Parco mezzi', icon: '🚙', roles: ['GESTIONALE'] as Role[] },

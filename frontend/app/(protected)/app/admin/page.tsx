@@ -20,7 +20,7 @@ export default function AdminPage() {
       </div>
       <div style={{ marginBottom: 20 }}>
         <Link href="/app/admin/tenants" className="primary-button">
-          <span style={{ marginRight: 6 }}>→</span> Vai a Gestione Tenant
+          <span style={{ marginRight: 6 }}>→</span> Vai a Gestione Clienti
         </Link>
       </div>
       <AdminUsersPanel />
