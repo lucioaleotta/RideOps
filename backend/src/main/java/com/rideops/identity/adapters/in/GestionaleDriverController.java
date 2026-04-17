@@ -62,7 +62,11 @@ public class GestionaleDriverController {
     @ResponseStatus(HttpStatus.CREATED)
     public UserSummaryDto createDriver(@Valid @RequestBody CreateDriverRequest request,
                                        @AuthenticationPrincipal IdentityUserDetails principal) {
-        return createUserUseCase.execute(toCreateCommand(request, principal.getTenantId()));
+        return createUserUseCase.execute(
+            toCreateCommand(request, principal.getTenantId()),
+            principal.getUserId(),
+            principal.getId()
+        );
     }
 
     @PutMapping("/{driverId}")

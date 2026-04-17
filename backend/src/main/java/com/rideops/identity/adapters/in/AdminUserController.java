@@ -72,7 +72,8 @@ public class AdminUserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserSummaryDto createUser(@Valid @RequestBody CreateUserRequest request) {
+    public UserSummaryDto createUser(@Valid @RequestBody CreateUserRequest request,
+                                     @AuthenticationPrincipal IdentityUserDetails principal) {
         return createUserUseCase.execute(
             new CreateUserCommand(
                 request.userId(),
@@ -88,26 +89,46 @@ public class AdminUserController {
                 null,
                 null,
                 null
-            )
+            ),
+            principal == null ? "unknown" : principal.getUserId(),
+            principal == null ? null : principal.getId()
         );
     }
 
     @PatchMapping("/{userId}/role")
     public UserSummaryDto updateRole(@PathVariable Long userId,
-                                     @Valid @RequestBody UpdateRoleRequest request) {
-        return updateUserRoleUseCase.execute(userId, request.role());
+                                     @Valid @RequestBody UpdateRoleRequest request,
+                                     @AuthenticationPrincipal IdentityUserDetails principal) {
+        return updateUserRoleUseCase.execute(
+            userId,
+            request.role(),
+            principal == null ? "unknown" : principal.getUserId(),
+            principal == null ? null : principal.getId()
+        );
     }
 
     @PatchMapping("/{userId}/enabled")
     public UserSummaryDto updateEnabled(@PathVariable Long userId,
-                                        @Valid @RequestBody UpdateEnabledRequest request) {
-        return setUserEnabledUseCase.execute(userId, request.enabled());
+                                        @Valid @RequestBody UpdateEnabledRequest request,
+                                        @AuthenticationPrincipal IdentityUserDetails principal) {
+        return setUserEnabledUseCase.execute(
+            userId,
+            request.enabled(),
+            principal == null ? "unknown" : principal.getUserId(),
+            principal == null ? null : principal.getId()
+        );
     }
 
     @PatchMapping("/{userId}/temporary-password")
     public UserSummaryDto setTemporaryPassword(@PathVariable Long userId,
-                                               @Valid @RequestBody SetTemporaryPasswordRequest request) {
-        return setTemporaryPasswordUseCase.execute(userId, request.temporaryPassword());
+                                               @Valid @RequestBody SetTemporaryPasswordRequest request,
+                                               @AuthenticationPrincipal IdentityUserDetails principal) {
+        return setTemporaryPasswordUseCase.execute(
+            userId,
+            request.temporaryPassword(),
+            principal == null ? "unknown" : principal.getUserId(),
+            principal == null ? null : principal.getId()
+        );
     }
 
     @PatchMapping("/{userId}")

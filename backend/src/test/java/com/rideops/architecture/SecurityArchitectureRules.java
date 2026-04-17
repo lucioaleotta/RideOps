@@ -1,7 +1,5 @@
 package com.rideops.architecture;
 
-import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
@@ -209,7 +207,7 @@ public class SecurityArchitectureRules {
             .layer("Repositories").definedBy(REPOSITORIES)
             .layer("Config").definedBy(CONFIG)
             .whereLayer("Controllers").mayOnlyAccessLayers("Services", "Config")
-            .whereLayer("Repositories").mayNotAccessLayers("Controllers")
+            .whereLayer("Repositories").mayOnlyBeAccessedByLayers("Services")
             .because("L'architettura a strati garantisce che i controlli di sicurezza " +
                      "nel service layer non possano essere bypassati (CWE-284 / OWASP A01)");
 }

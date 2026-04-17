@@ -1,5 +1,6 @@
 package com.rideops.identity.application.admin;
 
+import com.rideops.identity.adapters.out.UserAdminAuditLogEntity;
 import com.rideops.identity.adapters.out.UserEntity;
 import com.rideops.identity.domain.UserRole;
 import java.time.LocalDate;
@@ -26,15 +27,18 @@ public class CreateUserUseCase {
         Pattern.compile("^[+0-9][0-9\\s-]{7,30}$");
 
     private final UserAdminRepositoryPort userAdminRepositoryPort;
+    private final UserAdminAuditLogPort userAdminAuditLogPort;
     private final PasswordEncoder passwordEncoder;
 
     public CreateUserUseCase(UserAdminRepositoryPort userAdminRepositoryPort,
+                             UserAdminAuditLogPort userAdminAuditLogPort,
                              PasswordEncoder passwordEncoder) {
         this.userAdminRepositoryPort = userAdminRepositoryPort;
+        this.userAdminAuditLogPort = userAdminAuditLogPort;
         this.passwordEncoder = passwordEncoder;
     }
 
-    public UserSummaryDto execute(CreateUserCommand command) {
+    public UserSummaryDto execute(CreateUserCommand command, String adminUserId, Long adminUserDbId) {
         String userId = normalizeUserId(command.userId());
         String email = normalizeEmail(command.email());
         validateUserId(userId);
@@ -70,7 +74,19 @@ public class CreateUserUseCase {
         userEntity.setMobilePhone(profile.mobilePhone());
         userEntity.setLicenseExpiryDate(profile.licenseExpiryDate());
 
-        return UserAdminMapper.toDto(userAdminRepositoryPort.save(userEntity));
+        UserEntity saved = userAdminRepositoryPort.save(userEntity);
+
+        UserAdminAuditLogEntity audit = new UserAdminAuditLogEntity();
+        audit.setTenantId(saved.getTenantId());
+        audit.setTargetUserId(saved.getId());
+        audit.setTargetUserIdValue(saved.getUserId());
+        audit.setAdminUserId(adminUserDbId);
+        audit.setAdminUserIdValue((adminUserId == null || adminUserId.isBlank()) ? "unknown" : adminUserId);
+        audit.setAction("CREATE_USER");
+        audit.setChangedFields("userId,email,role,password");
+        userAdminAuditLogPort.save(audit);
+
+        return UserAdminMapper.toDto(saved);
     }
 
     DriverProfile validateAndBuildProfile(CreateUserCommand command) {

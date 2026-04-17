@@ -14,7 +14,7 @@ public class ListUserAdminAuditLogUseCase {
     }
 
     public List<UserAdminAuditLogDto> execute(LocalDate dateFilter, String adminUserIdFilter) {
-        return userAdminAuditLogPort.findLatest(10, dateFilter, adminUserIdFilter)
+        return userAdminAuditLogPort.findLatest(20, dateFilter, adminUserIdFilter)
             .stream()
             .map(entry -> new UserAdminAuditLogDto(
                 entry.getId(),

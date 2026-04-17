@@ -85,6 +85,8 @@ backend_start_local() {
     DB_PASSWORD="${POSTGRES_PASSWORD:-rideops}" \
     SERVER_PORT=8080 \
     SPRING_PROFILES_ACTIVE=dev \
+    JWT_SECRET="${JWT_SECRET:-dGVzdC1sb2NhbC1zZWNyZXQta2V5LWRldi1vbmx5LTMyYnl0ZXM=}" \
+    ADMIN_PASSWORD="${ADMIN_PASSWORD:-ChangeMe123!}" \
     nohup mvn spring-boot:run -Djacoco.skip=true > "$backend_log" 2>&1 &
     echo $! > "$BACKEND_PID_FILE"
   )
