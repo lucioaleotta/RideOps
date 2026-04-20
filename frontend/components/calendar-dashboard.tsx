@@ -49,6 +49,8 @@ type DriverItem = {
 type VehicleItem = {
   id: number;
   plate: string;
+  type: string | null;
+  notes: string | null;
 };
 
 type FilterState = {
@@ -282,7 +284,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
     }
 
     async function loadVehicles() {
-      const response = await fetch('/api/gestionale/vehicles', { cache: 'no-store' });
+      const response = await fetch('/api/fleet/vehicles', { cache: 'no-store' });
       const payload = (await response.json().catch(() => [])) as VehicleItem[] | { message?: string };
       if (!response.ok) {
         return;
@@ -397,9 +399,9 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
 
     const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(' ').trim();
     if (fullName) {
-      return `${fullName} (${driver.userId || driver.email})`;
+      return fullName;
     }
-    return driver.userId || driver.email;
+    return driver.email;
   }, [driverMode, selectedService, drivers]);
 
   const servicesByDay = useMemo(() => {
@@ -474,7 +476,9 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
   function vehicleLabel(vehicleId: number | null) {
     if (!vehicleId) return '—';
     const found = vehicles.find((v) => v.id === vehicleId);
-    return found ? found.plate : `#${vehicleId}`;
+    if (!found) return `#${vehicleId}`;
+    const description = found.notes?.trim() || found.type || null;
+    return description ? `${found.plate} - ${description}` : found.plate;
   }
 
   function moveRange(direction: -1 | 1) {
@@ -517,14 +521,18 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
           width: '100%',
           textAlign: 'left',
           marginTop: 4,
-          background: isSelected ? '#d7eafe' : '#e8f2fd'
+          background: isSelected ? '#d7eafe' : '#e8f2fd',
+          overflow: 'hidden',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'flex-start'
         }}
       >
-        <ButtonContent icon={<SelectIcon />}>
+        <span className="button-icon" aria-hidden="true" style={{ flexShrink: 0 }}><SelectIcon /></span>
+        <span style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
           <strong>{new Date(service.startAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</strong>
-          {' · '}
-          {service.pickupLocation}
-        </ButtonContent>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.85em', color: 'var(--muted)' }}>{service.pickupLocation}</span>
+        </span>
       </button>
     );
   }
@@ -550,7 +558,8 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                   border: '1px solid #dce8f5',
                   borderRadius: 10,
                   padding: 6,
-                  minHeight: 120,
+                  height: 120,
+                  overflow: 'hidden',
                   background: outOfMonth ? '#f5f8fc' : 'white',
                   opacity: outOfMonth ? 0.75 : 1
                 }}
@@ -572,7 +581,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
         {weekDays.map((day, index) => {
           const dayServices = getServicesForDate(day);
           return (
-            <div key={day.toISOString()} style={{ border: '1px solid #dce8f5', borderRadius: 10, padding: 8, minHeight: 180 }}>
+            <div key={day.toISOString()} style={{ border: '1px solid #dce8f5', borderRadius: 10, padding: 8, height: 180, overflow: 'hidden' }}>
               <div style={{ fontWeight: 700, marginBottom: 6 }}>
                 {WEEKDAY_LABELS[index]} {day.getDate()}
               </div>
