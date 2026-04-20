@@ -17,7 +17,10 @@ import org.junit.jupiter.api.Test;
 
 class JwtTenantIsolationTest {
 
-    private static final String SECRET = "rideops-secret-for-tests-should-be-long-enough";
+    // JwtService expects a Base64-encoded secret (decoded at startup)
+    private static final String SECRET_RAW = "rideops-secret-for-tests-should-be-long-enough";
+    private static final String SECRET = java.util.Base64.getEncoder()
+        .encodeToString(SECRET_RAW.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
     @Test
     void tokenContainsTenantClaim() {
@@ -52,7 +55,7 @@ class JwtTenantIsolationTest {
     }
 
     private Claims parseClaims(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(toBase64(SECRET)));
+        SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(SECRET));
         return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
     }
 
