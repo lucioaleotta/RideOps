@@ -25,20 +25,23 @@ class SetTemporaryPasswordUseCaseTest {
     private UserAdminRepositoryPort userAdminRepositoryPort;
 
     @Mock
+    private UserAdminAuditLogPort userAdminAuditLogPort;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     private SetTemporaryPasswordUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new SetTemporaryPasswordUseCase(userAdminRepositoryPort, passwordEncoder);
+        useCase = new SetTemporaryPasswordUseCase(userAdminRepositoryPort, userAdminAuditLogPort, passwordEncoder);
     }
 
     @Test
     void rejectInvalidTemporaryPassword() {
         UserAdminValidationException exception = assertThrows(
             UserAdminValidationException.class,
-            () -> useCase.execute(10L, "weak")
+            () -> useCase.execute(10L, "weak", "admin01", 1L)
         );
 
         assertEquals(
@@ -54,7 +57,7 @@ class SetTemporaryPasswordUseCaseTest {
 
         UserAdminNotFoundException exception = assertThrows(
             UserAdminNotFoundException.class,
-            () -> useCase.execute(11L, "TempPass1!")
+            () -> useCase.execute(11L, "TempPass1!", "admin01", 1L)
         );
 
         assertEquals("Utente non trovato", exception.getMessage());
@@ -73,10 +76,11 @@ class SetTemporaryPasswordUseCaseTest {
         when(passwordEncoder.encode("TempPass1!")).thenReturn("encoded-temp-password");
         when(userAdminRepositoryPort.save(userEntity)).thenReturn(userEntity);
 
-        UserSummaryDto dto = useCase.execute(12L, "TempPass1!");
+        UserSummaryDto dto = useCase.execute(12L, "TempPass1!", "admin01", 1L);
 
         assertEquals("encoded-temp-password", userEntity.getPasswordHash());
         assertEquals("driver01", dto.userId());
         verify(userAdminRepositoryPort).save(userEntity);
+        verify(userAdminAuditLogPort).save(any());
     }
 }
