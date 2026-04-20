@@ -47,11 +47,11 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       infra:    ${{ steps.filter.outputs.infra }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # dorny/paths-filter legge i file modificati nel commit/push e espone
       # output booleani per ogni filtro. Consente di saltare job costosi
       # (build Docker) se la parte corrispondente non è cambiata.
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -74,7 +74,7 @@ jobs:
     # Salta i test se il backend non è cambiato (ma gira sempre su workflow_dispatch)
     if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-java@v4
         with:
           java-version: "21"
@@ -108,7 +108,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.tag.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Determina tag immagine
         id: tag
@@ -162,7 +162,7 @@ jobs:
     needs: build-and-push
     environment: production
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Sincronizza script e config sul server
         uses: appleboy/scp-action@v0.1.7
