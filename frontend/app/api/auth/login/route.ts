@@ -40,10 +40,12 @@ export async function POST(request: Request) {
   const payload = (await loginResponse.json()) as LoginPayload;
   const decoded = decodeJwt(payload.accessToken);
 
+  const isProduction = process.env.NODE_ENV === 'production';
+  // TRADE-OFF: secure:false in development per HTTP locale; true in prod (HTTPS obbligatorio).
   cookies().set('access_token', payload.accessToken, {
     httpOnly: true,
-    secure: false,
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: 'strict',
     path: '/',
     maxAge: payload.expiresInSeconds
   });
@@ -51,8 +53,8 @@ export async function POST(request: Request) {
   if (decoded?.role && typeof decoded.role === 'string') {
     cookies().set('user_role', decoded.role, {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: 'strict',
       path: '/',
       maxAge: payload.expiresInSeconds
     });

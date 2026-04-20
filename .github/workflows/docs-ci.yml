@@ -30,6 +30,11 @@ on:
       - "TESTING_STRATEGY.md"
       - "TROUBLESHOOTING.md"
 
+# Nessun motivo di tenere in coda più run di lint/validazione Markdown.
+concurrency:
+  group: docs-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate-markdown:
     runs-on: ubuntu-latest

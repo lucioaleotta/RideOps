@@ -20,8 +20,10 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -70,7 +72,8 @@ public class AdminUserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserSummaryDto createUser(@Valid @RequestBody CreateUserRequest request) {
+    public UserSummaryDto createUser(@Valid @RequestBody CreateUserRequest request,
+                                     @AuthenticationPrincipal IdentityUserDetails principal) {
         return createUserUseCase.execute(
             new CreateUserCommand(
                 request.userId(),
@@ -86,26 +89,46 @@ public class AdminUserController {
                 null,
                 null,
                 null
-            )
+            ),
+            principal == null ? "unknown" : principal.getUserId(),
+            principal == null ? null : principal.getId()
         );
     }
 
     @PatchMapping("/{userId}/role")
     public UserSummaryDto updateRole(@PathVariable Long userId,
-                                     @Valid @RequestBody UpdateRoleRequest request) {
-        return updateUserRoleUseCase.execute(userId, request.role());
+                                     @Valid @RequestBody UpdateRoleRequest request,
+                                     @AuthenticationPrincipal IdentityUserDetails principal) {
+        return updateUserRoleUseCase.execute(
+            userId,
+            request.role(),
+            principal == null ? "unknown" : principal.getUserId(),
+            principal == null ? null : principal.getId()
+        );
     }
 
     @PatchMapping("/{userId}/enabled")
     public UserSummaryDto updateEnabled(@PathVariable Long userId,
-                                        @Valid @RequestBody UpdateEnabledRequest request) {
-        return setUserEnabledUseCase.execute(userId, request.enabled());
+                                        @Valid @RequestBody UpdateEnabledRequest request,
+                                        @AuthenticationPrincipal IdentityUserDetails principal) {
+        return setUserEnabledUseCase.execute(
+            userId,
+            request.enabled(),
+            principal == null ? "unknown" : principal.getUserId(),
+            principal == null ? null : principal.getId()
+        );
     }
 
     @PatchMapping("/{userId}/temporary-password")
     public UserSummaryDto setTemporaryPassword(@PathVariable Long userId,
-                                               @Valid @RequestBody SetTemporaryPasswordRequest request) {
-        return setTemporaryPasswordUseCase.execute(userId, request.temporaryPassword());
+                                               @Valid @RequestBody SetTemporaryPasswordRequest request,
+                                               @AuthenticationPrincipal IdentityUserDetails principal) {
+        return setTemporaryPasswordUseCase.execute(
+            userId,
+            request.temporaryPassword(),
+            principal == null ? "unknown" : principal.getUserId(),
+            principal == null ? null : principal.getId()
+        );
     }
 
     @PatchMapping("/{userId}")
@@ -127,10 +150,17 @@ public class AdminUserController {
     }
 
     @GetMapping("/journal")
-    public List<UserAdminAuditLogDto> listJournal(String date, String adminUserId) {
+    public List<UserAdminAuditLogDto> listJournal(@RequestParam(required = false) String date,
+                                                   @RequestParam(required = false) String adminUserId) {
         LocalDate dateFilter = null;
         if (date != null && !date.isBlank()) {
-            dateFilter = LocalDate.parse(date.trim());
+            try {
+                dateFilter = LocalDate.parse(date.trim());
+            } catch (DateTimeParseException e) {
+                // SECURITY: non propagare eccezione raw al client (CWE-755 / stack trace leakage)
+                throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Formato data non valido, usare YYYY-MM-DD");
+            }
         }
         return listUserAdminAuditLogUseCase.execute(dateFilter, adminUserId);
     }

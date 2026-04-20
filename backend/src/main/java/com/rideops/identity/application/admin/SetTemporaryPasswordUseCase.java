@@ -1,5 +1,6 @@
 package com.rideops.identity.application.admin;
 
+import com.rideops.identity.adapters.out.UserAdminAuditLogEntity;
 import java.util.regex.Pattern;
 import java.util.Objects;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,15 +13,18 @@ public class SetTemporaryPasswordUseCase {
         Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$");
 
     private final UserAdminRepositoryPort userAdminRepositoryPort;
+    private final UserAdminAuditLogPort userAdminAuditLogPort;
     private final PasswordEncoder passwordEncoder;
 
     public SetTemporaryPasswordUseCase(UserAdminRepositoryPort userAdminRepositoryPort,
+                                       UserAdminAuditLogPort userAdminAuditLogPort,
                                        PasswordEncoder passwordEncoder) {
         this.userAdminRepositoryPort = userAdminRepositoryPort;
+        this.userAdminAuditLogPort = userAdminAuditLogPort;
         this.passwordEncoder = passwordEncoder;
     }
 
-    public UserSummaryDto execute(Long userId, String rawTemporaryPassword) {
+    public UserSummaryDto execute(Long userId, String rawTemporaryPassword, String adminUserId, Long adminUserDbId) {
         Long targetUserId = Objects.requireNonNull(userId, "userId is required");
         validatePassword(rawTemporaryPassword);
 
@@ -28,7 +32,19 @@ public class SetTemporaryPasswordUseCase {
             .orElseThrow(() -> new UserAdminNotFoundException("Utente non trovato"));
 
         user.setPasswordHash(passwordEncoder.encode(rawTemporaryPassword));
-        return UserAdminMapper.toDto(userAdminRepositoryPort.save(user));
+        var saved = userAdminRepositoryPort.save(user);
+
+        UserAdminAuditLogEntity audit = new UserAdminAuditLogEntity();
+        audit.setTenantId(saved.getTenantId());
+        audit.setTargetUserId(saved.getId());
+        audit.setTargetUserIdValue(saved.getUserId());
+        audit.setAdminUserId(adminUserDbId);
+        audit.setAdminUserIdValue((adminUserId == null || adminUserId.isBlank()) ? "unknown" : adminUserId);
+        audit.setAction("SET_TEMPORARY_PASSWORD");
+        audit.setChangedFields("password");
+        userAdminAuditLogPort.save(audit);
+
+        return UserAdminMapper.toDto(saved);
     }
 
     private void validatePassword(String rawPassword) {

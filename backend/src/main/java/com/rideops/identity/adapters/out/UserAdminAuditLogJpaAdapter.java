@@ -35,37 +35,37 @@ public class UserAdminAuditLogJpaAdapter implements UserAdminAuditLogPort {
         if (tenantId == null) {
             // ADMIN cross-tenant: nessun filtro per tenant
             if (!hasAdminFilter && !hasDateFilter) {
-                return repository.findTop10ByOrderByCreatedAtDesc();
+                return repository.findTop20ByOrderByCreatedAtDesc();
             }
             if (hasAdminFilter && !hasDateFilter) {
-                return repository.findTop10ByAdminUserIdValueIgnoreCaseOrderByCreatedAtDesc(normalizedAdmin);
+                return repository.findTop20ByAdminUserIdValueIgnoreCaseOrderByCreatedAtDesc(normalizedAdmin);
             }
             LocalDateTime start = dateFilter.atStartOfDay();
             LocalDateTime end = dateFilter.plusDays(1).atStartOfDay().minusNanos(1);
             if (!hasAdminFilter) {
-                return repository.findTop10ByCreatedAtBetweenOrderByCreatedAtDesc(start, end);
+                return repository.findTop20ByCreatedAtBetweenOrderByCreatedAtDesc(start, end);
             }
-            return repository.findTop10ByAdminUserIdValueIgnoreCaseAndCreatedAtBetweenOrderByCreatedAtDesc(
+            return repository.findTop20ByAdminUserIdValueIgnoreCaseAndCreatedAtBetweenOrderByCreatedAtDesc(
                 normalizedAdmin, start, end);
         }
 
         // Utente con tenant: filtro per tenant
         if (!hasAdminFilter && !hasDateFilter) {
-            return repository.findTop10ByTenantIdOrderByCreatedAtDesc(tenantId);
+            return repository.findTop20ByTenantIdOrderByCreatedAtDesc(tenantId);
         }
 
         if (hasAdminFilter && !hasDateFilter) {
-            return repository.findTop10ByTenantIdAndAdminUserIdValueIgnoreCaseOrderByCreatedAtDesc(tenantId, normalizedAdmin);
+            return repository.findTop20ByTenantIdAndAdminUserIdValueIgnoreCaseOrderByCreatedAtDesc(tenantId, normalizedAdmin);
         }
 
         LocalDateTime start = dateFilter.atStartOfDay();
         LocalDateTime end = dateFilter.plusDays(1).atStartOfDay().minusNanos(1);
 
         if (!hasAdminFilter) {
-            return repository.findTop10ByTenantIdAndCreatedAtBetweenOrderByCreatedAtDesc(tenantId, start, end);
+            return repository.findTop20ByTenantIdAndCreatedAtBetweenOrderByCreatedAtDesc(tenantId, start, end);
         }
 
-        return repository.findTop10ByTenantIdAndAdminUserIdValueIgnoreCaseAndCreatedAtBetweenOrderByCreatedAtDesc(
+        return repository.findTop20ByTenantIdAndAdminUserIdValueIgnoreCaseAndCreatedAtBetweenOrderByCreatedAtDesc(
             tenantId,
             normalizedAdmin,
             start,

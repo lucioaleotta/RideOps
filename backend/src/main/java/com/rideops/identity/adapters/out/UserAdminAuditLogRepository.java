@@ -6,16 +6,16 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserAdminAuditLogRepository extends JpaRepository<UserAdminAuditLogEntity, Long> {
 
-    List<UserAdminAuditLogEntity> findTop10ByTenantIdOrderByCreatedAtDesc(Long tenantId);
+    List<UserAdminAuditLogEntity> findTop20ByTenantIdOrderByCreatedAtDesc(Long tenantId);
 
-    List<UserAdminAuditLogEntity> findTop10ByTenantIdAndAdminUserIdValueIgnoreCaseOrderByCreatedAtDesc(Long tenantId,
+    List<UserAdminAuditLogEntity> findTop20ByTenantIdAndAdminUserIdValueIgnoreCaseOrderByCreatedAtDesc(Long tenantId,
                                                                                                           String adminUserIdValue);
 
-    List<UserAdminAuditLogEntity> findTop10ByTenantIdAndCreatedAtBetweenOrderByCreatedAtDesc(Long tenantId,
+    List<UserAdminAuditLogEntity> findTop20ByTenantIdAndCreatedAtBetweenOrderByCreatedAtDesc(Long tenantId,
                                                                                                LocalDateTime start,
                                                                                                LocalDateTime end);
 
-    List<UserAdminAuditLogEntity> findTop10ByTenantIdAndAdminUserIdValueIgnoreCaseAndCreatedAtBetweenOrderByCreatedAtDesc(
+    List<UserAdminAuditLogEntity> findTop20ByTenantIdAndAdminUserIdValueIgnoreCaseAndCreatedAtBetweenOrderByCreatedAtDesc(
         Long tenantId,
         String adminUserIdValue,
         LocalDateTime start,
@@ -23,13 +23,13 @@ public interface UserAdminAuditLogRepository extends JpaRepository<UserAdminAudi
     );
 
     // Metodi cross-tenant utilizzati dall'utente ADMIN (senza tenant)
-    List<UserAdminAuditLogEntity> findTop10ByOrderByCreatedAtDesc();
+    List<UserAdminAuditLogEntity> findTop20ByOrderByCreatedAtDesc();
 
-    List<UserAdminAuditLogEntity> findTop10ByAdminUserIdValueIgnoreCaseOrderByCreatedAtDesc(String adminUserIdValue);
+    List<UserAdminAuditLogEntity> findTop20ByAdminUserIdValueIgnoreCaseOrderByCreatedAtDesc(String adminUserIdValue);
 
-    List<UserAdminAuditLogEntity> findTop10ByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime start, LocalDateTime end);
+    List<UserAdminAuditLogEntity> findTop20ByCreatedAtBetweenOrderByCreatedAtDesc(LocalDateTime start, LocalDateTime end);
 
-    List<UserAdminAuditLogEntity> findTop10ByAdminUserIdValueIgnoreCaseAndCreatedAtBetweenOrderByCreatedAtDesc(
+    List<UserAdminAuditLogEntity> findTop20ByAdminUserIdValueIgnoreCaseAndCreatedAtBetweenOrderByCreatedAtDesc(
         String adminUserIdValue,
         LocalDateTime start,
         LocalDateTime end

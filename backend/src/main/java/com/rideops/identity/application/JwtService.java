@@ -13,12 +13,18 @@ import org.springframework.stereotype.Service;
 @Service
 public class JwtService {
 
+    private static final String ISSUER = "rideops";
+    private static final String AUDIENCE = "rideops-api";
+
     private final SecretKey secretKey;
     private final long expirationSeconds;
 
     public JwtService(@Value("${security.jwt.secret}") String secret,
                       @Value("${security.jwt.expiration-seconds}") long expirationSeconds) {
-        this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(toBase64(secret)));
+        // SECURITY: secret DEVE essere una stringa Base64 di almeno 32 byte casuali (256 bit).
+        // Generare con: openssl rand -base64 32
+        // Il toBase64() originale era un double-encoding ridondante che mascherava chiavi deboli.
+        this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
         this.expirationSeconds = expirationSeconds;
     }
 
@@ -28,6 +34,8 @@ public class JwtService {
 
         return Jwts.builder()
             .subject(userDetails.getUsername())
+            .issuer(ISSUER)
+            .audience().add(AUDIENCE).and()
             .claim("uid", userDetails.getId())
             .claim("role", userDetails.getRole().name())
             .claim("tid", userDetails.getTenantId())
@@ -45,6 +53,17 @@ public class JwtService {
         Claims claims = extractAllClaims(token);
         String subject = claims.getSubject();
         Date expiration = claims.getExpiration();
+
+        // SECURITY: valida issuer e audience per prevenire token confusion (CWE-347)
+        String issuer = claims.getIssuer();
+        if (!ISSUER.equals(issuer)) {
+            return false;
+        }
+        java.util.Set<String> audience = claims.getAudience();
+        if (audience == null || !audience.contains(AUDIENCE)) {
+            return false;
+        }
+
         Object tokenTenant = claims.get("tid");
         boolean tenantMatches;
         if (tokenTenant == null && userDetails.getTenantId() == null) {
@@ -70,9 +89,5 @@ public class JwtService {
             .build()
             .parseSignedClaims(token)
             .getPayload();
-    }
-
-    private String toBase64(String secret) {
-        return java.util.Base64.getEncoder().encodeToString(secret.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 }
