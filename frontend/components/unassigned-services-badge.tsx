@@ -1,51 +1,80 @@
 "use client";
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { ButtonContent, FilterIcon } from './action-icons';
+
+type StatusCounts = { open: number; assigned: number; closedOrExecuted: number };
+
+function AlertIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="#FFF4E5" stroke="#F59E0B" strokeWidth="1.5" />
+      <line x1="12" y1="8" x2="12" y2="13" stroke="#F59E0B" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="12" cy="16" r="1" fill="#F59E0B" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="#EFF6FF" stroke="#3B82F6" strokeWidth="1.5" />
+      <circle cx="12" cy="12" r="4.5" stroke="#3B82F6" strokeWidth="1.5" />
+      <line x1="12" y1="9.5" x2="12" y2="12" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="12" y1="12" x2="14" y2="13.5" stroke="#3B82F6" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="12" cy="12" r="10" fill="#F0FDF4" stroke="#22C55E" strokeWidth="1.5" />
+      <polyline points="8,12.5 11,15.5 16,10" stroke="#22C55E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export function UnassignedServicesBadge() {
-  const [count, setCount] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [counts, setCounts] = useState<StatusCounts | null>(null);
 
   useEffect(() => {
-    async function load() {
-      const response = await fetch('/api/services/unassigned-count', { cache: 'no-store' });
-      const payload = (await response.json().catch(() => ({}))) as { count?: number; message?: string };
-
-      if (!response.ok) {
-        setError(payload.message ?? 'Errore caricamento badge');
-        return;
-      }
-
-      setCount(payload.count ?? 0);
-    }
-
-    load();
+    fetch('/api/services/status-counts', { cache: 'no-store' })
+      .then(r => r.json().catch(() => null))
+      .then(data => {
+        if (data && typeof data.open === 'number') setCounts(data as StatusCounts);
+      });
   }, []);
 
+  const open = counts?.open ?? '—';
+  const assigned = counts?.assigned ?? '—';
+  const closedOrExecuted = counts?.closedOrExecuted ?? '—';
+
   return (
-    <article className="dashboard-card">
-      <h3>Servizi non assegnati</h3>
-      {error ? (
-        <p className="error-text">{error}</p>
-      ) : (
-        <div
-          className={`mobile-alert-chip ${count > 0 ? 'is-alert' : 'is-clear'}`}
-          style={{ width: 'fit-content', marginTop: 6 }}
-        >
-          <span className="alert-chip-icon" aria-hidden="true">{count > 0 ? '⚠️' : '✅'}</span>
-          <span className="alert-chip-label">Servizi:</span>
-          <span className="alert-chip-count">{count}</span>
+    <div className="services-stat-cards">
+      <article className="services-stat-card">
+        <span className="services-stat-icon"><AlertIcon /></span>
+        <div className="services-stat-body">
+          <span className="services-stat-label">APERTI</span>
+          <span className="services-stat-count">{open}</span>
+          <span className="services-stat-sub">da assegnare</span>
         </div>
-      )}
-      {!error && (
-        <p style={{ marginTop: 10, marginBottom: 0 }}>
-          <Link href="/app/services?unassigned=1" className="logout-button compact-button" style={{ display: 'inline-block' }}>
-            <ButtonContent icon={<FilterIcon />}>Vedi non assegnati</ButtonContent>
-          </Link>
-        </p>
-      )}
-    </article>
+      </article>
+      <article className="services-stat-card">
+        <span className="services-stat-icon"><ClockIcon /></span>
+        <div className="services-stat-body">
+          <span className="services-stat-label">ASSEGNATI</span>
+          <span className="services-stat-count">{assigned}</span>
+          <span className="services-stat-sub">in lavorazione</span>
+        </div>
+      </article>
+      <article className="services-stat-card">
+        <span className="services-stat-icon"><CheckIcon /></span>
+        <div className="services-stat-body">
+          <span className="services-stat-label">CHIUSI</span>
+          <span className="services-stat-count">{closedOrExecuted}</span>
+          <span className="services-stat-sub">completati</span>
+        </div>
+      </article>
+    </div>
   );
 }
