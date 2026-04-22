@@ -279,10 +279,6 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
   }, [driverMode]);
 
   useEffect(() => {
-    if (driverMode) {
-      return;
-    }
-
     async function loadVehicles() {
       const response = await fetch('/api/fleet/vehicles', { cache: 'no-store' });
       const payload = (await response.json().catch(() => [])) as VehicleItem[] | { message?: string };
