@@ -40,6 +40,10 @@ export async function PUT(request: Request) {
 
   const body = await request.json().catch(() => null);
   if (!body
+    || !body.firstName
+    || !body.lastName
+    || !body.birthDate
+    || !body.licenseNumber
     || !body.email
     || !Array.isArray(body.licenseTypes)
     || body.licenseTypes.length === 0
@@ -58,6 +62,10 @@ export async function PUT(request: Request) {
       Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({
+      firstName: body.firstName,
+      lastName: body.lastName,
+      birthDate: body.birthDate,
+      licenseNumber: body.licenseNumber,
       email: body.email,
       licenseTypes: body.licenseTypes,
       residentialAddresses: body.residentialAddresses,

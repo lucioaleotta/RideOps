@@ -7,12 +7,14 @@ import com.rideops.identity.adapters.out.PasswordResetTokenRepository;
 import com.rideops.identity.adapters.out.UserEntity;
 import com.rideops.identity.adapters.out.UserRepository;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.UUID;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +29,19 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final EmailOutboxRepository outboxRepository;
     private final PasswordEncoder passwordEncoder;
+    private final String tokenHashSecret;
 
     public PasswordResetService(UserRepository userRepository,
                                 PasswordResetTokenRepository tokenRepository,
                                 EmailOutboxRepository outboxRepository,
-                                PasswordEncoder passwordEncoder) {
+                                PasswordEncoder passwordEncoder,
+                                @Value("${app.security.password-reset.hash-secret:${app.security.jwt.secret}}")
+                                String tokenHashSecret) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.outboxRepository = outboxRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tokenHashSecret = tokenHashSecret;
     }
 
     @Transactional
@@ -95,8 +101,9 @@ public class PasswordResetService {
 
     private String hash(String rawToken) {
         try {
-            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-            byte[] digest = messageDigest.digest(rawToken.getBytes(StandardCharsets.UTF_8));
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(tokenHashSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] digest = mac.doFinal(rawToken.getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);
         } catch (Exception exception) {
             throw new IllegalStateException("Impossibile calcolare hash token reset", exception);
