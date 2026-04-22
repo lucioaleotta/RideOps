@@ -35,7 +35,7 @@ public class PasswordResetService {
                                 PasswordResetTokenRepository tokenRepository,
                                 EmailOutboxRepository outboxRepository,
                                 PasswordEncoder passwordEncoder,
-                                @Value("${app.security.password-reset.hash-secret:${app.security.jwt.secret}}")
+                                @Value("${app.security.password-reset.hash-secret:${security.jwt.secret}}")
                                 String tokenHashSecret) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
