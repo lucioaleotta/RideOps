@@ -49,8 +49,8 @@ public class RideServiceEntity {
     @Column(precision = 12, scale = 2)
     private BigDecimal price;
 
-    @Column(name = "external_booking_reference")
-    private Long externalBookingReference;
+    @Column(name = "external_booking_reference", length = 100)
+    private String externalBookingReference;
 
     @Column(name = "internal_booking_reference", length = 32)
     private String internalBookingReference;
@@ -190,11 +190,11 @@ public class RideServiceEntity {
         this.price = price;
     }
 
-    public Long getExternalBookingReference() {
+    public String getExternalBookingReference() {
         return externalBookingReference;
     }
 
-    public void setExternalBookingReference(Long externalBookingReference) {
+    public void setExternalBookingReference(String externalBookingReference) {
         this.externalBookingReference = externalBookingReference;
     }
 

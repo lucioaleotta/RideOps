@@ -18,7 +18,7 @@ type ServiceItem = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
-  externalBookingReference: number | null;
+  externalBookingReference: string | null;
   internalBookingReference: string | null;
   clientName: string | null;
   clientPhone: string | null;
@@ -779,7 +779,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                 {/* Sezione riferimenti */}
                 <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
                   <CalDetailRow icon={<CalDocIcon />} label="Rif. interno" value={selectedService.internalBookingReference ?? '—'} />
-                  <CalDetailRow icon={<CalDocIcon />} label="Rif. esterno" value={selectedService.externalBookingReference != null ? String(selectedService.externalBookingReference) : '—'} />
+                  <CalDetailRow icon={<CalDocIcon />} label="Rif. esterno" value={selectedService.externalBookingReference ?? '—'} />
                 </div>
 
                 {calDetailDivider}

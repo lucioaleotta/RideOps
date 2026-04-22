@@ -19,7 +19,7 @@ type ServiceItem = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
-  externalBookingReference: number | null;
+  externalBookingReference: string | null;
   internalBookingReference: string | null;
   clientName: string | null;
   clientPhone: string | null;
@@ -613,9 +613,7 @@ export function ServicesPanel() {
       durationHours: form.type === 'TOUR' ? Number(form.durationHours) : null,
       notes: form.notes.trim() || null,
       price: form.price.trim() ? Number(form.price) : null,
-      externalBookingReference: form.externalBookingReference.trim()
-        ? Number(form.externalBookingReference)
-        : null,
+      externalBookingReference: form.externalBookingReference.trim() || null,
       clientName: form.clientName.trim() || null,
       clientPhone: form.clientPhone.trim() || null,
       clientEmail: form.clientEmail.trim() || null,
@@ -787,8 +785,7 @@ export function ServicesPanel() {
       durationHours: service.durationHours ? String(service.durationHours) : '',
       notes: service.notes ?? '',
       price: service.price != null ? String(service.price) : '',
-      externalBookingReference:
-        service.externalBookingReference != null ? String(service.externalBookingReference) : '',
+      externalBookingReference: service.externalBookingReference ?? '',
       internalBookingReference: service.internalBookingReference ?? '',
       clientName: service.clientName ?? '',
       clientPhone: service.clientPhone ?? '',
