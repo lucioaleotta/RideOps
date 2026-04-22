@@ -11,7 +11,7 @@ type ServiceDetail = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
-  externalBookingReference: number | null;
+  externalBookingReference: string | null;
   internalBookingReference: string | null;
   clientName: string | null;
   clientPhone: string | null;
@@ -19,7 +19,34 @@ type ServiceDetail = {
   passengersCount: number | null;
   itinerary: string | null;
   status: 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
+  assignedDriverId: number | null;
+  assignedVehicleId: number | null;
 };
+
+type DriverDetail = {
+  id: number;
+  userId: string;
+  email: string;
+  firstName?: string | null;
+  lastName?: string | null;
+};
+
+type VehicleDetail = {
+  id: number;
+  plate: string;
+  type: string | null;
+  notes: string | null;
+};
+
+function driverDisplayName(driver: DriverDetail): string {
+  const fullName = [driver.firstName, driver.lastName].filter(Boolean).join(' ').trim();
+  return fullName || driver.email;
+}
+
+function vehicleDisplayName(vehicle: VehicleDetail): string {
+  const description = vehicle.notes?.trim() || vehicle.type || null;
+  return description ? `${vehicle.plate} - ${description}` : vehicle.plate;
+}
 
 export default async function ServicePrintPage({ params }: { params: { id: string } }) {
   const token = cookies().get('access_token')?.value;
@@ -34,8 +61,10 @@ export default async function ServicePrintPage({ params }: { params: { id: strin
   }
 
   const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
+  const authHeaders = { Authorization: `Bearer ${token}` };
+
   const response = await fetch(`${backendUrl}/services/${params.id}`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: authHeaders,
     cache: 'no-store'
   });
 
@@ -51,6 +80,21 @@ export default async function ServicePrintPage({ params }: { params: { id: strin
   }
 
   const service = (await response.json()) as ServiceDetail;
+
+  // Fetch parallelo di driver e veicolo se assegnati
+  const [driversRes, vehiclesRes] = await Promise.all([
+    service.assignedDriverId
+      ? fetch(`${backendUrl}/gestionale/drivers`, { headers: authHeaders, cache: 'no-store' })
+      : Promise.resolve(null),
+    service.assignedVehicleId
+      ? fetch(`${backendUrl}/fleet/vehicles`, { headers: authHeaders, cache: 'no-store' })
+      : Promise.resolve(null)
+  ]);
+
+  const driversList: DriverDetail[] = driversRes?.ok ? (await driversRes.json()) as DriverDetail[] : [];
+  const driver: DriverDetail | null = driversList.find((d) => d.id === service.assignedDriverId) ?? null;
+  const vehiclesList: VehicleDetail[] = vehiclesRes?.ok ? (await vehiclesRes.json()) as VehicleDetail[] : [];
+  const vehicle: VehicleDetail | null = vehiclesList.find((v) => v.id === service.assignedVehicleId) ?? null;
 
   return (
     <main className="print-page">
@@ -76,6 +120,14 @@ export default async function ServicePrintPage({ params }: { params: { id: strin
           <div>
             <strong>Destinazione</strong>
             <p>{service.destination}</p>
+          </div>
+          <div>
+            <strong>Driver</strong>
+            <p>{driver ? driverDisplayName(driver) : '-'}</p>
+          </div>
+          <div>
+            <strong>Veicolo</strong>
+            <p>{vehicle ? vehicleDisplayName(vehicle) : '-'}</p>
           </div>
           <div>
             <strong>Durata ore</strong>

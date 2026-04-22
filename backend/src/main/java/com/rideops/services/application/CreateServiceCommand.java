@@ -14,7 +14,7 @@ public record CreateServiceCommand(
     Integer durationHours,
     String notes,
     BigDecimal price,
-    Long externalBookingReference,
+    String externalBookingReference,
     String clientName,
     String clientPhone,
     String clientEmail,

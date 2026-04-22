@@ -15,7 +15,7 @@ public record ServiceDto(
     Integer durationHours,
     String notes,
     BigDecimal price,
-    Long externalBookingReference,
+    String externalBookingReference,
     String internalBookingReference,
     String clientName,
     String clientPhone,

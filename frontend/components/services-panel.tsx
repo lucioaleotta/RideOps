@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { createPortal } from 'react-dom';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CancelIcon, CursorIcon, LockIcon, OpenIcon, PartnerIcon as SharedPartnerIcon, PrintIcon as SharedPrintIcon, ResetIcon, SaveIcon, SelectIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
 
@@ -18,7 +19,7 @@ type ServiceItem = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
-  externalBookingReference: number | null;
+  externalBookingReference: string | null;
   internalBookingReference: string | null;
   clientName: string | null;
   clientPhone: string | null;
@@ -108,8 +109,8 @@ type VehicleItem = {
 type ServicesFilterState = {
   status: ServiceStatus | '';
   driverId: number | '';
-  fromDate: string;
-  toDate: string;
+  type: ServiceType | '';
+  search: string;
   onlyUnassigned: boolean;
 };
 
@@ -142,8 +143,8 @@ const vehicleMaintenanceConflictMessage = 'Il veicolo risulta in manutenzione ne
 const defaultFilters: ServicesFilterState = {
   status: '',
   driverId: '',
-  fromDate: '',
-  toDate: '',
+  type: '',
+  search: '',
   onlyUnassigned: false
 };
 
@@ -248,6 +249,41 @@ function ServiceDetailRow({ icon, label, value }: { icon: ReactNode; label: stri
   );
 }
 
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <line x1="16.2" y1="16.2" x2="21" y2="21" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function FilterIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M4 6h16M7 12h10M10 18h4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function DestFlagIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6 21V4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M6 4h10l-3.5 4 3.5 4H6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function ActionEditIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -315,8 +351,9 @@ export function ServicesPanel() {
     return driver.email;
   }
 
-  const PAGE_SIZE = 10;
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
@@ -326,6 +363,7 @@ export function ServicesPanel() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [noticeServiceId, setNoticeServiceId] = useState<number | null>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingInitialStatus, setEditingInitialStatus] = useState<Exclude<ServiceStatus, 'CLOSED' | 'EXECUTED'>>('OPEN');
   const [editingInitialAssignedDriverId, setEditingInitialAssignedDriverId] = useState<number | null>(null);
@@ -333,6 +371,8 @@ export function ServicesPanel() {
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [selectedForPrintIds, setSelectedForPrintIds] = useState<number[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
   const [outsourceOpen, setOutsourceOpen] = useState(false);
   const [outsourcePartnerQuery, setOutsourcePartnerQuery] = useState('');
   const [outsourcePartnerId, setOutsourcePartnerId] = useState<number | ''>('');
@@ -340,7 +380,6 @@ export function ServicesPanel() {
   const [partnerHistory, setPartnerHistory] = useState<ServicePartnerHistoryItem | null>(null);
   const [partnerHistoryLoading, setPartnerHistoryLoading] = useState(false);
   const [partnerEmailSending, setPartnerEmailSending] = useState(false);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
 
@@ -472,12 +511,6 @@ export function ServicesPanel() {
     if (filters.driverId) {
       query.set('driverId', String(filters.driverId));
     }
-    if (filters.fromDate) {
-      query.set('from', toStartDateTime(filters.fromDate));
-    }
-    if (filters.toDate) {
-      query.set('to', toNextDayStartDateTime(filters.toDate));
-    }
 
     const targetUrl = query.size > 0 ? `/api/services?${query.toString()}` : '/api/services';
 
@@ -491,11 +524,11 @@ export function ServicesPanel() {
     }
 
     const nextServices = payload as ServiceItem[];
-    const filteredServices = filters.onlyUnassigned
+    const unassignedFiltered = filters.onlyUnassigned
       ? nextServices.filter((service) => !service.assignedDriverId)
       : nextServices;
 
-    setServices(filteredServices);
+    setServices(unassignedFiltered);
     setLoading(false);
   }
 
@@ -515,10 +548,23 @@ export function ServicesPanel() {
     });
   }, [searchParams]);
 
+  function setUnassignedFilter(active: boolean) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (active) {
+      params.set('unassigned', '1');
+    } else {
+      params.delete('unassigned');
+    }
+    router.replace(`${pathname}?${params.toString()}`);
+    // Aggiorno anche lo stato locale immediatamente così il caricamento non attende la navigazione
+    setFilters((prev) => ({ ...prev, onlyUnassigned: active }));
+    setCurrentPage(1);
+  }
+
   useEffect(() => {
     loadServices();
     setCurrentPage(1);
-  }, [filters.status, filters.driverId, filters.fromDate, filters.toDate, filters.onlyUnassigned]);
+  }, [filters.status, filters.driverId, filters.onlyUnassigned]);
 
   function resetForm() {
     setEditingId(null);
@@ -537,6 +583,23 @@ export function ServicesPanel() {
     setIsFormOpen(false);
   }
 
+  useEffect(() => {
+    if (!isFormOpen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') closeForm();
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isFormOpen]);
+
+  useEffect(() => {
+    if (noticeServiceId !== null && selectedServiceId !== noticeServiceId) {
+      setError(null);
+      setSuccess(null);
+      setNoticeServiceId(null);
+    }
+  }, [selectedServiceId, noticeServiceId]);
+
   function toPayload(status: Exclude<ServiceStatus, 'CLOSED' | 'EXECUTED'>) {
     const assignmentType: ServiceAssignmentType = form.receivedFromPartner
       ? 'INCOMING'
@@ -550,9 +613,7 @@ export function ServicesPanel() {
       durationHours: form.type === 'TOUR' ? Number(form.durationHours) : null,
       notes: form.notes.trim() || null,
       price: form.price.trim() ? Number(form.price) : null,
-      externalBookingReference: form.externalBookingReference.trim()
-        ? Number(form.externalBookingReference)
-        : null,
+      externalBookingReference: form.externalBookingReference.trim() || null,
       clientName: form.clientName.trim() || null,
       clientPhone: form.clientPhone.trim() || null,
       clientEmail: form.clientEmail.trim() || null,
@@ -699,6 +760,7 @@ export function ServicesPanel() {
     }
 
     setSuccess(editingId ? 'Servizio aggiornato' : 'Servizio creato');
+    setNoticeServiceId(serviceId);
     closeForm();
     await loadServices();
   }
@@ -723,8 +785,7 @@ export function ServicesPanel() {
       durationHours: service.durationHours ? String(service.durationHours) : '',
       notes: service.notes ?? '',
       price: service.price != null ? String(service.price) : '',
-      externalBookingReference:
-        service.externalBookingReference != null ? String(service.externalBookingReference) : '',
+      externalBookingReference: service.externalBookingReference ?? '',
       internalBookingReference: service.internalBookingReference ?? '',
       clientName: service.clientName ?? '',
       clientPhone: service.clientPhone ?? '',
@@ -754,6 +815,7 @@ export function ServicesPanel() {
     if (editingId === serviceId) {
       resetForm();
     }
+    setNoticeServiceId(null);
     setSuccess('Servizio eliminato');
     await loadServices();
   }
@@ -770,6 +832,7 @@ export function ServicesPanel() {
     }
 
     setSuccess('Servizio chiuso (pagamento registrato)');
+    setNoticeServiceId(serviceId);
     await loadServices();
   }
 
@@ -824,6 +887,7 @@ export function ServicesPanel() {
     }
 
     setSuccess('Servizio affidato a partner');
+    setNoticeServiceId(selectedService.id);
     closeOutsourceModal();
     await loadServices();
     await loadPartnerHistory(selectedService.id);
@@ -861,6 +925,7 @@ export function ServicesPanel() {
     }
 
     setSuccess('Email partner inserita in outbox');
+    setNoticeServiceId(serviceId);
     await loadPartnerHistory(serviceId);
   }
 
@@ -926,7 +991,8 @@ export function ServicesPanel() {
     if (!found) {
       return `#${service.assignedVehicleId}`;
     }
-    return found.plate;
+    const description = found.notes?.trim() || found.type || null;
+    return description ? `${found.plate} - ${description}` : found.plate;
   }
 
   function partnerLabel(partnerId: number | null) {
@@ -940,10 +1006,25 @@ export function ServicesPanel() {
     return found.ragioneSociale;
   }
 
-  const orderedServices = useMemo(
-    () => [...services].sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime()),
-    [services]
-  );
+  const orderedServices = useMemo(() => {
+    const q = filters.search.trim().toLowerCase();
+    const t = filters.type;
+    return [...services]
+      .filter((s) => {
+        if (t && s.type !== t) return false;
+        if (q) {
+          const haystack = [
+            s.internalBookingReference ?? '',
+            s.clientName ?? '',
+            s.pickupLocation,
+            s.destination
+          ].join(' ').toLowerCase();
+          if (!haystack.includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime());
+  }, [services, filters.search, filters.type]);
 
   const overdueExecutedServices = useMemo(() => {
     const now = Date.now();
@@ -960,7 +1041,7 @@ export function ServicesPanel() {
     });
   }, [orderedServices]);
 
-  const totalPages = Math.max(1, Math.ceil(orderedServices.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(orderedServices.length / pageSize));
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -969,9 +1050,9 @@ export function ServicesPanel() {
   }, [currentPage, totalPages]);
 
   const paginatedServices = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return orderedServices.slice(start, start + PAGE_SIZE);
-  }, [orderedServices, currentPage]);
+    const start = (currentPage - 1) * pageSize;
+    return orderedServices.slice(start, start + pageSize);
+  }, [orderedServices, currentPage, pageSize]);
 
   const selectedService = useMemo(
     () => orderedServices.find((item) => item.id === selectedServiceId) ?? null,
@@ -1014,142 +1095,139 @@ export function ServicesPanel() {
     setSelectedForPrintIds((prev) => prev.filter((id) => validIds.has(id)));
   }, [orderedServices]);
 
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    setPortalTarget(document.getElementById('services-new-button-portal'));
+  }, []);
+
   const allCurrentPageSelected = paginatedServices.length > 0
     && paginatedServices.every((service) => selectedForPrintIds.includes(service.id));
 
+  const newServiceBtn = (
+    <button
+      type="button"
+      className="primary-button compact-button services-new-button"
+      onClick={openCreateForm}
+    >
+      <ButtonContent icon={<AddIcon />}>Nuovo servizio</ButtonContent>
+    </button>
+  );
+
   return (
-    <section className="responsive-panel services-panel" style={{ display: 'grid', gap: 16, maxWidth: '100%' }}>
+    <>
+      {portalTarget && createPortal(newServiceBtn, portalTarget)}
+      <section className="responsive-panel services-panel" style={{ display: 'grid', gap: 16, maxWidth: '100%' }}>
+
+      {/* === Filtri card === */}
+      {(() => {
+        const hasActiveFilters = !!filters.status || !!filters.driverId || !!filters.type || !!filters.search || filters.onlyUnassigned;
+        const activeChips: { label: string; onRemove: () => void }[] = [];
+        if (filters.search) activeChips.push({ label: `Cerca: "${filters.search}"`, onRemove: () => setFilters((p) => ({ ...p, search: '' })) });
+        if (filters.status) activeChips.push({ label: `Stato: ${statusLabel(filters.status as ServiceStatus)}`, onRemove: () => setFilters((p) => ({ ...p, status: '' })) });
+        if (filters.driverId) {
+          const found = drivers.find((d) => d.id === filters.driverId);
+          activeChips.push({ label: `Driver: ${found ? driverLabel(found) : `#${filters.driverId}`}`, onRemove: () => setFilters((p) => ({ ...p, driverId: '' })) });
+        }
+        if (filters.type) activeChips.push({ label: `Tipo: ${typeLabel(filters.type as ServiceType)}`, onRemove: () => setFilters((p) => ({ ...p, type: '' })) });
+        if (filters.onlyUnassigned) activeChips.push({ label: 'Solo non assegnati', onRemove: () => setUnassignedFilter(false) });
+
+        return (
+          <article className="dashboard-card services-filters-card">
+            <div className="services-filters-row">
+              <div className="services-search-wrap">
+                <div className="services-search-input-wrap">
+                  <span className="services-search-icon"><SearchIcon /></span>
+                  <input
+                    className="services-search-input"
+                    placeholder="Rif, cliente, pickup, destinazione..."
+                    value={filters.search}
+                    onChange={(e) => { setFilters((p) => ({ ...p, search: e.target.value })); setCurrentPage(1); }}
+                  />
+                </div>
+              </div>
+              <div className="services-filter-group">
+                <span className="services-filter-label">Stato</span>
+                <select
+                  className="services-filter-select"
+                  value={filters.status}
+                  onChange={(event) => {
+                    const nextStatus = event.target.value as ServiceStatus | '';
+                    setFilters((prev) => ({
+                      ...prev,
+                      status: nextStatus,
+                      onlyUnassigned: nextStatus === 'ASSIGNED' || nextStatus === 'EXECUTED' || nextStatus === 'CLOSED'
+                        ? false
+                        : prev.onlyUnassigned
+                    }));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="">Tutti</option>
+                  <option value="OPEN">Aperti</option>
+                  <option value="ASSIGNED">Assegnati</option>
+                  <option value="EXECUTED">Eseguiti</option>
+                  <option value="CLOSED">Chiusi</option>
+                </select>
+              </div>
+              <div className="services-filter-group">
+                <span className="services-filter-label">Driver</span>
+                <select
+                  className="services-filter-select"
+                  value={filters.driverId}
+                  onChange={(event) => { setFilters((prev) => ({ ...prev, driverId: event.target.value ? Number(event.target.value) : '' })); setCurrentPage(1); }}
+                >
+                  <option value="">Tutti</option>
+                  {drivers.map((driver) => (
+                    <option key={driver.id} value={driver.id}>{driverLabel(driver)}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="services-filter-group">
+                <span className="services-filter-label">Tipo</span>
+                <select
+                  className="services-filter-select"
+                  value={filters.type}
+                  onChange={(event) => { setFilters((prev) => ({ ...prev, type: event.target.value as ServiceType | '' })); setCurrentPage(1); }}
+                >
+                  <option value="">Tutti</option>
+                  <option value="TRANSFER">Transfer</option>
+                  <option value="TOUR">Tour</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                className={`services-filter-unassigned-btn${filters.onlyUnassigned ? ' is-active' : ''}`}
+                onClick={() => setUnassignedFilter(!filters.onlyUnassigned)}
+              >
+                <span className="services-filter-unassigned-icon"><FilterIcon /></span>
+                Solo non assegnati
+              </button>
+            </div>
+            {hasActiveFilters && (
+              <div className="services-active-filters-row">
+                <span className="services-active-filters-label">Filtri attivi:</span>
+                <div className="services-active-chips">
+                  {activeChips.map((chip) => (
+                    <span key={chip.label} className="services-active-chip">
+                      {chip.label}
+                      <button type="button" className="services-active-chip-remove" onClick={chip.onRemove} aria-label={`Rimuovi filtro ${chip.label}`}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <button type="button" className="services-reset-link" onClick={() => { setFilters(defaultFilters); setCurrentPage(1); }}>
+                  Reset filtri
+                </button>
+              </div>
+            )}
+          </article>
+        );
+      })()}
+
       <article className="dashboard-card">
         <div className="panel-header services-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <h3 className="services-title">Lista servizi</h3>
-          <button
-            type="button"
-            className="primary-button compact-button services-new-button"
-            onClick={() => {
-              if (isFormOpen && !editingId) {
-                closeForm();
-              } else {
-                openCreateForm();
-              }
-            }}
-          >
-            <ButtonContent icon={isFormOpen && !editingId ? <LockIcon /> : <AddIcon />}>{isFormOpen && !editingId ? 'Chiudi form' : 'Nuovo servizio'}</ButtonContent>
-          </button>
         </div>
-        <button
-          type="button"
-          className="services-filters-label"
-          onClick={() => setMobileFiltersOpen((prev) => !prev)}
-          aria-expanded={mobileFiltersOpen}
-          aria-controls="services-filters-grid"
-        >
-          {mobileFiltersOpen ? 'Nascondi filtri ▲' : 'Mostra filtri ▼'}
-        </button>
-        <div
-          id="services-filters-grid"
-          className={`responsive-filters-grid services-filters-grid ${mobileFiltersOpen ? '' : 'is-hidden-mobile'}`}
-          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 8, marginTop: 8 }}
-        >
-          <label>
-            Stato
-            <select
-              className="form-input"
-              value={filters.status}
-              onChange={(event) => {
-                const nextStatus = event.target.value as ServiceStatus | '';
-                setFilters((prev) => ({
-                  ...prev,
-                  status: nextStatus,
-                  onlyUnassigned: nextStatus === 'ASSIGNED' || nextStatus === 'EXECUTED' || nextStatus === 'CLOSED'
-                    ? false
-                    : prev.onlyUnassigned
-                }));
-              }}
-            >
-              <option value="">Tutti</option>
-              <option value="OPEN">Aperti</option>
-              <option value="ASSIGNED">Assegnati</option>
-              <option value="EXECUTED">Eseguiti</option>
-              <option value="CLOSED">Chiusi</option>
-            </select>
-          </label>
-
-          <label>
-            Driver
-            <select
-              className="form-input"
-              value={filters.driverId}
-              onChange={(event) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  driverId: event.target.value ? Number(event.target.value) : ''
-                }))
-              }
-            >
-              <option value="">Tutti</option>
-              {drivers.map((driver) => (
-                <option key={driver.id} value={driver.id}>{driverLabel(driver)}</option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Da data
-            <input
-              className="form-input"
-              type="date"
-              value={filters.fromDate}
-              onChange={(event) => setFilters((prev) => ({ ...prev, fromDate: event.target.value }))}
-            />
-          </label>
-
-          <label>
-            A data
-            <input
-              className="form-input"
-              type="date"
-              value={filters.toDate}
-              onChange={(event) => setFilters((prev) => ({ ...prev, toDate: event.target.value }))}
-            />
-          </label>
-
-          <label className="inline-checkbox" style={{ display: 'flex', alignItems: 'end', gap: 8, paddingBottom: 4 }}>
-            <input
-              type="checkbox"
-              checked={filters.onlyUnassigned}
-              onChange={(event) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  onlyUnassigned: event.target.checked,
-                  status: event.target.checked ? 'OPEN' : prev.status
-                }))
-              }
-            />
-            Solo non assegnati
-          </label>
-
-          <div className="panel-end-action" style={{ display: 'flex', alignItems: 'end', justifyContent: 'flex-end' }}>
-            <button
-              type="button"
-              className="logout-button compact-button"
-              onClick={() => setFilters(defaultFilters)}
-            >
-              <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
-            </button>
-          </div>
-        </div>
-        {filters.onlyUnassigned && (
-          <div style={{ marginTop: 8, marginBottom: 8, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 600 }}>Filtro attivo: Non assegnati</span>
-            <button
-              type="button"
-              className="logout-button compact-button"
-              onClick={() => setFilters((prev) => ({ ...prev, onlyUnassigned: false }))}
-            >
-              <ButtonContent icon={<CancelIcon />}>Rimuovi filtro</ButtonContent>
-            </button>
-          </div>
-        )}
         {overdueExecutedServices.length > 0 && (
           <div style={{ marginTop: 10, marginBottom: 10, padding: 10, borderRadius: 10, background: '#fff4df', border: '1px solid #f2d39a' }}>
             <strong style={{ display: 'block', color: '#8a4b00' }}>
@@ -1160,8 +1238,24 @@ export function ServicesPanel() {
             </span>
           </div>
         )}
-        {error && <p className="error-text">{error}</p>}
-        {success && <p className="success-text">{success}</p>}
+        {error && (
+          <div className="services-notice services-notice--error">
+            <span className="services-notice-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8"/><line x1="12" y1="8" x2="12" y2="12.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><circle cx="12" cy="15.5" r="0.9" fill="currentColor"/></svg>
+            </span>
+            <span className="services-notice-text"><strong>{error}</strong></span>
+            <button type="button" className="services-notice-close" aria-label="Chiudi" onClick={() => { setError(null); setNoticeServiceId(null); }}>×</button>
+          </div>
+        )}
+        {success && (
+          <div className="services-notice services-notice--success">
+            <span className="services-notice-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8"/><polyline points="8 12.5 11 15.5 16 9.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </span>
+            <span className="services-notice-text"><strong>{success}</strong></span>
+            <button type="button" className="services-notice-close" aria-label="Chiudi" onClick={() => { setSuccess(null); setNoticeServiceId(null); }}>×</button>
+          </div>
+        )}
         {loading ? (
           <p>Caricamento servizi...</p>
         ) : (
@@ -1342,38 +1436,44 @@ export function ServicesPanel() {
                 </div>
 
                 <div className="services-selected-divider" />
-                <div style={{ marginTop: 10 }}>
-                  <strong style={{ display: 'block', marginBottom: 8 }}>Storico partner servizio</strong>
+                <div className="services-selected-history">
+                  <div className="services-selected-history-title">
+                    <span className="services-selected-history-heading">Storico partner servizio</span>
+                  </div>
                   {partnerHistoryLoading ? (
-                    <p style={{ margin: 0, color: 'var(--muted)' }}>Caricamento storico...</p>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14 }}>Caricamento storico...</p>
                   ) : !partnerHistory ? (
-                    <p style={{ margin: 0, color: 'var(--muted)' }}>Nessuno storico disponibile per questo servizio.</p>
+                    <p style={{ margin: 0, color: 'var(--muted)', fontSize: 14 }}>Nessuno storico disponibile per questo servizio.</p>
                   ) : (
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      <p style={{ margin: 0 }}>
-                        <strong>Partner:</strong> {partnerHistory.partnerRagioneSociale ?? '-'} ({partnerHistory.partnerEmail ?? '-'})
-                      </p>
-                      <p style={{ margin: 0 }}>
-                        <strong>Comunicazioni email inviate:</strong> {partnerHistory.communications.length}
-                      </p>
+                    <div style={{ display: 'grid', gap: 12 }}>
+                      <ServiceDetailRow
+                        icon={<DetailUserIcon />}
+                        label="Partner"
+                        value={`${partnerHistory.partnerRagioneSociale ?? '-'} (${partnerHistory.partnerEmail ?? '-'})`}
+                      />
+                      <ServiceDetailRow
+                        icon={<DetailMailIcon />}
+                        label="Comunicazioni inviate"
+                        value={partnerHistory.communications.length}
+                      />
                       {partnerHistory.communications.length > 0 && (
-                        <div className="table-scroll" style={{ overflowX: 'auto' }}>
-                          <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 560 }}>
+                        <div className="services-history-table-wrap">
+                          <table className="services-history-table">
                             <thead>
                               <tr>
-                                <th style={thStyle}>Canale</th>
-                                <th style={thStyle}>Destinatario</th>
-                                <th style={thStyle}>Oggetto</th>
-                                <th style={thStyle}>Data invio</th>
+                                <th>Canale</th>
+                                <th>Destinatario</th>
+                                <th>Oggetto</th>
+                                <th>Data invio</th>
                               </tr>
                             </thead>
                             <tbody>
                               {partnerHistory.communications.map((communication) => (
                                 <tr key={communication.communicationId}>
-                                  <td style={tdStyle}>{communication.channel}</td>
-                                  <td style={tdStyle}>{communication.recipient}</td>
-                                  <td style={tdStyle}>{communication.subject}</td>
-                                  <td style={tdStyle}>{new Date(communication.createdAt).toLocaleString('it-IT')}</td>
+                                  <td>{communication.channel}</td>
+                                  <td>{communication.recipient}</td>
+                                  <td>{communication.subject}</td>
+                                  <td>{new Date(communication.createdAt).toLocaleString('it-IT')}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -1395,30 +1495,32 @@ export function ServicesPanel() {
                 </div>
               </div>
             )}
-            <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, marginTop: 10, flexWrap: 'wrap' }}>
-              <small style={{ color: 'var(--muted)' }}>
-                Selezionati per stampa: {selectedForPrintIds.length}
-              </small>
-              <div className="panel-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <div className="services-list-topbar">
+              <span className="services-list-topbar-count">
+                {selectedForPrintIds.length} selezionati su {orderedServices.length} risultati
+              </span>
+              <div className="services-list-topbar-actions">
                 <button
                   type="button"
-                  className="primary-button compact-button"
+                  className="services-list-topbar-btn"
                   onClick={printSelectedServices}
                 >
-                  <ButtonContent icon={<SharedPrintIcon />}>Stampa selezionati</ButtonContent>
+                  <span className="services-list-topbar-btn-icon"><SharedPrintIcon /></span>
+                  Stampa
                 </button>
+                <span className="services-list-topbar-sep" aria-hidden="true">|</span>
                 <button
                   type="button"
-                  className="logout-button compact-button"
+                  className="services-list-topbar-btn services-list-topbar-btn-clear"
                   onClick={() => setSelectedForPrintIds([])}
                   disabled={selectedForPrintIds.length === 0}
                 >
-                  <ButtonContent icon={<ResetIcon />}>Pulisci selezione</ButtonContent>
+                  × Pulisci
                 </button>
               </div>
             </div>
             <div className="table-scroll services-desktop-table" style={{ overflowX: 'auto', marginTop: 8, maxWidth: '100%' }}>
-            <table className="responsive-table services-table" style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
+            <table className="responsive-table services-table" style={{ width: '100%', minWidth: 900, borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   <th style={thStyle}>
@@ -1429,94 +1531,116 @@ export function ServicesPanel() {
                       aria-label="Seleziona tutti i servizi in pagina per la stampa"
                     />
                   </th>
-                  <th style={thStyle}>Inizio</th>
-                  <th style={thStyle}>Pickup</th>
-                  <th style={thStyle}>Destinazione</th>
+                  <th style={thStyle}>Rif. interno</th>
+                  <th style={thStyle}>Data / Ora</th>
+                  <th style={thStyle}>Tratta</th>
                   <th style={thStyle}>Tipo</th>
+                  <th style={thStyle}>Driver / Veicolo</th>
                   <th style={thStyle}>Prezzo</th>
-                  <th style={thStyle}>Driver</th>
-                  <th style={thStyle}>Veicolo</th>
                   <th style={thStyle}>Stato</th>
-                  <th style={thStyle}>Azioni</th>
+                  <th style={{ ...thStyle, width: 48 }} />
                 </tr>
               </thead>
               <tbody>
-                {paginatedServices.map((service) => (
-                  <tr
-                    key={service.id}
-                    style={{
-                      background: selectedServiceId === service.id ? '#eaf4ff' : 'transparent',
-                      color: service.status === 'CLOSED' ? '#7f8ea3' : 'inherit'
-                    }}
-                  >
-                    <td style={tdStyle}>
-                      <input
-                        type="checkbox"
-                        checked={selectedForPrintIds.includes(service.id)}
-                        onChange={() => togglePrintSelection(service.id)}
-                        aria-label={`Seleziona servizio ${service.id} per stampa multipla`}
-                      />
-                    </td>
-                    <td style={tdStyle}>{new Date(service.startAt).toLocaleString('it-IT')}</td>
-                    <td style={{ ...tdStyle, minWidth: 180, lineHeight: 1.35 }}>{service.pickupLocation}</td>
-                    <td style={{ ...tdStyle, minWidth: 180, lineHeight: 1.35 }}>{service.destination}</td>
-                    <td style={tdStyle}>{typeLabel(service.type)}</td>
-                    <td style={tdStyle}>{formatCurrencyEUR(service.price)}</td>
-                    <td style={{ ...tdStyle, minWidth: 140 }}>
-                      {assignedDriverLabel(service)}
-                    </td>
-                    <td style={{ ...tdStyle, minWidth: 100 }}>
-                      {assignedVehicleLabel(service)}
-                    </td>
-                    <td style={tdStyle}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '4px 8px',
-                          borderRadius: 999,
-                          fontSize: 12,
-                          fontWeight: 600,
-                          background:
-                            service.status === 'CLOSED'
-                              ? '#eceff3'
-                              : service.status === 'EXECUTED'
-                                ? '#fff3e6'
-                              : service.status === 'ASSIGNED'
-                                ? '#e8f5e9'
-                                : '#fff4e5',
-                          color:
-                            service.status === 'CLOSED'
-                              ? '#5f6b7a'
-                              : service.status === 'EXECUTED'
-                                ? '#b45f06'
-                              : service.status === 'ASSIGNED'
-                                ? '#2e7d32'
-                                : '#b26a00'
-                        }}
-                      >
-                        {statusLabel(service.status)}
-                      </span>
-                    </td>
-                    <td style={{ ...tdStyle, minWidth: 180 }}>
-                      <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                        <button
-                          type="button"
-                          className="primary-button compact-button"
-                          onClick={() => setSelectedServiceId(service.id)}
-                        >
-                          <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
-                        </button>
-                        <button
-                          type="button"
-                          className="primary-button compact-button"
-                          onClick={() => openPrint(service.id)}
-                        >
-                          <ButtonContent icon={<SharedPrintIcon />}>Stampa</ButtonContent>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {paginatedServices.map((service) => {
+                  const d = new Date(service.startAt);
+                  const dateStr = d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                  const timeStr = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+                  const isMenuOpen = openDropdownId === service.id;
+
+                  return (
+                    <tr
+                      key={service.id}
+                      style={{
+                        background: selectedServiceId === service.id ? '#eaf4ff' : 'transparent',
+                        color: service.status === 'CLOSED' ? '#7f8ea3' : 'inherit'
+                      }}
+                    >
+                      <td style={tdStyle}>
+                        <input
+                          type="checkbox"
+                          checked={selectedForPrintIds.includes(service.id)}
+                          onChange={() => togglePrintSelection(service.id)}
+                          aria-label={`Seleziona servizio ${service.id} per stampa multipla`}
+                        />
+                      </td>
+                      <td style={{ ...tdStyle, fontWeight: 600, whiteSpace: 'nowrap', fontSize: 13 }}>
+                        {service.internalBookingReference ?? <span style={{ color: '#b0b8c4', fontStyle: 'italic' }}>—</span>}
+                      </td>
+                      <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>{dateStr}</div>
+                        <div style={{ color: '#5f7693', fontSize: 13 }}>{timeStr}</div>
+                      </td>
+                      <td style={{ ...tdStyle, minWidth: 200, lineHeight: 1.4 }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+                          <span className="services-tratta-icon services-tratta-icon-pin"><MobilePinIcon /></span>
+                          <span style={{ fontSize: 14 }}>{service.pickupLocation}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 5 }}>
+                          <span className="services-tratta-icon services-tratta-icon-flag"><DestFlagIcon /></span>
+                          <span style={{ color: '#5f7693', fontSize: 14 }}>{service.destination}</span>
+                        </div>
+                      </td>
+                      <td style={tdStyle}>
+                        <span className="service-chip service-chip-type">{typeLabel(service.type)}</span>
+                      </td>
+                      <td style={{ ...tdStyle, minWidth: 140 }}>
+                        {service.assignedDriverId ? (
+                          <>
+                            <div style={{ fontWeight: 600, fontSize: 14 }}>{assignedDriverLabel(service)}</div>
+                            <div style={{ color: '#5f7693', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                              <span className="services-vehicle-icon"><DetailCarIcon /></span>
+                              {assignedVehicleLabel(service)}
+                            </div>
+                          </>
+                        ) : (
+                          <span style={{ color: '#b0b8c4', fontStyle: 'italic', fontSize: 14 }}>— Non assegnato</span>
+                        )}
+                      </td>
+                      <td style={{ ...tdStyle, fontWeight: 700, whiteSpace: 'nowrap', fontSize: 14 }}>
+                        {formatCurrencyEUR(service.price)}
+                      </td>
+                      <td style={tdStyle}>
+                        <span className={`service-chip service-chip-status ${statusClass(service.status)}`}>
+                          {statusLabel(service.status)}
+                        </span>
+                      </td>
+                      <td style={{ ...tdStyle, position: 'relative', width: 48 }}>
+                        <div className="services-row-menu">
+                          <button
+                            type="button"
+                            className="services-row-menu-btn"
+                            onClick={() => setOpenDropdownId(isMenuOpen ? null : service.id)}
+                            aria-label="Apri menu azioni"
+                            aria-expanded={isMenuOpen}
+                          >
+                            ···
+                          </button>
+                          {isMenuOpen && (
+                            <div className="services-row-menu-dropdown">
+                              <button
+                                type="button"
+                                className="services-row-menu-item"
+                                onClick={() => { setSelectedServiceId(service.id); setOpenDropdownId(null); }}
+                              >
+                                <span className="services-row-menu-item-icon"><EyeIcon /></span>
+                                Apri dettaglio
+                              </button>
+                              <button
+                                type="button"
+                                className="services-row-menu-item"
+                                onClick={() => { openPrint(service.id); setOpenDropdownId(null); }}
+                              >
+                                <span className="services-row-menu-item-icon"><ActionPrintIcon /></span>
+                                Stampa
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             </div>
@@ -1597,30 +1721,44 @@ export function ServicesPanel() {
                 );
               })}
             </div>
-            <div className="panel-header panel-pagination" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
-              <span>
-                Pagina {currentPage} di {totalPages}
-              </span>
-              <div className="panel-actions" style={{ display: 'flex', gap: 8 }}>
+            <div className="services-list-footer">
+              <div className="services-list-footer-size">
+                Mostra
+                <select
+                  className="services-list-pagesize-select"
+                  value={pageSize}
+                  onChange={(event) => {
+                    setPageSize(Number(event.target.value));
+                    setCurrentPage(1);
+                  }}
+                  aria-label="Numero di risultati per pagina"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                di {orderedServices.length} risultati
+              </div>
+              <div className="services-list-footer-pagination">
                 <button
                   type="button"
-                  className="logout-button"
+                  className="services-list-page-btn"
                   onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                   aria-label="Pagina precedente"
-                  title="Pagina precedente"
                 >
-                  <ButtonContent icon={<ArrowLeftIcon />}>Prec.</ButtonContent>
+                  ‹ Prec
                 </button>
+                <span className="services-list-page-info">Pagina {currentPage} di {totalPages}</span>
                 <button
                   type="button"
-                  className="logout-button"
+                  className="services-list-page-btn"
                   onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                   aria-label="Pagina successiva"
-                  title="Pagina successiva"
                 >
-                  <ButtonContent icon={<ArrowRightIcon />}>Succ.</ButtonContent>
+                  Succ ›
                 </button>
               </div>
             </div>
@@ -1713,12 +1851,14 @@ export function ServicesPanel() {
         </div>
       )}
 
-      {isFormOpen && (
-        <article className="dashboard-card">
-          <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-            <h3>{editingId ? `Modifica servizio #${editingId}` : 'Nuovo servizio'}</h3>
-            <button type="button" className="logout-button" onClick={closeForm}><ButtonContent icon={<LockIcon />}>Chiudi</ButtonContent></button>
-          </div>
+      {isFormOpen && createPortal(
+        <div className="services-modal-backdrop" onClick={(e) => { if (e.target === e.currentTarget) closeForm(); }}>
+          <div className="services-modal" role="dialog" aria-modal="true" aria-label={editingId ? `Modifica servizio #${editingId}` : 'Nuovo servizio'}>
+            <div className="services-modal-header">
+              <h2 className="services-modal-title">{editingId ? `Modifica servizio #${editingId}` : 'Nuovo servizio'}</h2>
+              <button type="button" className="services-modal-close" aria-label="Chiudi" onClick={closeForm}>×</button>
+            </div>
+            <div className="services-modal-body">
           <form className="form-grid" onSubmit={onSubmit}>
             <label>
               Data/ora inizio
@@ -1972,10 +2112,15 @@ export function ServicesPanel() {
               {editingId && (
                 <button type="button" className="logout-button" onClick={openCreateForm}><ButtonContent icon={<AddIcon />}>Nuovo servizio</ButtonContent></button>
               )}
+              <button type="button" className="logout-button" onClick={closeForm}><ButtonContent icon={<LockIcon />}>Annulla</ButtonContent></button>
             </div>
           </form>
-        </article>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </section>
+    </>
   );
 }
