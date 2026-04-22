@@ -24,6 +24,10 @@ public class UpdateOwnDriverProfileUseCase {
     }
 
     public UserSummaryDto execute(Long userId,
+                                  String firstName,
+                                  String lastName,
+                                  LocalDate birthDate,
+                                  String licenseNumber,
                                   String email,
                                   List<String> licenseTypes,
                                   List<String> residentialAddresses,
@@ -45,16 +49,20 @@ public class UpdateOwnDriverProfileUseCase {
         }
 
         var profile = createUserUseCase.validateAndBuildDriverProfile(
-            user.getFirstName(),
-            user.getLastName(),
-            user.getBirthDate(),
-            user.getLicenseNumber(),
+            firstName,
+            lastName,
+            birthDate,
+            licenseNumber,
             licenseTypes,
             residentialAddresses,
             mobilePhone,
             licenseExpiryDate
         );
 
+        user.setFirstName(profile.firstName());
+        user.setLastName(profile.lastName());
+        user.setBirthDate(profile.birthDate());
+        user.setLicenseNumber(profile.licenseNumber());
         user.setEmail(normalizedEmail);
         user.setLicenseTypesJson(DriverProfileJson.writeStringList(profile.licenseTypes()));
         user.setResidentialAddressesJson(DriverProfileJson.writeStringList(profile.residentialAddresses()));

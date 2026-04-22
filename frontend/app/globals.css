@@ -1140,6 +1140,120 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.driver-profile-grid {
+  display: grid;
+  border: 1px solid #d8e2ef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.driver-profile-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 240px) 1fr;
+  gap: 14px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e4ebf5;
+}
+
+.driver-profile-row:last-child {
+  border-bottom: none;
+}
+
+.driver-profile-row strong {
+  color: #1f2b3b;
+}
+
+.driver-profile-row span {
+  color: #607089;
+  overflow-wrap: anywhere;
+}
+
+.driver-license-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.driver-license-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2c3f57;
+  background: #edf2f7;
+  border: 1px solid #d8e3f0;
+}
+
+.driver-edit-modal {
+  width: min(980px, 100%);
+}
+
+.driver-edit-section {
+  display: grid;
+  gap: 10px;
+}
+
+.driver-edit-section h4 {
+  margin: 0;
+  color: #273548;
+}
+
+.driver-license-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.driver-license-chip {
+  border: 1px solid #d2deec;
+  background: #f6f9fd;
+  color: #32475e;
+  border-radius: 10px;
+  min-width: 42px;
+  height: 34px;
+  padding: 0 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.driver-license-chip.is-selected {
+  background: #2f67b7;
+  border-color: #2f67b7;
+  color: #ffffff;
+}
+
+.driver-profile-panel .secondary-button {
+  border: 1px solid #ced8e4;
+  background: #ffffff;
+  color: #2e3d4f;
+}
+
+.driver-profile-panel .secondary-button:hover:not(:disabled) {
+  background: #f4f7fb;
+}
+
+.driver-profile-panel .secondary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .driver-profile-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .driver-edit-modal {
+    padding: 14px;
+  }
+}
+
 .services-selected-title {
   font-size: 20px;
   color: #1c2738;

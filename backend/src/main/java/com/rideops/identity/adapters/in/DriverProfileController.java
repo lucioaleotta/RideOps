@@ -52,6 +52,10 @@ public class DriverProfileController {
 
         return updateOwnDriverProfileUseCase.execute(
             user.getId(),
+            request.firstName(),
+            request.lastName(),
+            request.birthDate(),
+            request.licenseNumber(),
             request.email(),
             request.licenseTypes(),
             request.residentialAddresses(),
@@ -60,7 +64,11 @@ public class DriverProfileController {
         );
     }
 
-    record UpdateDriverProfileRequest(@NotBlank @Email String email,
+    record UpdateDriverProfileRequest(@NotBlank String firstName,
+                                      @NotBlank String lastName,
+                                      @NotNull LocalDate birthDate,
+                                      @NotBlank String licenseNumber,
+                                      @NotBlank @Email String email,
                                       @NotEmpty List<@NotBlank String> licenseTypes,
                                       @NotEmpty List<@NotBlank String> residentialAddresses,
                                       @NotBlank String mobilePhone,

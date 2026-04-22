@@ -18,7 +18,7 @@ module.exports = {
   ],
   coverageThreshold: {
     global: {
-      branches: 40, // Start low, increase gradually
+      branches: 40,
       functions: 40,
       lines: 40,
       statements: 40,
@@ -26,4 +26,14 @@ module.exports = {
   },
   testPathIgnorePatterns: ['/node_modules/', '/.next/', '/e2e/'],
   transformIgnorePatterns: ['/node_modules/(?!(decode-uri-component|split-on-first|strict-uri-encode)/)'],
+  // Configure ts-jest to handle JSX/TSX files with React support
+  globals: {
+    'ts-jest': {
+      tsconfig: {
+        jsx: 'react-jsx',
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+      },
+    },
+  },
 };

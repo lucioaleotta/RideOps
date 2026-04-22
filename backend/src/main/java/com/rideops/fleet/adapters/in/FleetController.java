@@ -45,6 +45,7 @@ public class FleetController {
     }
 
     @GetMapping("/vehicles")
+    @PreAuthorize("hasAnyRole('ADMIN','GESTIONALE','DRIVER')")
     public List<VehicleDto> listVehicles() {
         return fleetService.listVehicles();
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from 'react';
-import { ButtonContent, CancelIcon, EditIcon, SaveIcon } from './action-icons';
+import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, SaveIcon } from './action-icons';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
 
@@ -23,11 +23,15 @@ type DriverProfile = {
 };
 
 type ProfileForm = {
+  firstName: string;
+  lastName: string;
+  birthDate: string;
+  licenseNumber: string;
   email: string;
   mobilePhone: string;
   licenseExpiryDate: string;
   licenseTypes: LicenseType[];
-  address: string;
+  residentialAddresses: string[];
 };
 
 const licenseTypeOptions: LicenseType[] = ['AM', 'A1', 'A2', 'A', 'B', 'BE', 'C', 'CE', 'D', 'DE', 'CQC'];
@@ -37,11 +41,15 @@ function toProfileForm(profile: DriverProfile): ProfileForm {
     .filter((value): value is LicenseType => licenseTypeOptions.includes(value as LicenseType));
 
   return {
+    firstName: profile.firstName ?? '',
+    lastName: profile.lastName ?? '',
+    birthDate: profile.birthDate ?? '',
+    licenseNumber: profile.licenseNumber ?? '',
     email: profile.email,
     mobilePhone: profile.mobilePhone ?? '',
     licenseExpiryDate: profile.licenseExpiryDate ?? '',
     licenseTypes: normalizedLicenseTypes.length > 0 ? normalizedLicenseTypes : ['B'],
-    address: profile.residentialAddresses?.[0] ?? ''
+    residentialAddresses: profile.residentialAddresses?.length ? profile.residentialAddresses : ['']
   };
 }
 
@@ -64,6 +72,17 @@ export function DriverProfilePanel() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' && isEditing && !submitting) {
+        onCancelEditing();
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isEditing, submitting, profile]);
 
   useEffect(() => {
     async function load() {
@@ -115,17 +134,23 @@ export function DriverProfilePanel() {
     setError(null);
     setSuccess(null);
 
-    const normalizedAddress = form.address.trim();
+    const normalizedAddresses = form.residentialAddresses
+      .map((value) => value.trim())
+      .filter(Boolean);
 
     const response = await fetch('/api/driver/profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        firstName: form.firstName,
+        lastName: form.lastName,
+        birthDate: form.birthDate,
+        licenseNumber: form.licenseNumber,
         email: form.email,
         mobilePhone: form.mobilePhone,
         licenseExpiryDate: form.licenseExpiryDate,
         licenseTypes: form.licenseTypes,
-        residentialAddresses: normalizedAddress ? [normalizedAddress] : []
+        residentialAddresses: normalizedAddresses
       })
     });
 
@@ -163,6 +188,33 @@ export function DriverProfilePanel() {
     setIsEditing(false);
   }
 
+  function addAddress() {
+    setForm((prev) => (prev ? { ...prev, residentialAddresses: [...prev.residentialAddresses, ''] } : prev));
+  }
+
+  function updateAddress(index: number, value: string) {
+    setForm((prev) => {
+      if (!prev) {
+        return prev;
+      }
+      const next = [...prev.residentialAddresses];
+      next[index] = value;
+      return { ...prev, residentialAddresses: next };
+    });
+  }
+
+  function removeAddress(index: number) {
+    setForm((prev) => {
+      if (!prev || prev.residentialAddresses.length <= 1) {
+        return prev;
+      }
+      return {
+        ...prev,
+        residentialAddresses: prev.residentialAddresses.filter((_, currentIndex) => currentIndex !== index)
+      };
+    });
+  }
+
   if (loading) {
     return <p>Caricamento profilo driver...</p>;
   }
@@ -178,100 +230,185 @@ export function DriverProfilePanel() {
 
       <article className="dashboard-card">
         <h3>Informazioni personali</h3>
-        <p><strong>Nome:</strong> {profile.firstName ?? '-'}</p>
-        <p><strong>Cognome:</strong> {profile.lastName ?? '-'}</p>
-        <p><strong>User ID:</strong> {profile.userId}</p>
-        <p><strong>Data di nascita:</strong> {formatDate(profile.birthDate)}</p>
-        <p><strong>Numero patente:</strong> {profile.licenseNumber ?? '-'}</p>
-        <p><strong>Email:</strong> {profile.email}</p>
-        <p><strong>Cellulare:</strong> {profile.mobilePhone ?? '-'}</p>
-        <p><strong>Indirizzo di residenza:</strong> {profile.residentialAddresses?.[0] ?? '-'}</p>
-        <p><strong>Scadenza patente:</strong> {formatDate(profile.licenseExpiryDate)}</p>
-        <p><strong>Tipi patente:</strong> {profile.licenseTypes?.length ? profile.licenseTypes.join(', ') : '-'}</p>
-
-        {!isEditing && (
-          <div className="form-actions" style={{ marginTop: 12 }}>
-            <button type="button" className="primary-button" onClick={onStartEditing}>
-              <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
-            </button>
+        <div className="driver-profile-grid" role="list">
+          <div className="driver-profile-row" role="listitem"><strong>Nome</strong><span>{profile.firstName ?? '-'}</span></div>
+          <div className="driver-profile-row" role="listitem"><strong>Cognome</strong><span>{profile.lastName ?? '-'}</span></div>
+          <div className="driver-profile-row" role="listitem"><strong>User ID</strong><span>{profile.userId}</span></div>
+          <div className="driver-profile-row" role="listitem"><strong>Data di nascita</strong><span>{formatDate(profile.birthDate)}</span></div>
+          <div className="driver-profile-row" role="listitem"><strong>Numero patente</strong><span>{profile.licenseNumber ?? '-'}</span></div>
+          <div className="driver-profile-row" role="listitem"><strong>Email</strong><span>{profile.email}</span></div>
+          <div className="driver-profile-row" role="listitem"><strong>Cellulare</strong><span>{profile.mobilePhone ?? '-'}</span></div>
+          <div className="driver-profile-row" role="listitem"><strong>Indirizzo di residenza</strong><span>{profile.residentialAddresses?.[0] ?? '-'}</span></div>
+          <div className="driver-profile-row" role="listitem"><strong>Scadenza patente</strong><span>{formatDate(profile.licenseExpiryDate)}</span></div>
+          <div className="driver-profile-row" role="listitem">
+            <strong>Tipi patente</strong>
+            <span className="driver-license-badges">
+              {profile.licenseTypes?.length
+                ? profile.licenseTypes.map((type) => <span key={type} className="driver-license-badge">{type}</span>)
+                : <span>-</span>}
+            </span>
           </div>
-        )}
+        </div>
+        <div className="form-actions" style={{ marginTop: 12 }}>
+          <button type="button" className="primary-button" onClick={onStartEditing}>
+            <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
+          </button>
+        </div>
       </article>
 
       {isEditing && (
-        <article className="dashboard-card">
-          <h3>Modifica contatti e patente</h3>
-          <form onSubmit={onSubmit} className="form-grid">
-            <label>
-              Email
-              <input
-                type="email"
-                className="form-input"
-                value={form.email}
-                onChange={(event) => setForm((prev) => (prev ? { ...prev, email: event.target.value } : prev))}
-                required
-              />
-            </label>
-
-            <label>
-              Cellulare
-              <input
-                className="form-input"
-                value={form.mobilePhone}
-                onChange={(event) => setForm((prev) => (prev ? { ...prev, mobilePhone: event.target.value } : prev))}
-                placeholder="+39..."
-                required
-              />
-            </label>
-
-            <label>
-              Indirizzo di residenza
-              <input
-                className="form-input"
-                value={form.address}
-                onChange={(event) => setForm((prev) => (prev ? { ...prev, address: event.target.value } : prev))}
-                placeholder="Via, numero civico, citta"
-                required
-              />
-            </label>
-
-            <label>
-              Data scadenza patente
-              <input
-                type="date"
-                className="form-input"
-                value={form.licenseExpiryDate}
-                onChange={(event) => setForm((prev) => (prev ? { ...prev, licenseExpiryDate: event.target.value } : prev))}
-                required
-              />
-            </label>
-
-            <div>
-              <strong>Tipi patente</strong>
-              <div className="panel-actions" style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
-                {licenseTypeOptions.map((type) => (
-                  <label key={type} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <input
-                      type="checkbox"
-                      checked={form.licenseTypes.includes(type)}
-                      onChange={() => toggleLicenseType(type)}
-                    />
-                    <span>{type}</span>
-                  </label>
-                ))}
+        <div className="tenant-modal-overlay" onClick={onCancelEditing}>
+          <article className="tenant-modal-card driver-edit-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="tenant-modal-header">
+              <div>
+                <h3>Modifica driver</h3>
+                <p>Compila i dati anagrafici, la patente e gli indirizzi di residenza.</p>
               </div>
+              <button type="button" className="tenant-modal-close" onClick={onCancelEditing} aria-label="Chiudi modale">
+                ×
+              </button>
             </div>
 
-            <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="submit" className="primary-button" disabled={submitting}>
-                <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : 'Salva'}</ButtonContent>
-              </button>
-              <button type="button" className="secondary-button" onClick={onCancelEditing} disabled={submitting}>
-                <ButtonContent icon={<CancelIcon />}>Cancella</ButtonContent>
-              </button>
-            </div>
-          </form>
-        </article>
+            <form onSubmit={onSubmit} className="form-grid">
+              <section className="driver-edit-section">
+                <h4>Anagrafica</h4>
+                <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                  <label>
+                    Nome
+                    <input
+                      className="form-input"
+                      value={form.firstName}
+                      onChange={(event) => setForm((prev) => (prev ? { ...prev, firstName: event.target.value } : prev))}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Cognome
+                    <input
+                      className="form-input"
+                      value={form.lastName}
+                      onChange={(event) => setForm((prev) => (prev ? { ...prev, lastName: event.target.value } : prev))}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Data di nascita
+                    <input
+                      className="form-input"
+                      type="date"
+                      value={form.birthDate}
+                      onChange={(event) => setForm((prev) => (prev ? { ...prev, birthDate: event.target.value } : prev))}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Cellulare
+                    <input
+                      className="form-input"
+                      value={form.mobilePhone}
+                      onChange={(event) => setForm((prev) => (prev ? { ...prev, mobilePhone: event.target.value } : prev))}
+                      placeholder="+39..."
+                      required
+                    />
+                  </label>
+                  <label style={{ gridColumn: '1 / -1' }}>
+                    Email
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={form.email}
+                      onChange={(event) => setForm((prev) => (prev ? { ...prev, email: event.target.value } : prev))}
+                      required
+                    />
+                  </label>
+                </div>
+              </section>
+
+              <section className="driver-edit-section">
+                <h4>Patente</h4>
+                <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                  <label>
+                    Numero patente
+                    <input
+                      className="form-input"
+                      value={form.licenseNumber}
+                      onChange={(event) => setForm((prev) => (prev ? { ...prev, licenseNumber: event.target.value } : prev))}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Scadenza patente
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={form.licenseExpiryDate}
+                      onChange={(event) => setForm((prev) => (prev ? { ...prev, licenseExpiryDate: event.target.value } : prev))}
+                      required
+                    />
+                  </label>
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <strong>Tipo patente (uno o piu)</strong>
+                  <div className="driver-license-picker">
+                    {licenseTypeOptions.map((type) => {
+                      const selected = form.licenseTypes.includes(type);
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          className={`driver-license-chip ${selected ? 'is-selected' : ''}`}
+                          onClick={() => toggleLicenseType(type)}
+                        >
+                          {type}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+
+              <section className="driver-edit-section">
+                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <h4>Indirizzi di residenza</h4>
+                  <button type="button" className="secondary-button" onClick={addAddress}>
+                    <ButtonContent icon={<AddIcon />}>Aggiungi</ButtonContent>
+                  </button>
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {form.residentialAddresses.map((address, index) => (
+                    <div key={`address-${index}`} className="address-row" style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        className="form-input"
+                        value={address}
+                        onChange={(event) => updateAddress(index, event.target.value)}
+                        placeholder={`Indirizzo ${index + 1}`}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() => removeAddress(index)}
+                        disabled={form.residentialAddresses.length <= 1}
+                        aria-label={`Rimuovi indirizzo ${index + 1}`}
+                      >
+                        <ButtonContent icon={<DeleteIcon />}>Rimuovi</ButtonContent>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                <button type="button" className="secondary-button" onClick={onCancelEditing} disabled={submitting}>
+                  <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
+                </button>
+                <button type="submit" className="primary-button" disabled={submitting}>
+                  <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : 'Aggiorna driver'}</ButtonContent>
+                </button>
+              </div>
+            </form>
+          </article>
+        </div>
       )}
     </section>
   );

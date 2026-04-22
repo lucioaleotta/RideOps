@@ -18,5 +18,7 @@ public interface TenantManagementRepositoryPort {
 
     Optional<TenantEntity> findById(Long id);
 
+    List<TenantEntity> findAllByOrderByBusinessNameAsc();
+
     List<TenantEntity> search(String query);
 }

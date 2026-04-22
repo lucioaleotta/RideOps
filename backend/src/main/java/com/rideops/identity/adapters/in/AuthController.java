@@ -1,7 +1,7 @@
 package com.rideops.identity.adapters.in;
 
+import com.rideops.config.JwtSecurityService;
 import com.rideops.identity.application.IdentityUserDetails;
-import com.rideops.identity.application.JwtService;
 import com.rideops.identity.application.PasswordResetService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -25,14 +25,14 @@ import org.springframework.web.server.ResponseStatusException;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
-    private final JwtService jwtService;
+    private final JwtSecurityService jwtSecurityService;
     private final PasswordResetService passwordResetService;
 
     public AuthController(AuthenticationManager authenticationManager,
-                          JwtService jwtService,
+                          JwtSecurityService jwtSecurityService,
                           PasswordResetService passwordResetService) {
         this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
+        this.jwtSecurityService = jwtSecurityService;
         this.passwordResetService = passwordResetService;
     }
 
@@ -43,8 +43,8 @@ public class AuthController {
                 new UsernamePasswordAuthenticationToken(request.userId(), request.password())
             );
             IdentityUserDetails principal = (IdentityUserDetails) authentication.getPrincipal();
-            String token = jwtService.generateToken(principal);
-            return new LoginResponse(token, "Bearer", jwtService.getExpirationSeconds());
+            String token = jwtSecurityService.generateToken(principal);
+            return new LoginResponse(token, "Bearer", jwtSecurityService.getExpirationSeconds());
         } catch (BadCredentialsException exception) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenziali non valide");
         }

@@ -47,6 +47,11 @@ public class TenantManagementJpaAdapter implements TenantManagementRepositoryPor
     }
 
     @Override
+    public List<TenantEntity> findAllByOrderByBusinessNameAsc() {
+        return tenantRepository.findAllByOrderByBusinessNameAsc();
+    }
+
+    @Override
     public List<TenantEntity> search(String query) {
         if (query == null || query.trim().isEmpty()) {
             return tenantRepository.findAllByOrderByBusinessNameAsc();
