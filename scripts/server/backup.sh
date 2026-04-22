@@ -10,7 +10,7 @@ BACKUP_DIR="/opt/rideops/backups"
 COMPOSE_FILE="/opt/rideops/docker-compose.prod.yml"
 ENV_FILE="/opt/rideops/.env"
 CONTAINER="rideops-postgres"
-RETENTION_DAYS=7
+RETENTION_DAYS=3
 
 # Carica variabili d'ambiente
 # shellcheck source=/dev/null
