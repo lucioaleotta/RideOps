@@ -215,7 +215,7 @@ export function AdminUsersPanel() {
             </select>
           </label>
           <label>
-            Cliente
+            Tenant
             <input className="form-input" value={filterTenant} onChange={(e) => setFilterTenant(e.target.value)} placeholder="cerca..." />
           </label>
         </div>
@@ -237,7 +237,7 @@ export function AdminUsersPanel() {
                     <th align="left">User ID</th>
                     <th align="left">Email</th>
                     <th align="left">Ruolo</th>
-                    <th align="left">Cliente</th>
+                    <th align="left">Tenant</th>
                     <th align="left">Stato</th>
                     <th align="left">Data Creazione</th>
                     <th align="left">Azioni</th>
@@ -283,7 +283,7 @@ export function AdminUsersPanel() {
                   </div>
                   <div className="admin-user-email">{user.email}</div>
                   {user.tenantName && (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #888)', marginBottom: 4 }}>Cliente: {user.tenantName}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #888)', marginBottom: 4 }}>Tenant: {user.tenantName}</div>
                   )}
                   <div className="admin-user-card-footer">
                     <div className="admin-user-meta">
