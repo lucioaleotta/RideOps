@@ -1,6 +1,6 @@
 package com.rideops.identity.application.admin;
 
-import com.rideops.multitenancy.application.TenantManagementRepositoryPort;
+import com.rideops.multitenancy.TenantRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -11,16 +11,16 @@ import java.util.stream.Collectors;
 public class ListUsersUseCase {
 
     private final UserAdminRepositoryPort userAdminRepositoryPort;
-    private final TenantManagementRepositoryPort tenantManagementRepositoryPort;
+    private final TenantRepository tenantRepository;
 
     public ListUsersUseCase(UserAdminRepositoryPort userAdminRepositoryPort,
-                            TenantManagementRepositoryPort tenantManagementRepositoryPort) {
+                            TenantRepository tenantRepository) {
         this.userAdminRepositoryPort = userAdminRepositoryPort;
-        this.tenantManagementRepositoryPort = tenantManagementRepositoryPort;
+        this.tenantRepository = tenantRepository;
     }
 
     public List<UserSummaryDto> execute() {
-        Map<Long, String> tenantNames = tenantManagementRepositoryPort.findAllByOrderByBusinessNameAsc()
+        Map<Long, String> tenantNames = tenantRepository.findAll()
             .stream()
             .collect(Collectors.toMap(t -> t.getId(), t -> t.getBusinessName()));
 
