@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from 'react';
+import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CalendarIcon, CancelIcon, CursorIcon, FilterIcon, LockIcon, OpenIcon, PartnerIcon as SharedPartnerIcon, PrintIcon as SharedPrintIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon, UserIcon } from './action-icons';
@@ -118,6 +118,11 @@ type ServicesFilterState = {
 
 type ServiceNoticeTone = 'info' | 'warning' | 'error';
 
+type FilterOption = {
+  value: string;
+  label: string;
+};
+
 const defaultForm: ServiceFormState = {
   startAt: '',
   pickupLocation: '',
@@ -191,6 +196,15 @@ function MobilePinIcon() {
         strokeLinejoin="round"
       />
       <circle cx="12" cy="11" r="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function MobileFlagIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M6.5 4.8v14.4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M7.5 6.2h9.2l-2.3 3.1 2.3 3.1H7.5Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -365,6 +379,96 @@ function ServiceNoticeIcon({ tone }: { tone: ServiceNoticeTone }) {
       <path d="M12 10.2v6" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
       <circle cx="12" cy="7.2" r="1" fill="currentColor" />
     </svg>
+  );
+}
+
+function FilterDropdown({
+  label,
+  value,
+  options,
+  onChange,
+  className
+}: {
+  label: string;
+  value: string;
+  options: FilterOption[];
+  onChange: (nextValue: string) => void;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const selectedOption = options.find((option) => option.value === value) ?? options[0];
+
+  return (
+    <div className={`services-filter-group services-filter-dropdown ${className ?? ''}`.trim()} ref={containerRef}>
+      <span className="services-filter-label">{label}</span>
+      <button
+        type="button"
+        className={`services-filter-dropdown-trigger ${isOpen ? 'is-open' : ''}`}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((prev) => !prev)}
+      >
+        <span className="services-filter-dropdown-value">{selectedOption?.label ?? ''}</span>
+        <span className="services-filter-dropdown-chevron" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+      </button>
+
+      {isOpen && (
+        <div className="services-filter-dropdown-menu" role="listbox" aria-label={label}>
+          {options.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <button
+                key={option.value || 'all'}
+                type="button"
+                role="option"
+                aria-selected={isSelected}
+                className={`services-filter-dropdown-option ${isSelected ? 'is-selected' : ''}`}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+              >
+                <span className="services-filter-dropdown-check" aria-hidden="true">
+                  {isSelected ? (
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="m5 12 4.2 4.2L19 6.8" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : null}
+                </span>
+                <span className="services-filter-dropdown-option-label">{option.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1156,6 +1260,25 @@ export function ServicesPanel() {
     ? drivers.find((driver) => driver.id === filters.driverId) ?? null
     : null;
 
+  const statusFilterOptions: FilterOption[] = [
+    { value: '', label: 'Tutti' },
+    { value: 'OPEN', label: 'Aperti' },
+    { value: 'ASSIGNED', label: 'Assegnati' },
+    { value: 'EXECUTED', label: 'Eseguiti' },
+    { value: 'CLOSED', label: 'Chiusi' }
+  ];
+
+  const driverFilterOptions: FilterOption[] = [
+    { value: '', label: 'Tutti' },
+    ...drivers.map((driver) => ({ value: String(driver.id), label: driverLabel(driver) }))
+  ];
+
+  const typeFilterOptions: FilterOption[] = [
+    { value: '', label: 'Tutti' },
+    { value: 'TRANSFER', label: 'Transfer' },
+    { value: 'TOUR', label: 'Tour' }
+  ];
+
   const activeFilterChips = [
     filters.query.trim()
       ? {
@@ -1277,61 +1400,43 @@ export function ServicesPanel() {
               </div>
             </label>
 
-            <label className="services-filter-group services-filter-group--status">
-              <span className="services-filter-label">Stato</span>
-              <select
-                className="services-filter-select"
-                value={filters.status}
-                onChange={(event) => {
-                  const nextStatus = event.target.value as ServiceStatus | '';
-                  updateFilters((prev) => ({
-                    ...prev,
-                    status: nextStatus,
-                    onlyUnassigned: nextStatus === 'ASSIGNED' || nextStatus === 'EXECUTED' || nextStatus === 'CLOSED'
-                      ? false
-                      : prev.onlyUnassigned
-                  }));
-                }}
-              >
-                <option value="">Tutti</option>
-                <option value="OPEN">Aperti</option>
-                <option value="ASSIGNED">Assegnati</option>
-                <option value="EXECUTED">Eseguiti</option>
-                <option value="CLOSED">Chiusi</option>
-              </select>
-            </label>
+            <FilterDropdown
+              className="services-filter-group--status"
+              label="Stato"
+              value={filters.status}
+              options={statusFilterOptions}
+              onChange={(nextValue) => {
+                const nextStatus = nextValue as ServiceStatus | '';
+                updateFilters((prev) => ({
+                  ...prev,
+                  status: nextStatus,
+                  onlyUnassigned: nextStatus === 'ASSIGNED' || nextStatus === 'EXECUTED' || nextStatus === 'CLOSED'
+                    ? false
+                    : prev.onlyUnassigned
+                }));
+              }}
+            />
 
-            <label className="services-filter-group services-filter-group--driver">
-              <span className="services-filter-label">Driver</span>
-              <select
-                className="services-filter-select"
-                value={filters.driverId}
-                onChange={(event) =>
-                  updateFilters((prev) => ({
-                    ...prev,
-                    driverId: event.target.value ? Number(event.target.value) : ''
-                  }))
-                }
-              >
-                <option value="">Tutti</option>
-                {drivers.map((driver) => (
-                  <option key={driver.id} value={driver.id}>{driverLabel(driver)}</option>
-                ))}
-              </select>
-            </label>
+            <FilterDropdown
+              className="services-filter-group--driver"
+              label="Driver"
+              value={filters.driverId ? String(filters.driverId) : ''}
+              options={driverFilterOptions}
+              onChange={(nextValue) =>
+                updateFilters((prev) => ({
+                  ...prev,
+                  driverId: nextValue ? Number(nextValue) : ''
+                }))
+              }
+            />
 
-            <label className="services-filter-group services-filter-group--type">
-              <span className="services-filter-label">Tipo</span>
-              <select
-                className="services-filter-select"
-                value={filters.type}
-                onChange={(event) => updateFilters((prev) => ({ ...prev, type: event.target.value as ServiceType | '' }))}
-              >
-                <option value="">Tutti</option>
-                <option value="TRANSFER">Transfer</option>
-                <option value="TOUR">Tour</option>
-              </select>
-            </label>
+            <FilterDropdown
+              className="services-filter-group--type"
+              label="Tipo"
+              value={filters.type}
+              options={typeFilterOptions}
+              onChange={(nextValue) => updateFilters((prev) => ({ ...prev, type: nextValue as ServiceType | '' }))}
+            />
 
             <button
               type="button"
@@ -1799,12 +1904,12 @@ export function ServicesPanel() {
                     </td>
                     <td style={tdStyle}>
                       <div className="services-table-route">
-                        <div className="services-table-route-line">
+                        <div className="services-table-route-line services-table-route-line--pickup">
                           <span className="services-table-route-icon"><MobilePinIcon /></span>
                           <span className="services-table-route-text">{service.pickupLocation}</span>
                         </div>
-                        <div className="services-table-route-line">
-                          <span className="services-table-route-icon"><CursorIcon /></span>
+                        <div className="services-table-route-line services-table-route-line--destination">
+                          <span className="services-table-route-icon"><MobileFlagIcon /></span>
                           <span className="services-table-route-text">{service.destination}</span>
                         </div>
                       </div>
