@@ -385,25 +385,22 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
 
   return (
     <section className="responsive-panel partners-management-panel" style={{ display: 'grid', gap: 16 }}>
-      <article className="dashboard-card">
-        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <h2>Gestione Partner</h2>
-          <button
-            type="button"
-            className="primary-button compact-button"
-            onClick={() => {
-              setShowCreateForm((prev) => !prev);
-              setIsEditMode(false);
-              setSelectedPartnerId('');
-              setForm(defaultForm);
-            }}
-          >
-            <ButtonContent icon={showCreateForm ? <LockIcon /> : <AddIcon />}>{showCreateForm ? 'Chiudi nuovo partner' : 'Nuovo partner'}</ButtonContent>
-          </button>
-        </div>
-        <p>Gestisci anagrafica e operativita` di agenzie, NCC e altri fornitori.</p>
+      {showCreateForm && (
+        <article className="dashboard-card">
+          <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+            <h3>Nuovo Partner</h3>
+            <button
+              type="button"
+              className="primary-button compact-button"
+              onClick={() => {
+                setShowCreateForm(false);
+                setForm(defaultForm);
+              }}
+            >
+              <ButtonContent icon={<LockIcon />}>Chiudi</ButtonContent>
+            </button>
+          </div>
 
-        {showCreateForm && (
           <form className="form-grid" onSubmit={createPartner}>
             <label>
               Tipologia
@@ -443,7 +440,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
             </label>
             <label>
               Zona Operativa
-              <input className="form-input" value={form.zonaOperativa} onChange={(e) => setForm((p) => ({ ...p, zonaOperativa: e.target.value }))} />
+                <input className="form-input" value={form.zonaOperativa} onChange={(e) => setForm((p) => ({ ...p, zonaOperativa: e.target.value }))} />
             </label>
             <label>
               Partita IVA
@@ -486,108 +483,108 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
               <button type="button" className="logout-button compact-button" onClick={() => setForm(defaultForm)}><ButtonContent icon={<ResetIcon />}>Reset</ButtonContent></button>
             </div>
           </form>
-        )}
-      </article>
+        </article>
+      )}
 
-      <article className="dashboard-card">
-        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-          <h3>Filtri</h3>
-          <button type="button" className="logout-button compact-button" onClick={() => setShowFiltersCard((prev) => !prev)}>
-            <ButtonContent icon={showFiltersCard ? <LockIcon /> : <FilterIcon />}>{showFiltersCard ? 'Chiudi filtri' : 'Apri filtri'}</ButtonContent>
-          </button>
+      <article className="dashboard-card gestionale-partner-list-card">
+        <div className="panel-header gestionale-partner-toolbar">
+          <h3>Partner</h3>
+          <div className="panel-actions gestionale-partner-toolbar-actions">
+            <label className="gestionale-partner-include-toggle">
+              <input
+                type="checkbox"
+                checked={showDeleted}
+                onChange={(e) => setShowDeleted(e.target.checked)}
+              />
+              Includi cancellati
+            </label>
+            <button
+              type="button"
+              className="primary-button compact-button"
+              onClick={() => setShowCreateForm(true)}
+            >
+              <ButtonContent icon={<AddIcon />}>Nuovo partner</ButtonContent>
+            </button>
+          </div>
         </div>
 
-        {showFiltersCard && (
-          <div className="form-grid" style={{ display: 'grid', gap: 10, marginTop: 8 }}>
-            <label>
-              Ragione Sociale
-              <input className="form-input" value={filterRagioneSociale} onChange={(e) => setFilterRagioneSociale(e.target.value)} />
-            </label>
-            <label>
-              Tipologia
-              <select className="form-input" value={filterType} onChange={(e) => setFilterType(e.target.value as 'ALL' | PartnerType)}>
-                <option value="ALL">Tutte</option>
-                <option value="AGENZIA">Agenzia</option>
-                <option value="NCC">NCC</option>
-                <option value="ALTRO">Altro</option>
-              </select>
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="checkbox" checked={showDeleted} onChange={(e) => setShowDeleted(e.target.checked)} />
-              Mostra partner cancellati
-            </label>
-            <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                className="logout-button compact-button"
-                onClick={() => {
-                  setFilterRagioneSociale('');
-                  setFilterType('ALL');
-                  setShowDeleted(false);
-                }}
-              >
-                <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
-              </button>
-            </div>
-          </div>
-        )}
-      </article>
-
-      <article className="dashboard-card">
-        <h3>Lista Partner</h3>
-        {loading ? (
-          <p>Caricamento partner...</p>
-        ) : (
-          <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 8 }}>
-            <table className="responsive-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Ragione Sociale</th>
-                  <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Telefono</th>
-                  <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Email</th>
-                  <th style={{ textAlign: 'left', padding: '0 10px 8px 0' }}>Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visiblePartners.length === 0 ? (
-                  <tr>
-                    <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }} colSpan={4}>
-                      Nessun partner trovato.
+        <div className="table-scroll gestionale-partner-table-wrap">
+          <table className="responsive-table partner-table gestionale-partner-table">
+            <thead>
+              <tr>
+                <th>Ragione Sociale</th>
+                <th>Telefono</th>
+                <th>Email</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visiblePartners.map((partner) => {
+                const isSelected = selectedPartnerId === partner.id;
+                return (
+                  <tr
+                    key={partner.id}
+                    className={`gestionale-partner-row ${isSelected ? 'is-selected' : ''} ${partner.deleted ? 'is-deleted' : ''}`}
+                  >
+                    <td>{partner.ragioneSociale}</td>
+                    <td>{partner.telefono ?? '-'}</td>
+                    <td>{partner.email ?? '-'}</td>
+                    <td>
+                      <div className="table-actions gestionale-partner-table-actions">
+                        <button type="button" className="primary-button compact-button" onClick={() => selectPartner(partner.id)}>
+                          <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
+                        </button>
+                        <button
+                          type="button"
+                          className="primary-button compact-button"
+                          onClick={() => {
+                            selectPartner(partner.id);
+                            setIsEditMode(true);
+                          }}
+                          disabled={partner.deleted}
+                        >
+                          <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
+                        </button>
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  visiblePartners.map((partner) => (
-                    <tr key={partner.id} style={selectedPartnerId === partner.id ? { background: '#eaf1f9' } : undefined}>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                        {partner.ragioneSociale} {partner.deleted ? '(cancellato)' : ''}
-                      </td>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{partner.telefono ?? '-'}</td>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>{partner.email ?? '-'}</td>
-                      <td style={{ padding: '8px 10px 8px 0', borderBottom: '1px solid #eaf1f9' }}>
-                        <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          <button type="button" className="logout-button compact-button" onClick={() => selectPartner(partner.id)}>
-                            <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
-                          </button>
-                          <button
-                            type="button"
-                            className="primary-button compact-button"
-                            onClick={() => {
-                              selectPartner(partner.id);
-                              setIsEditMode(true);
-                            }}
-                            disabled={partner.deleted}
-                          >
-                            <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                );
+              })}
+            </tbody>
+          </table>
+          {loading && <p className="gestionale-partner-table-empty">Caricamento partner...</p>}
+          {!loading && visiblePartners.length === 0 && <p className="gestionale-partner-table-empty">Nessun partner trovato.</p>}
+        </div>
+
+        <div className="gestionale-partner-mobile-list-wrap">
+          <h4 className="gestionale-partner-mobile-list-title">Partner ({visiblePartners.length})</h4>
+
+          <div className="gestionale-partner-mobile-list">
+            {visiblePartners.map((partner) => {
+              const isSelected = selectedPartnerId === partner.id;
+              return (
+                <button
+                  key={`mobile-${partner.id}`}
+                  type="button"
+                  className={`gestionale-partner-mobile-item ${isSelected ? 'is-selected' : ''}`}
+                  onClick={() => selectPartner(partner.id)}
+                >
+                  <span className="gestionale-partner-mobile-icon" aria-hidden="true">{typeLabel(partner.type).charAt(0)}</span>
+
+                  <span className="gestionale-partner-mobile-main">
+                    <span className="gestionale-partner-mobile-name">{partner.ragioneSociale}</span>
+                    <span className="gestionale-partner-mobile-type">{typeLabel(partner.type)}</span>
+                  </span>
+
+                  <span className="gestionale-partner-mobile-chevron" aria-hidden="true">›</span>
+                </button>
+              );
+            })}
           </div>
-        )}
+
+          {loading && <p className="gestionale-partner-table-empty">Caricamento partner...</p>}
+          {!loading && visiblePartners.length === 0 && <p className="gestionale-partner-table-empty">Nessun partner trovato.</p>}
+        </div>
       </article>
 
       {selectedPartnerDetail && (
