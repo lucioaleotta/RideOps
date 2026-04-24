@@ -38,6 +38,12 @@ type DriverFormState = {
   licenseExpiryDate: string;
 };
 
+type DriverStats = {
+  active: number;
+  expiringIn90Days: number;
+  disabled: number;
+};
+
 const licenseTypeOptions: LicenseType[] = ['AM', 'A1', 'A2', 'A', 'B', 'BE', 'C', 'CE', 'D', 'DE', 'CQC'];
 
 const defaultForm: DriverFormState = {
@@ -114,8 +120,56 @@ function DriverAddressIcon() {
   );
 }
 
+function DriverActiveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <circle cx="9" cy="8" r="3" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M3.6 18.2c0-2.9 2.4-5.2 5.4-5.2h.1c3 0 5.4 2.3 5.4 5.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <circle cx="17.5" cy="9" r="2.3" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M15.7 16.8a4.4 4.4 0 0 1 4.3-3.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DriverExpiryIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3.5" y="5.5" width="17" height="14" rx="3" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M8 3.8v3.3M16 3.8v3.3M3.5 9.6h17" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M12 12v3l2 1.3" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <circle cx="12" cy="15" r="4.6" fill="none" stroke="currentColor" strokeWidth="1.9" />
+    </svg>
+  );
+}
+
+function DriverDisabledIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M8.4 6.2h7.2l-.5-1.4a1.4 1.4 0 0 0-1.3-.9h-3.6a1.4 1.4 0 0 0-1.3.9Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <rect x="6" y="6.8" width="12" height="13.8" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M10 10.2v7M14 10.2v7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function computeDriverStats(items: DriverItem[]): DriverStats {
+  return items.reduce<DriverStats>((acc, driver) => {
+    if (driver.enabled) {
+      acc.active += 1;
+      const daysLeft = daysToDate(driver.licenseExpiryDate);
+      if (daysLeft !== null && daysLeft >= 0 && daysLeft <= 90) {
+        acc.expiringIn90Days += 1;
+      }
+    } else {
+      acc.disabled += 1;
+    }
+    return acc;
+  }, { active: 0, expiringIn90Days: 0, disabled: 0 });
+}
+
 export function GestionaleDriversPanel() {
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
+  const [stats, setStats] = useState<DriverStats>({ active: 0, expiringIn90Days: 0, disabled: 0 });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -170,6 +224,19 @@ export function GestionaleDriversPanel() {
 
     const nextDrivers = payload as DriverItem[];
     setDrivers(nextDrivers);
+
+    if (nextIncludeDeleted) {
+      setStats(computeDriverStats(nextDrivers));
+    } else {
+      const statsResponse = await fetch('/api/gestionale/drivers?includeDeleted=true', { cache: 'no-store' });
+      const statsPayload = (await statsResponse.json().catch(() => [])) as DriverItem[];
+      if (statsResponse.ok) {
+        setStats(computeDriverStats(statsPayload));
+      } else {
+        setStats(computeDriverStats(nextDrivers));
+      }
+    }
+
     setLoading(false);
 
     if (selectedDriverId && !nextDrivers.some((driver) => driver.id === selectedDriverId)) {
@@ -383,6 +450,32 @@ export function GestionaleDriversPanel() {
   return (
     <section className="responsive-panel gestionale-panel" style={{ display: 'grid', gap: 16 }}>
       {newButtonPortalTarget ? createPortal(createDriverButton, newButtonPortalTarget) : null}
+
+      <section className="gestionale-driver-kpi-grid" aria-label="Statistiche driver">
+        <article className="dashboard-card gestionale-driver-kpi-card">
+          <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--active" aria-hidden="true"><DriverActiveIcon /></div>
+          <div className="gestionale-driver-kpi-content">
+            <p className="gestionale-driver-kpi-label">Driver attivi</p>
+            <p className="gestionale-driver-kpi-value">{stats.active}</p>
+          </div>
+        </article>
+
+        <article className="dashboard-card gestionale-driver-kpi-card">
+          <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--expiry" aria-hidden="true"><DriverExpiryIcon /></div>
+          <div className="gestionale-driver-kpi-content">
+            <p className="gestionale-driver-kpi-label">Patenti in scadenza (90gg)</p>
+            <p className="gestionale-driver-kpi-value">{stats.expiringIn90Days}</p>
+          </div>
+        </article>
+
+        <article className="dashboard-card gestionale-driver-kpi-card">
+          <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--disabled" aria-hidden="true"><DriverDisabledIcon /></div>
+          <div className="gestionale-driver-kpi-content">
+            <p className="gestionale-driver-kpi-label">Disattivati</p>
+            <p className="gestionale-driver-kpi-value">{stats.disabled}</p>
+          </div>
+        </article>
+      </section>
 
       {selectedDriver && (
         <article className="dashboard-card gestionale-driver-selected-card">
