@@ -228,6 +228,39 @@ export function DriverProfilePanel() {
       {error && <p className="error-text">{error}</p>}
       {success && <p className="success-text">{success}</p>}
 
+      {/* Card patenti in scadenza */}
+      {(() => {
+        const expiry = profile.licenseExpiryDate;
+        let daysLeft: number | null = null;
+        if (expiry) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const due = new Date(`${expiry.slice(0, 10)}T00:00:00`);
+          daysLeft = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        }
+        const expiring = daysLeft !== null && daysLeft <= 90;
+        return (
+          <div className="driver-license-expiry-card">
+            <span className="driver-license-expiry-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+                <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="1.9" />
+                <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                <circle cx="12" cy="15" r="1" fill="currentColor" />
+                <line x1="12" y1="12" x2="12" y2="14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </span>
+            <div className="driver-license-expiry-body">
+              <span className="driver-license-expiry-label">Patenti in scadenza (90gg)</span>
+              <span className={`driver-license-expiry-value${expiring ? ' driver-license-expiry-value--warn' : ''}`}>
+                {expiring ? 1 : 0}
+              </span>
+            </div>
+          </div>
+        );
+      })()}
+
       <article className="dashboard-card">
         <h3>Informazioni personali</h3>
         <div className="driver-profile-grid" role="list">
