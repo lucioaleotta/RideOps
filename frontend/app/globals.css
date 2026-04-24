@@ -242,6 +242,10 @@ a:hover {
   opacity: 1;
 }
 
+.fleet-inline-notice {
+  margin-top: 8px;
+}
+
 /* ── Storico partner servizio (sph) ─────────────────────────── */
 .sph-card {
   margin-top: 18px;
@@ -1494,6 +1498,52 @@ a:hover {
   gap: 12px;
   flex-wrap: nowrap;
   margin-left: auto;
+}
+
+.gestionale-partner-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: clamp(320px, 38vw, 520px);
+}
+
+.gestionale-partner-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 22px;
+  height: 22px;
+  transform: translateY(-50%);
+  color: #6f829b;
+}
+
+.gestionale-partner-search-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.gestionale-partner-search-input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #ccd7e5;
+  border-radius: 10px;
+  padding: 10px 14px 10px 52px;
+  background: #f8fbff;
+  color: #243449;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.gestionale-partner-search-input::placeholder {
+  color: #6f829b;
+}
+
+.gestionale-partner-search-input:focus {
+  outline: none;
+  border-color: #8fb4de;
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.12);
 }
 
 .gestionale-partner-include-toggle {
@@ -5488,6 +5538,11 @@ a:hover {
     .gestionale-partner-toolbar-actions {
       width: 100%;
       justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    .gestionale-partner-search {
+      width: 100%;
     }
 
     .gestionale-partner-table-wrap {

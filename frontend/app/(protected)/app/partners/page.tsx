@@ -27,8 +27,13 @@ export default async function PartnersPage() {
 
   return (
     <main>
-      <h1>Gestione Partner</h1>
-      <p>Anagrafica fornitori: agenzie turismo, operatori NCC e altre tipologie.</p>
+      <div className="services-page-header">
+        <div className="services-page-header-text">
+          <h1>Gestione Partner</h1>
+          <p className="services-page-subtitle">Anagrafica fornitori: agenzie turismo, operatori NCC e altre tipologie.</p>
+        </div>
+        <div id="partners-new-button-portal" />
+      </div>
       <PartnersManagement userRole={user?.role ?? 'UNKNOWN'} />
     </main>
   );

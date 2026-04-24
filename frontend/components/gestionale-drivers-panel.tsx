@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, FilterIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon } from './action-icons';
 import { PasswordInput } from './password-input';
+import { StatusNotice } from './status-notice';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
 
@@ -1034,8 +1035,8 @@ export function GestionaleDriversPanel() {
         </div>
       )}
 
-      {error && <p className="error-text">{error}</p>}
-      {success && <p className="success-text">{success}</p>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
+      {success && <StatusNotice tone="success">{success}</StatusNotice>}
     </section>
   );
 }

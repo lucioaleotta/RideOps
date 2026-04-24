@@ -3,6 +3,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { ButtonContent, CancelIcon, EditIcon, FilterIcon, JournalIcon, LockIcon, ResetIcon, SaveIcon } from './action-icons';
 import { PasswordInput } from './password-input';
+import { StatusNotice } from './status-notice';
 
 type UserRole = 'ADMIN' | 'GESTIONALE' | 'DRIVER';
 
@@ -186,8 +187,8 @@ export function AdminUsersPanel() {
     <section style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
         <h3>Elenco utenti</h3>
-        {error && <p className="error-text">{error}</p>}
-        {success && <p className="success-text">{success}</p>}
+        {error && <StatusNotice tone="error">{error}</StatusNotice>}
+        {success && <StatusNotice tone="success">{success}</StatusNotice>}
 
         {/* Filtri */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
@@ -432,7 +433,7 @@ export function AdminUsersPanel() {
               </button>
             </div>
 
-            {journalError && <p className="error-text">{journalError}</p>}
+            {journalError && <StatusNotice tone="error">{journalError}</StatusNotice>}
 
             {journalLoading ? (
               <p>Caricamento journal...</p>

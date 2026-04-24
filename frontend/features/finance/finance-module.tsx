@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AddIcon, ButtonContent, FilterIcon, ResetIcon } from '../../components/action-icons';
+import { StatusNotice } from '../../components/status-notice';
 import { formatCurrencyEUR } from '../../lib/currency';
 import {
   createFinanceTransaction,
@@ -291,8 +292,8 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
 
       <FinanceSubnav active={section} />
 
-      {error && <p className="error-text">{error}</p>}
-      {success && <p className="success-text">{success}</p>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
+      {success && <StatusNotice tone="success">{success}</StatusNotice>}
       {loading && <p>Caricamento dati finanziari...</p>}
 
       {!loading && showOverview && dashboard && (

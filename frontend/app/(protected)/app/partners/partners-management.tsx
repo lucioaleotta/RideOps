@@ -1,7 +1,9 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { AddIcon, ButtonContent, CancelIcon, CursorIcon, DeleteIcon, EditIcon, FilterIcon, LockIcon, ResetIcon, SaveIcon, SelectIcon } from '../../../../components/action-icons';
+import { createPortal } from 'react-dom';
+import { AddIcon, ButtonContent, CursorIcon, DeleteIcon, EditIcon, LockIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon } from '../../../../components/action-icons';
+import { StatusNotice } from '../../../../components/status-notice';
 
 type PartnerType = 'AGENZIA' | 'NCC' | 'ALTRO';
 
@@ -161,14 +163,13 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
   const [selectedPartnerId, setSelectedPartnerId] = useState<number | ''>('');
   const [selectedPartnerDetail, setSelectedPartnerDetail] = useState<PartnerItem | null>(null);
 
-  const [showFiltersCard, setShowFiltersCard] = useState(false);
-  const [filterRagioneSociale, setFilterRagioneSociale] = useState('');
-  const [filterType, setFilterType] = useState<'ALL' | PartnerType>('ALL');
+  const [partnerQuery, setPartnerQuery] = useState('');
   const [showDeleted, setShowDeleted] = useState(false);
 
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingPartnerId, setEditingPartnerId] = useState<number | null>(null);
   const [form, setForm] = useState<PartnerFormState>(defaultForm);
+  const [newButtonPortalTarget, setNewButtonPortalTarget] = useState<HTMLElement | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -179,12 +180,6 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
     setError(null);
 
     const query = new URLSearchParams();
-    if (filterRagioneSociale.trim()) {
-      query.set('ragioneSociale', filterRagioneSociale.trim());
-    }
-    if (filterType !== 'ALL') {
-      query.set('type', filterType);
-    }
     if (showDeleted) {
       query.set('includeDeleted', 'true');
     }
@@ -202,7 +197,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
 
     setPartners(payload as PartnerItem[]);
     setLoading(false);
-  }, [filterRagioneSociale, filterType, showDeleted]);
+  }, [showDeleted]);
 
   async function loadPartnerDetail(partnerId: number) {
     const response = await fetch(`/api/partners/${partnerId}`, { cache: 'no-store' });
@@ -249,12 +244,15 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
   useEffect(() => {
     if (!selectedPartnerId) {
       setSelectedPartnerDetail(null);
-      setIsEditMode(false);
       return;
     }
 
     loadPartnerDetail(selectedPartnerId);
   }, [selectedPartnerId]);
+
+  useEffect(() => {
+    setNewButtonPortalTarget(document.getElementById('partners-new-button-portal'));
+  }, []);
 
   const visiblePartners = useMemo(() => {
     // Safety fallback: if API ignores includeDeleted, still hide deleted by default.
@@ -263,6 +261,26 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
     }
     return partners;
   }, [partners, showDeleted]);
+
+  const filteredPartners = useMemo(() => {
+    const query = partnerQuery.trim().toLowerCase();
+    if (!query) {
+      return visiblePartners;
+    }
+
+    return visiblePartners.filter((partner) => {
+      const searchableParts = [
+        partner.ragioneSociale,
+        partner.nomeReferente ?? '',
+        partner.cognomeReferente ?? '',
+        partner.telefono ?? '',
+        partner.email ?? '',
+        typeLabel(partner.type)
+      ];
+
+      return searchableParts.join(' ').toLowerCase().includes(query);
+    });
+  }, [partnerQuery, visiblePartners]);
 
   function toPayload(current: PartnerFormState) {
     return {
@@ -306,7 +324,8 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
 
     const created = payload as PartnerItem;
     setSuccess('Partner creato');
-    setShowCreateForm(false);
+    setIsFormModalOpen(false);
+    setEditingPartnerId(null);
     setForm(defaultForm);
     setSelectedPartnerId(created.id);
     await loadPartners();
@@ -334,7 +353,8 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
     }
 
     setSuccess('Partner aggiornato');
-    setIsEditMode(false);
+    setIsFormModalOpen(false);
+    setEditingPartnerId(null);
     await loadPartners();
     await loadPartnerDetail(selectedPartnerId);
   }
@@ -360,19 +380,39 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
     setSuccess('Partner cancellato logicamente');
     setSelectedPartnerId('');
     setSelectedPartnerDetail(null);
-    setIsEditMode(false);
     await loadPartners();
   }
 
   function selectPartner(partnerId: number) {
     setSelectedPartnerId(partnerId);
-    setIsEditMode(false);
   }
 
   function deselectPartner() {
     setSelectedPartnerId('');
     setSelectedPartnerDetail(null);
-    setIsEditMode(false);
+  }
+
+  function openCreateModal() {
+    setError(null);
+    setSuccess(null);
+    setEditingPartnerId(null);
+    setForm(defaultForm);
+    setIsFormModalOpen(true);
+  }
+
+  async function openEditModal(partnerId: number) {
+    setError(null);
+    setSuccess(null);
+    setEditingPartnerId(partnerId);
+    setSelectedPartnerId(partnerId);
+    await loadPartnerDetail(partnerId);
+    setIsFormModalOpen(true);
+  }
+
+  function closeFormModal() {
+    setIsFormModalOpen(false);
+    setEditingPartnerId(null);
+    setForm(defaultForm);
   }
 
   if (!isAllowed) {
@@ -383,113 +423,43 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
     );
   }
 
+  const createPartnerButton = (
+    <button
+      type="button"
+      className="primary-button compact-button"
+      onClick={() => {
+        if (isFormModalOpen && editingPartnerId === null) {
+          closeFormModal();
+        } else {
+          openCreateModal();
+        }
+        setSelectedPartnerId('');
+      }}
+    >
+      <ButtonContent icon={isFormModalOpen && editingPartnerId === null ? <LockIcon /> : <AddIcon />}>
+        {isFormModalOpen && editingPartnerId === null ? 'Chiudi nuovo partner' : 'Nuovo partner'}
+      </ButtonContent>
+    </button>
+  );
+
   return (
     <section className="responsive-panel partners-management-panel" style={{ display: 'grid', gap: 16 }}>
-      {showCreateForm && (
-        <article className="dashboard-card">
-          <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-            <h3>Nuovo Partner</h3>
-            <button
-              type="button"
-              className="primary-button compact-button"
-              onClick={() => {
-                setShowCreateForm(false);
-                setForm(defaultForm);
-              }}
-            >
-              <ButtonContent icon={<LockIcon />}>Chiudi</ButtonContent>
-            </button>
-          </div>
-
-          <form className="form-grid" onSubmit={createPartner}>
-            <label>
-              Tipologia
-              <select className="form-input" value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as PartnerType }))}>
-                <option value="AGENZIA">Agenzia</option>
-                <option value="NCC">NCC</option>
-                <option value="ALTRO">Altro</option>
-              </select>
-            </label>
-            <label>
-              Ragione Sociale
-              <input className="form-input" value={form.ragioneSociale} onChange={(e) => setForm((p) => ({ ...p, ragioneSociale: e.target.value }))} required />
-            </label>
-            <label>
-              Nome Referente
-              <input className="form-input" value={form.nomeReferente} onChange={(e) => setForm((p) => ({ ...p, nomeReferente: e.target.value }))} />
-            </label>
-            <label>
-              Cognome Referente
-              <input className="form-input" value={form.cognomeReferente} onChange={(e) => setForm((p) => ({ ...p, cognomeReferente: e.target.value }))} />
-            </label>
-            <label>
-              Telefono
-              <input className="form-input" value={form.telefono} onChange={(e) => setForm((p) => ({ ...p, telefono: e.target.value }))} />
-            </label>
-            <label>
-              Email
-              <input className="form-input" type="email" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} />
-            </label>
-            <label>
-              Citta`
-              <input className="form-input" value={form.citta} onChange={(e) => setForm((p) => ({ ...p, citta: e.target.value }))} />
-            </label>
-            <label>
-              Indirizzo
-              <input className="form-input" value={form.indirizzo} onChange={(e) => setForm((p) => ({ ...p, indirizzo: e.target.value }))} />
-            </label>
-            <label>
-              Zona Operativa
-                <input className="form-input" value={form.zonaOperativa} onChange={(e) => setForm((p) => ({ ...p, zonaOperativa: e.target.value }))} />
-            </label>
-            <label>
-              Partita IVA
-              <input className="form-input" value={form.partitaIva} onChange={(e) => setForm((p) => ({ ...p, partitaIva: e.target.value }))} />
-            </label>
-            <label>
-              Codice Fiscale
-              <input className="form-input" value={form.codiceFiscale} onChange={(e) => setForm((p) => ({ ...p, codiceFiscale: e.target.value }))} />
-            </label>
-            <label>
-              IBAN
-              <input className="form-input" value={form.iban} onChange={(e) => setForm((p) => ({ ...p, iban: e.target.value }))} />
-            </label>
-            <label>
-              Intestatario Conto
-              <input className="form-input" value={form.intestatarioConto} onChange={(e) => setForm((p) => ({ ...p, intestatarioConto: e.target.value }))} />
-            </label>
-            <label>
-              Note Pagamenti
-              <input className="form-input" value={form.notePagamenti} onChange={(e) => setForm((p) => ({ ...p, notePagamenti: e.target.value }))} />
-            </label>
-            <label>
-              Telefono WhatsApp
-              <input className="form-input" value={form.telefonoWhatsApp} onChange={(e) => setForm((p) => ({ ...p, telefonoWhatsApp: e.target.value }))} />
-            </label>
-            <label>
-              Note Operative
-              <input className="form-input" value={form.noteOperative} onChange={(e) => setForm((p) => ({ ...p, noteOperative: e.target.value }))} />
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="checkbox" checked={form.riceveEmail} onChange={(e) => setForm((p) => ({ ...p, riceveEmail: e.target.checked }))} />
-              Riceve Email
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <input type="checkbox" checked={form.riceveWhatsApp} onChange={(e) => setForm((p) => ({ ...p, riceveWhatsApp: e.target.checked }))} />
-              Riceve WhatsApp
-            </label>
-            <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
-              <button type="submit" className="primary-button compact-button"><ButtonContent icon={<AddIcon />}>Crea partner</ButtonContent></button>
-              <button type="button" className="logout-button compact-button" onClick={() => setForm(defaultForm)}><ButtonContent icon={<ResetIcon />}>Reset</ButtonContent></button>
-            </div>
-          </form>
-        </article>
-      )}
+      {newButtonPortalTarget ? createPortal(createPartnerButton, newButtonPortalTarget) : null}
 
       <article className="dashboard-card gestionale-partner-list-card">
         <div className="panel-header gestionale-partner-toolbar">
           <h3>Partner</h3>
           <div className="panel-actions gestionale-partner-toolbar-actions">
+            <label className="gestionale-partner-search" aria-label="Ricerca partner">
+              <span className="gestionale-partner-search-icon" aria-hidden="true"><SearchIcon /></span>
+              <input
+                type="search"
+                className="gestionale-partner-search-input"
+                value={partnerQuery}
+                onChange={(event) => setPartnerQuery(event.target.value)}
+                placeholder="Cerca per ragione sociale, referente, telefono o email"
+              />
+            </label>
             <label className="gestionale-partner-include-toggle">
               <input
                 type="checkbox"
@@ -498,13 +468,6 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
               />
               Includi cancellati
             </label>
-            <button
-              type="button"
-              className="primary-button compact-button"
-              onClick={() => setShowCreateForm(true)}
-            >
-              <ButtonContent icon={<AddIcon />}>Nuovo partner</ButtonContent>
-            </button>
           </div>
         </div>
 
@@ -519,7 +482,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
               </tr>
             </thead>
             <tbody>
-              {visiblePartners.map((partner) => {
+              {filteredPartners.map((partner) => {
                 const isSelected = selectedPartnerId === partner.id;
                 return (
                   <tr
@@ -537,10 +500,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
                         <button
                           type="button"
                           className="primary-button compact-button"
-                          onClick={() => {
-                            selectPartner(partner.id);
-                            setIsEditMode(true);
-                          }}
+                          onClick={() => openEditModal(partner.id)}
                           disabled={partner.deleted}
                         >
                           <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
@@ -553,21 +513,25 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
             </tbody>
           </table>
           {loading && <p className="gestionale-partner-table-empty">Caricamento partner...</p>}
-          {!loading && visiblePartners.length === 0 && <p className="gestionale-partner-table-empty">Nessun partner trovato.</p>}
+          {!loading && filteredPartners.length === 0 && <p className="gestionale-partner-table-empty">Nessun partner trovato.</p>}
         </div>
 
         <div className="gestionale-partner-mobile-list-wrap">
-          <h4 className="gestionale-partner-mobile-list-title">Partner ({visiblePartners.length})</h4>
-
           <div className="gestionale-partner-mobile-list">
-            {visiblePartners.map((partner) => {
+            {filteredPartners.map((partner) => {
               const isSelected = selectedPartnerId === partner.id;
               return (
                 <button
                   key={`mobile-${partner.id}`}
                   type="button"
                   className={`gestionale-partner-mobile-item ${isSelected ? 'is-selected' : ''}`}
-                  onClick={() => selectPartner(partner.id)}
+                  onClick={() => {
+                    if (isSelected) {
+                      deselectPartner();
+                    } else {
+                      selectPartner(partner.id);
+                    }
+                  }}
                 >
                   <span className="gestionale-partner-mobile-icon" aria-hidden="true">{typeLabel(partner.type).charAt(0)}</span>
 
@@ -583,7 +547,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
           </div>
 
           {loading && <p className="gestionale-partner-table-empty">Caricamento partner...</p>}
-          {!loading && visiblePartners.length === 0 && <p className="gestionale-partner-table-empty">Nessun partner trovato.</p>}
+          {!loading && filteredPartners.length === 0 && <p className="gestionale-partner-table-empty">Nessun partner trovato.</p>}
         </div>
       </article>
 
@@ -601,10 +565,10 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
               <button
                 type="button"
                 className="primary-button compact-button"
-                onClick={() => setIsEditMode((prev) => !prev)}
+                onClick={() => selectedPartnerId && openEditModal(selectedPartnerId)}
                 disabled={selectedPartnerDetail.deleted}
               >
-                <ButtonContent icon={isEditMode ? <LockIcon /> : <EditIcon />}>{isEditMode ? 'Chiudi modifica' : 'Modifica'}</ButtonContent>
+                <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
               </button>
               <button
                 type="button"
@@ -700,8 +664,35 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
             </div>
           </section>
 
-          {isEditMode && (
-            <form className="form-grid" onSubmit={updatePartner} style={{ marginTop: 10 }}>
+        </article>
+      )}
+
+      {isFormModalOpen && (
+        <div
+          className="tenant-modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeFormModal();
+            }
+          }}
+        >
+          <article className="tenant-modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="tenant-modal-header">
+              <div>
+                <h3>{editingPartnerId ? 'Modifica partner' : 'Nuovo partner'}</h3>
+                <p>{editingPartnerId ? 'Aggiorna i dati anagrafici e operativi del partner.' : 'Inserisci un nuovo partner in anagrafica.'}</p>
+              </div>
+              <button
+                type="button"
+                className="tenant-modal-close"
+                aria-label="Chiudi modale partner"
+                onClick={closeFormModal}
+              >
+                ×
+              </button>
+            </div>
+
+            <form className="form-grid" onSubmit={editingPartnerId ? updatePartner : createPartner}>
               <label>
                 Tipologia
                 <select className="form-input" value={form.type} onChange={(e) => setForm((p) => ({ ...p, type: e.target.value as PartnerType }))}>
@@ -779,18 +770,22 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
                 Riceve WhatsApp
               </label>
               <div className="form-actions" style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" className="primary-button compact-button"><ButtonContent icon={<SaveIcon />}>Salva modifiche</ButtonContent></button>
-                <button type="button" className="logout-button compact-button" onClick={() => selectedPartnerId && loadPartnerDetail(selectedPartnerId)}>
+                <button type="submit" className="primary-button compact-button">
+                  <ButtonContent icon={editingPartnerId ? <SaveIcon /> : <AddIcon />}>
+                    {editingPartnerId ? 'Salva modifiche' : 'Crea partner'}
+                  </ButtonContent>
+                </button>
+                <button type="button" className="logout-button compact-button" onClick={() => setForm(defaultForm)}>
                   <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
                 </button>
               </div>
             </form>
-          )}
-        </article>
+          </article>
+        </div>
       )}
 
-      {error && <p className="error-text">{error}</p>}
-      {success && <p style={{ color: '#2e7d32' }}>{success}</p>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
+      {success && <StatusNotice tone="success">{success}</StatusNotice>}
     </section>
   );
 }

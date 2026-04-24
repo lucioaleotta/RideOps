@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, FilterIcon, LockIcon, ResetIcon, SaveIcon, SelectIcon } from './action-icons';
+import { StatusNotice } from './status-notice';
 
 type VehicleType = 'SEDAN' | 'VAN' | 'MINIBUS' | 'SUV' | 'OTHER';
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
@@ -1409,8 +1410,8 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
         </>
       )}
 
-      {error && <article className="dashboard-card"><p className="error-text">{error}</p></article>}
-      {success && <article className="dashboard-card"><p className="success-text">{success}</p></article>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
+      {success && <StatusNotice tone="success">{success}</StatusNotice>}
     </section>
   );
 }

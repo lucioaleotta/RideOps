@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { StatusNotice } from './status-notice';
 
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
 type DeadlineStatus = 'DA_ESEGUIRE' | 'IN_SCADENZA' | 'SCADUTA' | 'PAGATA' | 'ESEGUITA' | 'ANNULLATA';
@@ -241,7 +242,7 @@ export function FleetDeadlinesAlerts({
           {loading ? (
             <p>Caricamento allarmi...</p>
           ) : error ? (
-            <p className="error-text">{error}</p>
+            <StatusNotice tone="error">{error}</StatusNotice>
           ) : orderedItems.length === 0 ? (
             <p>Nessuna scadenza aperta.</p>
           ) : (

@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, LockIcon, ResetIcon, SaveIcon } from './action-icons';
+import { StatusNotice } from './status-notice';
 
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
 type DeadlineStatus = 'DA_ESEGUIRE' | 'IN_SCADENZA' | 'SCADUTA' | 'PAGATA' | 'ESEGUITA' | 'ANNULLATA';
@@ -418,8 +419,8 @@ export function FleetDeadlinesPanel() {
           </form>
         )}
 
-        {error && <p className="error-text" style={{ marginTop: 8 }}>{error}</p>}
-        {success && <p className="success-text" style={{ marginTop: 8 }}>{success}</p>}
+        {error && <StatusNotice tone="error" className="fleet-inline-notice">{error}</StatusNotice>}
+        {success && <StatusNotice tone="success" className="fleet-inline-notice">{success}</StatusNotice>}
       </article>
 
       <article className="dashboard-card">
