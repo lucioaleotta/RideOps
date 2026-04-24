@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
-import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, LockIcon, ResetIcon, SaveIcon, SelectIcon } from './action-icons';
+import { createPortal } from 'react-dom';
+import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon } from './action-icons';
 import { PasswordInput } from './password-input';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
@@ -84,15 +85,37 @@ export function GestionaleDriversPanel() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [includeDeleted, setIncludeDeleted] = useState(false);
+  const [driverQuery, setDriverQuery] = useState('');
   const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
   const [editingDriverId, setEditingDriverId] = useState<number | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [newButtonPortalTarget, setNewButtonPortalTarget] = useState<HTMLElement | null>(null);
   const [form, setForm] = useState<DriverFormState>(defaultForm);
 
   const selectedDriver = useMemo(
     () => drivers.find((item) => item.id === selectedDriverId) ?? null,
     [drivers, selectedDriverId]
   );
+
+  const filteredDrivers = useMemo(() => {
+    const query = driverQuery.trim().toLowerCase();
+    if (!query) {
+      return drivers;
+    }
+
+    return drivers.filter((driver) => {
+      const searchableParts = [
+        driver.firstName ?? '',
+        driver.lastName ?? '',
+        driver.licenseNumber ?? '',
+        driver.userId ?? '',
+        driver.email ?? '',
+        (driver.licenseTypes ?? []).join(' ')
+      ];
+
+      return searchableParts.join(' ').toLowerCase().includes(query);
+    });
+  }, [drivers, driverQuery]);
 
   async function loadDrivers(nextIncludeDeleted = includeDeleted) {
     setLoading(true);
@@ -123,6 +146,10 @@ export function GestionaleDriversPanel() {
 
   useEffect(() => {
     loadDrivers();
+  }, []);
+
+  useEffect(() => {
+    setNewButtonPortalTarget(document.getElementById('gestionale-driver-new-button-portal'));
   }, []);
 
   async function onToggleIncludeDeleted(checked: boolean) {
@@ -307,13 +334,34 @@ export function GestionaleDriversPanel() {
     await loadDrivers();
   }
 
+  const createDriverButton = (
+    <button
+      type="button"
+      className="primary-button compact-button"
+      onClick={openCreateForm}
+    >
+      <ButtonContent icon={<AddIcon />}>Nuovo driver</ButtonContent>
+    </button>
+  );
+
   return (
     <section className="responsive-panel gestionale-panel" style={{ display: 'grid', gap: 16 }}>
-      <article className="dashboard-card">
-        <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      {newButtonPortalTarget ? createPortal(createDriverButton, newButtonPortalTarget) : null}
+      <article className="dashboard-card gestionale-driver-list-card">
+        <div className="panel-header gestionale-driver-toolbar">
           <h3>Driver</h3>
-          <div className="panel-actions" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+          <div className="panel-actions gestionale-driver-toolbar-actions">
+            <label className="gestionale-driver-search" aria-label="Ricerca driver">
+              <span className="gestionale-driver-search-icon" aria-hidden="true"><SearchIcon /></span>
+              <input
+                type="search"
+                className="gestionale-driver-search-input"
+                value={driverQuery}
+                onChange={(event) => setDriverQuery(event.target.value)}
+                placeholder="Cerca per nome, cognome o patente"
+              />
+            </label>
+            <label className="gestionale-driver-include-toggle">
               <input
                 type="checkbox"
                 checked={includeDeleted}
@@ -321,36 +369,23 @@ export function GestionaleDriversPanel() {
               />
               Includi cancellati
             </label>
-            <button
-              type="button"
-              className="primary-button compact-button"
-              onClick={() => {
-                if (isFormOpen && !editingDriverId) {
-                  setIsFormOpen(false);
-                } else {
-                  openCreateForm();
-                }
-              }}
-            >
-              <ButtonContent icon={isFormOpen && !editingDriverId ? <LockIcon /> : <AddIcon />}>{isFormOpen && !editingDriverId ? 'Chiudi form' : 'Nuovo driver'}</ButtonContent>
-            </button>
           </div>
         </div>
 
-        <div className="table-scroll" style={{ overflowX: 'auto', marginTop: 10 }}>
-          <table className="responsive-table driver-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
+        <div className="table-scroll gestionale-driver-table-wrap">
+          <table className="responsive-table driver-table gestionale-driver-table">
             <thead>
               <tr>
-                <th style={{ textAlign: 'left', padding: '0 10px 10px 0', borderBottom: '1px solid #dce8f5' }}>Nome</th>
-                <th style={{ textAlign: 'left', padding: '0 10px 10px 0', borderBottom: '1px solid #dce8f5' }}>Cognome</th>
-                <th style={{ textAlign: 'left', padding: '0 10px 10px 0', borderBottom: '1px solid #dce8f5' }}>Nascita</th>
-                <th style={{ textAlign: 'left', padding: '0 10px 10px 0', borderBottom: '1px solid #dce8f5' }}>Patente</th>
-                <th style={{ textAlign: 'left', padding: '0 10px 10px 0', borderBottom: '1px solid #dce8f5' }}>Scadenza</th>
-                <th style={{ textAlign: 'left', padding: '0 10px 10px 0', borderBottom: '1px solid #dce8f5' }}>Azioni</th>
+                <th>Nome</th>
+                <th>Cognome</th>
+                <th>Nascita</th>
+                <th>Patente</th>
+                <th>Scadenza</th>
+                <th>Azioni</th>
               </tr>
             </thead>
             <tbody>
-              {drivers.map((driver) => {
+              {filteredDrivers.map((driver) => {
                 const isSelected = selectedDriverId === driver.id;
                 const daysLeft = daysToDate(driver.licenseExpiryDate);
                 const isExpirySoon = driver.enabled && daysLeft !== null && daysLeft >= 0 && daysLeft <= 15;
@@ -358,24 +393,31 @@ export function GestionaleDriversPanel() {
                 return (
                   <tr
                     key={driver.id}
-                    style={{
-                      background: isSelected ? '#eaf4ff' : 'transparent',
-                      color: driver.enabled ? 'inherit' : '#7f8ea3'
-                    }}
+                    className={`gestionale-driver-row ${isSelected ? 'is-selected' : ''} ${driver.enabled ? '' : 'is-disabled'}`}
                   >
-                    <td style={{ padding: '10px 10px 10px 0', borderBottom: '1px solid #eaf1f9' }}>{driver.firstName ?? '-'}</td>
-                    <td style={{ padding: '10px 10px 10px 0', borderBottom: '1px solid #eaf1f9' }}>{driver.lastName ?? '-'}</td>
-                    <td style={{ padding: '10px 10px 10px 0', borderBottom: '1px solid #eaf1f9' }}>{formatDate(driver.birthDate)}</td>
-                    <td style={{ padding: '10px 10px 10px 0', borderBottom: '1px solid #eaf1f9' }}>
-                      {driver.licenseNumber ?? '-'}
-                      {driver.licenseTypes?.length ? ` (${driver.licenseTypes.join(', ')})` : ''}
+                    <td>{driver.firstName ?? '-'}</td>
+                    <td>{driver.lastName ?? '-'}</td>
+                    <td>{formatDate(driver.birthDate)}</td>
+                    <td>
+                      <div className="gestionale-driver-license">
+                        <span className="gestionale-driver-license-number">{driver.licenseNumber ?? '-'}</span>
+                        {!!driver.licenseTypes?.length && (
+                          <div className="driver-license-badges">
+                            {driver.licenseTypes.map((licenseType) => (
+                              <span key={`${driver.id}-${licenseType}`} className="driver-license-badge">
+                                {licenseType}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td style={{ padding: '10px 10px 10px 0', borderBottom: '1px solid #eaf1f9' }}>
+                    <td>
                       <div>{formatDate(driver.licenseExpiryDate)}</div>
                       {isExpirySoon && <small className="warning-text">Scade tra {daysLeft} gg</small>}
                     </td>
-                    <td style={{ padding: '10px 0 10px 0', borderBottom: '1px solid #eaf1f9' }}>
-                      <div className="table-actions" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    <td>
+                      <div className="table-actions gestionale-driver-table-actions">
                         <button type="button" className="primary-button compact-button" onClick={() => onSelectDriver(driver)}>
                           <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
                         </button>
@@ -408,8 +450,8 @@ export function GestionaleDriversPanel() {
               })}
             </tbody>
           </table>
-          {loading && <p>Caricamento driver...</p>}
-          {!loading && drivers.length === 0 && <p>Nessun driver trovato.</p>}
+          {loading && <p className="gestionale-driver-table-empty">Caricamento driver...</p>}
+          {!loading && filteredDrivers.length === 0 && <p className="gestionale-driver-table-empty">Nessun driver trovato.</p>}
         </div>
       </article>
 
@@ -430,169 +472,196 @@ export function GestionaleDriversPanel() {
       )}
 
       {isFormOpen && (
-        <article className="dashboard-card">
-          <h4>{editingDriverId ? 'Modifica driver' : 'Nuovo driver'}</h4>
-          <form className="form-grid" onSubmit={onCreateDriver}>
-            {!editingDriverId && (
-              <div className="dashboard-card" style={{ background: '#eef6ff' }}>
-                <strong>Credenziali iniziali</strong>
-                <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, marginTop: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
-                  <label>
-                    User ID driver
-                    <input
-                      className="form-input"
-                      value={form.userId}
-                      onChange={(event) => setForm((prev) => ({ ...prev, userId: event.target.value }))}
-                      required
-                    />
-                  </label>
-                  <label>
-                    Email driver
-                    <input
-                      className="form-input"
-                      type="email"
-                      value={form.email}
-                      onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
-                      required
-                    />
-                  </label>
-                  <label>
-                    Password iniziale
-                    <PasswordInput
-                      className="form-input"
-                      minLength={8}
-                      value={form.password}
-                      onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
-                      required
-                      autoComplete="new-password"
-                    />
-                  </label>
-                </div>
+        <div
+          className="tenant-modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsFormOpen(false);
+              resetForm();
+            }
+          }}
+        >
+          <article className="tenant-modal-card driver-edit-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="tenant-modal-header">
+              <div>
+                <h3>{editingDriverId ? 'Modifica driver' : 'Nuovo driver'}</h3>
+                <p>{editingDriverId ? 'Aggiorna i dati anagrafici e patente del driver.' : 'Inserisci un nuovo driver e le credenziali iniziali.'}</p>
               </div>
-            )}
-
-            <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-              <label>
-                Nome
-                <input
-                  className="form-input"
-                  value={form.firstName}
-                  onChange={(event) => setForm((prev) => ({ ...prev, firstName: event.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Cognome
-                <input
-                  className="form-input"
-                  value={form.lastName}
-                  onChange={(event) => setForm((prev) => ({ ...prev, lastName: event.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Data di nascita
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.birthDate}
-                  onChange={(event) => setForm((prev) => ({ ...prev, birthDate: event.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Numero patente
-                <input
-                  className="form-input"
-                  value={form.licenseNumber}
-                  onChange={(event) => setForm((prev) => ({ ...prev, licenseNumber: event.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Cellulare
-                <input
-                  className="form-input"
-                  value={form.mobilePhone}
-                  onChange={(event) => setForm((prev) => ({ ...prev, mobilePhone: event.target.value }))}
-                  required
-                />
-              </label>
-              <label>
-                Scadenza patente
-                <input
-                  className="form-input"
-                  type="date"
-                  value={form.licenseExpiryDate}
-                  onChange={(event) => setForm((prev) => ({ ...prev, licenseExpiryDate: event.target.value }))}
-                  required
-                />
-              </label>
-            </div>
-
-            <div className="dashboard-card" style={{ background: '#f4f9ff' }}>
-              <strong>Tipo patente (uno o piu)</strong>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
-                {licenseTypeOptions.map((type) => (
-                  <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <input
-                      type="checkbox"
-                      checked={form.licenseTypes.includes(type)}
-                      onChange={() => toggleLicenseType(type)}
-                    />
-                    {type}
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="dashboard-card" style={{ background: '#f4f9ff' }}>
-              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                <strong>Indirizzi di residenza</strong>
-                <button type="button" className="primary-button compact-button" onClick={addAddress}><ButtonContent icon={<AddIcon />}>Aggiungi indirizzo</ButtonContent></button>
-              </div>
-              <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-                {form.residentialAddresses.map((address, index) => (
-                  <div key={`address-${index}`} className="address-row" style={{ display: 'flex', gap: 8 }}>
-                    <input
-                      className="form-input"
-                      value={address}
-                      onChange={(event) => updateAddress(index, event.target.value)}
-                      placeholder={`Indirizzo ${index + 1}`}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="primary-button compact-button"
-                      style={{ background: '#d32f2f' }}
-                      onClick={() => removeAddress(index)}
-                      disabled={form.residentialAddresses.length <= 1}
-                    >
-                      <ButtonContent icon={<DeleteIcon />}>Rimuovi</ButtonContent>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="submit" className="primary-button compact-button" disabled={submitting}>
-                <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : editingDriverId ? 'Aggiorna driver' : 'Crea driver'}</ButtonContent>
-              </button>
               <button
                 type="button"
-                className="primary-button compact-button"
-                style={{ background: '#607d8b' }}
+                className="tenant-modal-close"
+                aria-label="Chiudi modale driver"
                 onClick={() => {
                   setIsFormOpen(false);
                   resetForm();
                 }}
               >
-                <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
+                ×
               </button>
             </div>
-          </form>
-        </article>
+
+            <form className="form-grid" onSubmit={onCreateDriver}>
+              {!editingDriverId && (
+                <div className="dashboard-card" style={{ background: '#eef6ff' }}>
+                  <strong>Credenziali iniziali</strong>
+                  <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, marginTop: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
+                    <label>
+                      User ID driver
+                      <input
+                        className="form-input"
+                        value={form.userId}
+                        onChange={(event) => setForm((prev) => ({ ...prev, userId: event.target.value }))}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Email driver
+                      <input
+                        className="form-input"
+                        type="email"
+                        value={form.email}
+                        onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Password iniziale
+                      <PasswordInput
+                        className="form-input"
+                        minLength={8}
+                        value={form.password}
+                        onChange={(event) => setForm((prev) => ({ ...prev, password: event.target.value }))}
+                        required
+                        autoComplete="new-password"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
+                <label>
+                  Nome
+                  <input
+                    className="form-input"
+                    value={form.firstName}
+                    onChange={(event) => setForm((prev) => ({ ...prev, firstName: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  Cognome
+                  <input
+                    className="form-input"
+                    value={form.lastName}
+                    onChange={(event) => setForm((prev) => ({ ...prev, lastName: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  Data di nascita
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={form.birthDate}
+                    onChange={(event) => setForm((prev) => ({ ...prev, birthDate: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  Numero patente
+                  <input
+                    className="form-input"
+                    value={form.licenseNumber}
+                    onChange={(event) => setForm((prev) => ({ ...prev, licenseNumber: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  Cellulare
+                  <input
+                    className="form-input"
+                    value={form.mobilePhone}
+                    onChange={(event) => setForm((prev) => ({ ...prev, mobilePhone: event.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  Scadenza patente
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={form.licenseExpiryDate}
+                    onChange={(event) => setForm((prev) => ({ ...prev, licenseExpiryDate: event.target.value }))}
+                    required
+                  />
+                </label>
+              </div>
+
+              <div className="dashboard-card" style={{ background: '#f4f9ff' }}>
+                <strong>Tipo patente (uno o piu)</strong>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
+                  {licenseTypeOptions.map((type) => (
+                    <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input
+                        type="checkbox"
+                        checked={form.licenseTypes.includes(type)}
+                        onChange={() => toggleLicenseType(type)}
+                      />
+                      {type}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="dashboard-card" style={{ background: '#f4f9ff' }}>
+                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <strong>Indirizzi di residenza</strong>
+                  <button type="button" className="primary-button compact-button" onClick={addAddress}><ButtonContent icon={<AddIcon />}>Aggiungi indirizzo</ButtonContent></button>
+                </div>
+                <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+                  {form.residentialAddresses.map((address, index) => (
+                    <div key={`address-${index}`} className="address-row" style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        className="form-input"
+                        value={address}
+                        onChange={(event) => updateAddress(index, event.target.value)}
+                        placeholder={`Indirizzo ${index + 1}`}
+                        required
+                      />
+                      <button
+                        type="button"
+                        className="primary-button compact-button"
+                        style={{ background: '#d32f2f' }}
+                        onClick={() => removeAddress(index)}
+                        disabled={form.residentialAddresses.length <= 1}
+                      >
+                        <ButtonContent icon={<DeleteIcon />}>Rimuovi</ButtonContent>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button type="submit" className="primary-button compact-button" disabled={submitting}>
+                  <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : editingDriverId ? 'Aggiorna driver' : 'Crea driver'}</ButtonContent>
+                </button>
+                <button
+                  type="button"
+                  className="primary-button compact-button"
+                  style={{ background: '#607d8b' }}
+                  onClick={() => {
+                    setIsFormOpen(false);
+                    resetForm();
+                  }}
+                >
+                  <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
+                </button>
+              </div>
+            </form>
+          </article>
+        </div>
       )}
 
       {error && <p className="error-text">{error}</p>}

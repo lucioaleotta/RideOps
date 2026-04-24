@@ -1398,6 +1398,199 @@ a:hover {
   flex-wrap: wrap;
 }
 
+.gestionale-driver-list-card {
+  border: 1px solid #d8e2ef;
+  border-radius: 16px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.gestionale-driver-toolbar {
+  padding: 22px 26px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.gestionale-driver-toolbar h3 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  color: #1f2b3b;
+}
+
+.gestionale-driver-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.gestionale-driver-search {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: min(420px, 100%);
+}
+
+.gestionale-driver-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  width: 22px;
+  height: 22px;
+  transform: translateY(-50%);
+  color: #6f829b;
+}
+
+.gestionale-driver-search-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.gestionale-driver-search-input {
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid #ccd7e5;
+  border-radius: 12px;
+  padding: 12px 14px 12px 58px;
+  background: #f8fbff;
+  color: #243449;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.gestionale-driver-search-input::placeholder {
+  color: #6f829b;
+}
+
+.gestionale-driver-search-input:focus {
+  outline: none;
+  border-color: #8fb4de;
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.12);
+}
+
+.gestionale-driver-include-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  color: #1f2b3b;
+  white-space: nowrap;
+}
+
+.gestionale-driver-include-toggle input[type='checkbox'] {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  border: 2px solid #3b82f6;
+  border-radius: 9px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #ffffff;
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.gestionale-driver-include-toggle input[type='checkbox']:checked::after {
+  content: '';
+  width: 13px;
+  height: 8px;
+  border-left: 2px solid #2563eb;
+  border-bottom: 2px solid #2563eb;
+  transform: rotate(-45deg) translateY(-1px);
+}
+
+.gestionale-driver-table-wrap {
+  margin-top: 0;
+}
+
+.gestionale-driver-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1100px;
+}
+
+.gestionale-driver-table thead th {
+  text-align: left;
+  padding: 18px 26px;
+  border-top: 1px solid #e0e7f1;
+  border-bottom: 1px solid #dce4ef;
+  color: #6a7f9a;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.gestionale-driver-table tbody td {
+  padding: 26px;
+  border-bottom: 1px solid #e0e7f1;
+  color: #273447;
+  font-size: 15px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.gestionale-driver-table tbody td:nth-child(1),
+.gestionale-driver-table tbody td:nth-child(2),
+.gestionale-driver-table tbody td:nth-child(5) {
+  font-size: 16px;
+}
+
+.gestionale-driver-table tbody td:nth-child(3) {
+  color: #667d99;
+}
+
+.gestionale-driver-row.is-selected {
+  background: #eaf4ff;
+}
+
+.gestionale-driver-row.is-disabled {
+  color: #7f8ea3;
+}
+
+.gestionale-driver-license {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.gestionale-driver-license-number {
+  color: #2b3c51;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.gestionale-driver-table-actions {
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.gestionale-driver-table-actions .compact-button {
+  min-height: 42px;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px 14px;
+}
+
+.gestionale-driver-table-empty {
+  margin: 0;
+  padding: 16px 26px 24px;
+  color: #6b7f9d;
+}
+
 .driver-profile-grid {
   display: grid;
   border: 1px solid #d8e2ef;
@@ -1502,6 +1695,28 @@ a:hover {
 }
 
 @media (max-width: 760px) {
+  .gestionale-driver-toolbar {
+    padding: 16px;
+  }
+
+  .gestionale-driver-toolbar h3 {
+    font-size: 28px;
+  }
+
+  .gestionale-driver-search {
+    min-width: 100%;
+  }
+
+  .gestionale-driver-table {
+    min-width: 900px;
+  }
+
+  .gestionale-driver-table thead th,
+  .gestionale-driver-table tbody td {
+    padding: 16px;
+    font-size: 14px;
+  }
+
   .driver-profile-row {
     grid-template-columns: 1fr;
     gap: 4px;
