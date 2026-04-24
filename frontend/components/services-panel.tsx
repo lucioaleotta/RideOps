@@ -1779,30 +1779,60 @@ export function ServicesPanel() {
                     {partnerHistory.communications.length === 0 ? (
                       <p className="sph-empty">Nessuna comunicazione inviata.</p>
                     ) : (
-                      <div className="table-scroll sph-table-wrap">
-                        <table className="sph-table">
-                          <thead>
-                            <tr>
-                              <th className="sph-th">Canale</th>
-                              <th className="sph-th">Destinatario</th>
-                              <th className="sph-th sph-th--subject">Oggetto</th>
-                              <th className="sph-th sph-th--date">Data invio</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {partnerHistory.communications.map((communication) => (
-                              <tr key={communication.communicationId} className="sph-tr">
-                                <td className="sph-td">
-                                  <span className="sph-channel-badge">{communication.channel.toUpperCase()}</span>
-                                </td>
-                                <td className="sph-td">{communication.recipient}</td>
-                                <td className="sph-td sph-td--subject">{communication.subject}</td>
-                                <td className="sph-td sph-td--date">{new Date(communication.createdAt).toLocaleString('it-IT')}</td>
+                      <>
+                        {/* Desktop: tabella */}
+                        <div className="table-scroll sph-table-wrap sph-desktop-list">
+                          <table className="sph-table">
+                            <thead>
+                              <tr>
+                                <th className="sph-th">Canale</th>
+                                <th className="sph-th">Destinatario</th>
+                                <th className="sph-th sph-th--subject">Oggetto</th>
+                                <th className="sph-th sph-th--date">Data invio</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {partnerHistory.communications.map((communication) => (
+                                <tr key={communication.communicationId} className="sph-tr">
+                                  <td className="sph-td">
+                                    <span className="sph-channel-badge">{communication.channel.toUpperCase()}</span>
+                                  </td>
+                                  <td className="sph-td">{communication.recipient}</td>
+                                  <td className="sph-td sph-td--subject">{communication.subject}</td>
+                                  <td className="sph-td sph-td--date">{new Date(communication.createdAt).toLocaleString('it-IT')}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {/* Mobile: card list */}
+                        <div className="sph-mobile-list">
+                          {partnerHistory.communications.map((communication) => (
+                            <div key={communication.communicationId} className="sph-mobile-card">
+                              <div className="sph-mobile-card-top">
+                                <span className="sph-channel-badge">{communication.channel.toUpperCase()}</span>
+                                <span className="sph-mobile-card-date">
+                                  <svg className="sph-mobile-cal-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+                                    <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth="1.9" />
+                                    <line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                                    <line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+                                  </svg>
+                                  {new Date(communication.createdAt).toLocaleString('it-IT')}
+                                </span>
+                              </div>
+                              <div className="sph-mobile-card-subject">{communication.subject}</div>
+                              <div className="sph-mobile-card-recipient">
+                                <svg className="sph-mobile-email-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                                  <rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+                                  <polyline points="2 9 12 15 22 9" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+                                </svg>
+                                {communication.recipient}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
                     )}
 
                     <div className="sph-actions">

@@ -457,6 +457,61 @@ a:hover {
   height: 100%;
 }
 
+/* mobile card list: nascosta su desktop */
+.sph-mobile-list {
+  display: none;
+}
+.sph-mobile-card {
+  padding: 12px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sph-mobile-card + .sph-mobile-card {
+  margin-top: 10px;
+}
+.sph-mobile-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sph-mobile-card-date {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+.sph-mobile-cal-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: #64748b;
+}
+.sph-mobile-card-subject {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1a2b45;
+  line-height: 1.35;
+}
+.sph-mobile-card-recipient {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #4a5568;
+}
+.sph-mobile-email-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #64748b;
+}
+
 @media (max-width: 900px) {
   .sph-header {
     flex-wrap: wrap;
@@ -474,6 +529,15 @@ a:hover {
   .sph-send-btn {
     width: 100%;
     justify-content: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .sph-desktop-list {
+    display: none;
+  }
+  .sph-mobile-list {
+    display: block;
   }
 }
 
@@ -2072,6 +2136,52 @@ a:hover {
   background: #ffffff;
   color: #2e3d4f;
 }
+
+/* ── Driver license expiry card ──────────────────────────────── */
+.driver-license-expiry-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: var(--shadow, 0 1px 4px rgba(0,0,0,0.06));
+}
+.driver-license-expiry-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #fff3e0;
+  color: #e65100;
+}
+.driver-license-expiry-icon svg {
+  width: 24px;
+  height: 24px;
+}
+.driver-license-expiry-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.driver-license-expiry-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+.driver-license-expiry-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a2b45;
+  line-height: 1.1;
+}
+.driver-license-expiry-value--warn {
+  color: #e65100;
+}
+
 
 .driver-profile-panel .secondary-button:hover:not(:disabled) {
   background: #f4f7fb;
