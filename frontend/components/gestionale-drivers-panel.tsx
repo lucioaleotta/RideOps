@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon } from './action-icons';
+import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, FilterIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon } from './action-icons';
 import { PasswordInput } from './password-input';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
@@ -120,6 +120,16 @@ function DriverAddressIcon() {
   );
 }
 
+function DriverCalendarIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3.5" y="5.5" width="17" height="14" rx="3" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M8 3.8v3.3M16 3.8v3.3M3.5 9.6h17" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+      <path d="M8 13.2h3.2M12.8 13.2H16M8 16.2h3.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function DriverActiveIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -150,6 +160,21 @@ function DriverDisabledIcon() {
       <path d="M10 10.2v7M14 10.2v7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
     </svg>
   );
+}
+
+function DriverChevronIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function driverInitials(driver: DriverItem) {
+  const first = (driver.firstName ?? '').trim().charAt(0);
+  const last = (driver.lastName ?? '').trim().charAt(0);
+  const result = `${first}${last}`.toUpperCase();
+  return result || 'DR';
 }
 
 function computeDriverStats(items: DriverItem[]): DriverStats {
@@ -451,29 +476,60 @@ export function GestionaleDriversPanel() {
     <section className="responsive-panel gestionale-panel" style={{ display: 'grid', gap: 16 }}>
       {newButtonPortalTarget ? createPortal(createDriverButton, newButtonPortalTarget) : null}
 
+      <div className="gestionale-driver-mobile-toolbar">
+        <label className="gestionale-driver-mobile-search" aria-label="Ricerca driver">
+          <span className="gestionale-driver-mobile-search-icon" aria-hidden="true"><SearchIcon /></span>
+          <input
+            type="search"
+            className="gestionale-driver-mobile-search-input"
+            value={driverQuery}
+            onChange={(event) => setDriverQuery(event.target.value)}
+            placeholder="Cerca driver..."
+          />
+        </label>
+        <button
+          type="button"
+          className={`gestionale-driver-mobile-filter-btn ${includeDeleted ? 'is-active' : ''}`}
+          onClick={() => onToggleIncludeDeleted(!includeDeleted)}
+          aria-label="Includi disattivati"
+          aria-pressed={includeDeleted}
+        >
+          <FilterIcon />
+        </button>
+      </div>
+
       <section className="gestionale-driver-kpi-grid" aria-label="Statistiche driver">
         <article className="dashboard-card gestionale-driver-kpi-card">
-          <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--active" aria-hidden="true"><DriverActiveIcon /></div>
-          <div className="gestionale-driver-kpi-content">
-            <p className="gestionale-driver-kpi-label">Driver attivi</p>
-            <p className="gestionale-driver-kpi-value">{stats.active}</p>
+          <div className="gestionale-driver-kpi-top">
+            <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--active" aria-hidden="true"><DriverActiveIcon /></div>
+            <p className="gestionale-driver-kpi-label">
+              <span className="gestionale-driver-kpi-label-desktop">Driver attivi</span>
+              <span className="gestionale-driver-kpi-label-mobile">Attivi</span>
+            </p>
           </div>
+          <p className="gestionale-driver-kpi-value">{stats.active}</p>
         </article>
 
         <article className="dashboard-card gestionale-driver-kpi-card">
-          <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--expiry" aria-hidden="true"><DriverExpiryIcon /></div>
-          <div className="gestionale-driver-kpi-content">
-            <p className="gestionale-driver-kpi-label">Patenti in scadenza (90gg)</p>
-            <p className="gestionale-driver-kpi-value">{stats.expiringIn90Days}</p>
+          <div className="gestionale-driver-kpi-top">
+            <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--expiry" aria-hidden="true"><DriverExpiryIcon /></div>
+            <p className="gestionale-driver-kpi-label">
+              <span className="gestionale-driver-kpi-label-desktop">Patenti in scadenza (90gg)</span>
+              <span className="gestionale-driver-kpi-label-mobile">Scadenza</span>
+            </p>
           </div>
+          <p className="gestionale-driver-kpi-value">{stats.expiringIn90Days}</p>
         </article>
 
         <article className="dashboard-card gestionale-driver-kpi-card">
-          <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--disabled" aria-hidden="true"><DriverDisabledIcon /></div>
-          <div className="gestionale-driver-kpi-content">
-            <p className="gestionale-driver-kpi-label">Disattivati</p>
-            <p className="gestionale-driver-kpi-value">{stats.disabled}</p>
+          <div className="gestionale-driver-kpi-top">
+            <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--disabled" aria-hidden="true"><DriverDisabledIcon /></div>
+            <p className="gestionale-driver-kpi-label">
+              <span className="gestionale-driver-kpi-label-desktop">Disattivati</span>
+              <span className="gestionale-driver-kpi-label-mobile">Disatt.</span>
+            </p>
           </div>
+          <p className="gestionale-driver-kpi-value">{stats.disabled}</p>
         </article>
       </section>
 
@@ -631,7 +687,139 @@ export function GestionaleDriversPanel() {
           {loading && <p className="gestionale-driver-table-empty">Caricamento driver...</p>}
           {!loading && filteredDrivers.length === 0 && <p className="gestionale-driver-table-empty">Nessun driver trovato.</p>}
         </div>
+
+        <div className="gestionale-driver-mobile-list-wrap">
+          <h4 className="gestionale-driver-mobile-list-title">Driver ({filteredDrivers.length})</h4>
+
+          <div className="gestionale-driver-mobile-list">
+            {filteredDrivers.map((driver) => {
+              const isSelected = selectedDriverId === driver.id;
+
+              return (
+                <button
+                  key={`mobile-${driver.id}`}
+                  type="button"
+                  className={`gestionale-driver-mobile-item ${isSelected ? 'is-selected' : ''}`}
+                  onClick={() => onSelectDriver(driver)}
+                >
+                  <span className="gestionale-driver-mobile-avatar" aria-hidden="true">{driverInitials(driver)}</span>
+
+                  <span className="gestionale-driver-mobile-main">
+                    <span className="gestionale-driver-mobile-name">{driver.firstName ?? '-'} {driver.lastName ?? '-'}</span>
+
+                    <span className="gestionale-driver-mobile-license-row">
+                      <span className="gestionale-driver-mobile-license-icon" aria-hidden="true"><DriverLicenseIcon /></span>
+                      <span className="gestionale-driver-mobile-license-number">{driver.licenseNumber ?? '-'}</span>
+                    </span>
+
+                    {!!driver.licenseTypes?.length && (
+                      <span className="gestionale-driver-mobile-license-badges">
+                        {driver.licenseTypes.map((licenseType) => (
+                          <span key={`mobile-badge-${driver.id}-${licenseType}`} className="gestionale-driver-mobile-license-badge">
+                            {licenseType}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                  </span>
+
+                  <span className="gestionale-driver-mobile-chevron" aria-hidden="true"><DriverChevronIcon /></span>
+                </button>
+              );
+            })}
+          </div>
+
+          {loading && <p className="gestionale-driver-table-empty">Caricamento driver...</p>}
+          {!loading && filteredDrivers.length === 0 && <p className="gestionale-driver-table-empty">Nessun driver trovato.</p>}
+        </div>
       </article>
+
+      {selectedDriver && !isFormOpen && (
+        <div
+          className="gestionale-driver-mobile-sheet-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelectedDriverId(null);
+            }
+          }}
+        >
+          <article className="gestionale-driver-mobile-sheet" onClick={(event) => event.stopPropagation()}>
+            <span className="gestionale-driver-mobile-sheet-handle" aria-hidden="true" />
+
+            <header className="gestionale-driver-mobile-sheet-header">
+              <span className="gestionale-driver-mobile-sheet-avatar" aria-hidden="true">{driverInitials(selectedDriver)}</span>
+              <div className="gestionale-driver-mobile-sheet-header-text">
+                <h4>{selectedDriver.firstName ?? '-'} {selectedDriver.lastName ?? '-'}</h4>
+                <p>{selectedDriver.enabled ? 'Driver attivo' : 'Driver disattivato'}</p>
+              </div>
+            </header>
+
+            <section className="gestionale-driver-mobile-sheet-card">
+              <div className="gestionale-driver-mobile-sheet-row">
+                <span className="gestionale-driver-mobile-sheet-icon" aria-hidden="true"><DriverMailIcon /></span>
+                <span>{selectedDriver.email || '-'}</span>
+              </div>
+
+              <div className="gestionale-driver-mobile-sheet-row">
+                <span className="gestionale-driver-mobile-sheet-icon" aria-hidden="true"><DriverPhoneIcon /></span>
+                <span>{selectedDriver.mobilePhone || '-'}</span>
+              </div>
+
+              <div className="gestionale-driver-mobile-sheet-row">
+                <span className="gestionale-driver-mobile-sheet-icon" aria-hidden="true"><DriverCalendarIcon /></span>
+                <span>{formatDate(selectedDriver.birthDate)}</span>
+              </div>
+
+              <div className="gestionale-driver-mobile-sheet-row gestionale-driver-mobile-sheet-row--license">
+                <span className="gestionale-driver-mobile-sheet-icon" aria-hidden="true"><DriverLicenseIcon /></span>
+                <div className="gestionale-driver-mobile-sheet-license-block">
+                  <span className="gestionale-driver-mobile-sheet-license-number">{selectedDriver.licenseNumber ?? '-'}</span>
+                  {!!selectedDriver.licenseTypes?.length && (
+                    <span className="gestionale-driver-mobile-sheet-license-badges">
+                      {selectedDriver.licenseTypes.map((licenseType) => (
+                        <span key={`sheet-${selectedDriver.id}-${licenseType}`} className="gestionale-driver-mobile-sheet-license-badge">
+                          {licenseType}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                  <span className="gestionale-driver-mobile-sheet-license-expiry">Scadenza: {formatDate(selectedDriver.licenseExpiryDate)}</span>
+                </div>
+              </div>
+
+              <div className="gestionale-driver-mobile-sheet-row">
+                <span className="gestionale-driver-mobile-sheet-icon" aria-hidden="true"><DriverAddressIcon /></span>
+                <span>{selectedDriver.residentialAddresses?.[0] || '-'}</span>
+              </div>
+            </section>
+
+            <footer className="gestionale-driver-mobile-sheet-actions">
+              <button type="button" className="secondary-button compact-button" onClick={() => onEditDriver(selectedDriver)}>
+                <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
+              </button>
+              {selectedDriver.enabled ? (
+                <button
+                  type="button"
+                  className="primary-button compact-button"
+                  style={{ background: '#d32f2f' }}
+                  onClick={() => onDeleteDriver(selectedDriver.id)}
+                >
+                  <ButtonContent icon={<DeleteIcon />}>Disattiva</ButtonContent>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="primary-button compact-button"
+                  style={{ background: '#7cb342' }}
+                  onClick={() => onRestoreDriver(selectedDriver.id)}
+                >
+                  <ButtonContent icon={<ResetIcon />}>Riattiva</ButtonContent>
+                </button>
+              )}
+            </footer>
+          </article>
+        </div>
+      )}
 
       {isFormOpen && (
         <div
