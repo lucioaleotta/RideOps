@@ -10,9 +10,6 @@ export default function GestionalePage() {
         </div>
         <div id="gestionale-driver-new-button-portal" />
       </div>
-      <div className="dashboard-card">
-        <p>Da qui puoi gestire l&apos;anagrafica DRIVER: creazione, modifica, disattivazione logica e ripristino.</p>
-      </div>
       <GestionaleDriversPanel />
     </main>
   );

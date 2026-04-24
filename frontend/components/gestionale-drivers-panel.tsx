@@ -78,6 +78,42 @@ function daysToDate(value: string | null) {
   return Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+function DriverMailIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="m5 7 7 5.3L19 7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DriverPhoneIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M7.4 4.8c0 7.1 4.7 11.8 11.8 11.8l1.8-2.3a1.6 1.6 0 0 0-.5-2.4l-2.3-1.3a1.6 1.6 0 0 0-2 .3l-1.1 1.2a9.9 9.9 0 0 1-3.2-3.2l1.2-1.1a1.6 1.6 0 0 0 .3-2L12 3.7a1.6 1.6 0 0 0-2.4-.5Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function DriverLicenseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <circle cx="8" cy="12" r="1.8" fill="none" stroke="currentColor" strokeWidth="1.9" />
+      <path d="M12.6 10h5.2M12.6 13h5.2" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DriverAddressIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 21s6-5.7 6-10a6 6 0 1 0-12 0c0 4.3 6 10 6 10Z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+      <circle cx="12" cy="11" r="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+    </svg>
+  );
+}
+
 export function GestionaleDriversPanel() {
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -347,6 +383,55 @@ export function GestionaleDriversPanel() {
   return (
     <section className="responsive-panel gestionale-panel" style={{ display: 'grid', gap: 16 }}>
       {newButtonPortalTarget ? createPortal(createDriverButton, newButtonPortalTarget) : null}
+
+      {selectedDriver && (
+        <article className="dashboard-card gestionale-driver-selected-card">
+          <div className="gestionale-driver-selected-header">
+            <div className="gestionale-driver-selected-title-wrap">
+              <span className="gestionale-driver-selected-label">Driver selezionato</span>
+              <h4 className="gestionale-driver-selected-name">{selectedDriver.firstName ?? '-'} {selectedDriver.lastName ?? '-'}</h4>
+            </div>
+            <div className="gestionale-driver-selected-actions">
+              <button type="button" className="primary-button compact-button" onClick={() => onEditDriver(selectedDriver)}>
+                <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
+              </button>
+              <button
+                type="button"
+                className="gestionale-driver-selected-close"
+                aria-label="Deseleziona driver"
+                onClick={() => setSelectedDriverId(null)}
+              >
+                ×
+              </button>
+            </div>
+          </div>
+
+          <div className="gestionale-driver-selected-meta-grid">
+            <div className="gestionale-driver-selected-meta-item">
+              <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverMailIcon /></span>
+              <span className="gestionale-driver-selected-meta-value">{selectedDriver.email || '-'}</span>
+            </div>
+            <div className="gestionale-driver-selected-meta-item">
+              <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverPhoneIcon /></span>
+              <span className="gestionale-driver-selected-meta-value">{selectedDriver.mobilePhone || '-'}</span>
+            </div>
+            <div className="gestionale-driver-selected-meta-item">
+              <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverLicenseIcon /></span>
+              <span className="gestionale-driver-selected-meta-value">
+                {selectedDriver.licenseNumber ?? '-'}
+                {selectedDriver.licenseTypes?.length ? ` (${selectedDriver.licenseTypes.join(', ')})` : ''}
+              </span>
+            </div>
+            <div className="gestionale-driver-selected-meta-item gestionale-driver-selected-meta-item--address">
+              <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverAddressIcon /></span>
+              <span className="gestionale-driver-selected-meta-value">
+                {(selectedDriver.residentialAddresses ?? []).join(' | ') || '-'}
+              </span>
+            </div>
+          </div>
+        </article>
+      )}
+
       <article className="dashboard-card gestionale-driver-list-card">
         <div className="panel-header gestionale-driver-toolbar">
           <h3>Driver</h3>
@@ -455,22 +540,6 @@ export function GestionaleDriversPanel() {
         </div>
       </article>
 
-      {selectedDriver && (
-        <article className="dashboard-card">
-          <h4>Driver selezionato</h4>
-          <p>
-            <strong>{selectedDriver.firstName ?? '-'} {selectedDriver.lastName ?? '-'}</strong>
-            {' - '}
-            {selectedDriver.userId}
-            {' - '}
-            {selectedDriver.mobilePhone ?? '-'}
-          </p>
-          <p style={{ marginTop: 6 }}>
-            Residenza: {(selectedDriver.residentialAddresses ?? []).join(' | ') || '-'}
-          </p>
-        </article>
-      )}
-
       {isFormOpen && (
         <div
           className="tenant-modal-overlay"
@@ -500,13 +569,62 @@ export function GestionaleDriversPanel() {
               </button>
             </div>
 
-            <form className="form-grid" onSubmit={onCreateDriver}>
+            <form className="driver-form-modal" onSubmit={onCreateDriver}>
+              <section className="driver-form-section">
+                <h4 className="driver-form-section-title">Anagrafica</h4>
+                <div className="driver-form-grid driver-form-grid--two-col">
+                  <label className="driver-form-field">
+                    <span>Nome</span>
+                    <input
+                      className="form-input"
+                      value={form.firstName}
+                      onChange={(event) => setForm((prev) => ({ ...prev, firstName: event.target.value }))}
+                      required
+                    />
+                  </label>
+                  <label className="driver-form-field">
+                    <span>Cognome</span>
+                    <input
+                      className="form-input"
+                      value={form.lastName}
+                      onChange={(event) => setForm((prev) => ({ ...prev, lastName: event.target.value }))}
+                      required
+                    />
+                  </label>
+                  <label className="driver-form-field">
+                    <span>Data di nascita</span>
+                    <input
+                      className="form-input"
+                      type="date"
+                      value={form.birthDate}
+                      onChange={(event) => setForm((prev) => ({ ...prev, birthDate: event.target.value }))}
+                      required
+                    />
+                  </label>
+                  <label className="driver-form-field">
+                    <span>Cellulare</span>
+                    <input
+                      className="form-input"
+                      value={form.mobilePhone}
+                      onChange={(event) => setForm((prev) => ({ ...prev, mobilePhone: event.target.value }))}
+                      required
+                    />
+                  </label>
+                  {editingDriverId ? (
+                    <label className="driver-form-field driver-form-field--full-width">
+                      <span>Email</span>
+                      <input className="form-input" type="email" value={form.email} disabled />
+                    </label>
+                  ) : null}
+                </div>
+              </section>
+
               {!editingDriverId && (
-                <div className="dashboard-card" style={{ background: '#eef6ff' }}>
-                  <strong>Credenziali iniziali</strong>
-                  <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, marginTop: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
-                    <label>
-                      User ID driver
+                <section className="driver-form-section">
+                  <h4 className="driver-form-section-title">Credenziali iniziali</h4>
+                  <div className="driver-form-grid driver-form-grid--three-col">
+                    <label className="driver-form-field">
+                      <span>User ID driver</span>
                       <input
                         className="form-input"
                         value={form.userId}
@@ -514,8 +632,8 @@ export function GestionaleDriversPanel() {
                         required
                       />
                     </label>
-                    <label>
-                      Email driver
+                    <label className="driver-form-field">
+                      <span>Email driver</span>
                       <input
                         className="form-input"
                         type="email"
@@ -524,8 +642,8 @@ export function GestionaleDriversPanel() {
                         required
                       />
                     </label>
-                    <label>
-                      Password iniziale
+                    <label className="driver-form-field">
+                      <span>Password iniziale</span>
                       <PasswordInput
                         className="form-input"
                         minLength={8}
@@ -536,92 +654,64 @@ export function GestionaleDriversPanel() {
                       />
                     </label>
                   </div>
-                </div>
+                </section>
               )}
 
-              <div className="responsive-form-grid" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
-                <label>
-                  Nome
-                  <input
-                    className="form-input"
-                    value={form.firstName}
-                    onChange={(event) => setForm((prev) => ({ ...prev, firstName: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label>
-                  Cognome
-                  <input
-                    className="form-input"
-                    value={form.lastName}
-                    onChange={(event) => setForm((prev) => ({ ...prev, lastName: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label>
-                  Data di nascita
-                  <input
-                    className="form-input"
-                    type="date"
-                    value={form.birthDate}
-                    onChange={(event) => setForm((prev) => ({ ...prev, birthDate: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label>
-                  Numero patente
-                  <input
-                    className="form-input"
-                    value={form.licenseNumber}
-                    onChange={(event) => setForm((prev) => ({ ...prev, licenseNumber: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label>
-                  Cellulare
-                  <input
-                    className="form-input"
-                    value={form.mobilePhone}
-                    onChange={(event) => setForm((prev) => ({ ...prev, mobilePhone: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label>
-                  Scadenza patente
-                  <input
-                    className="form-input"
-                    type="date"
-                    value={form.licenseExpiryDate}
-                    onChange={(event) => setForm((prev) => ({ ...prev, licenseExpiryDate: event.target.value }))}
-                    required
-                  />
-                </label>
-              </div>
-
-              <div className="dashboard-card" style={{ background: '#f4f9ff' }}>
-                <strong>Tipo patente (uno o piu)</strong>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 8 }}>
-                  {licenseTypeOptions.map((type) => (
-                    <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <input
-                        type="checkbox"
-                        checked={form.licenseTypes.includes(type)}
-                        onChange={() => toggleLicenseType(type)}
-                      />
-                      {type}
-                    </label>
-                  ))}
+              <section className="driver-form-section">
+                <h4 className="driver-form-section-title">Patente</h4>
+                <div className="driver-form-grid driver-form-grid--two-col">
+                  <label className="driver-form-field">
+                    <span>Numero patente</span>
+                    <input
+                      className="form-input"
+                      value={form.licenseNumber}
+                      onChange={(event) => setForm((prev) => ({ ...prev, licenseNumber: event.target.value }))}
+                      required
+                    />
+                  </label>
+                  <label className="driver-form-field">
+                    <span>Scadenza patente</span>
+                    <input
+                      className="form-input"
+                      type="date"
+                      value={form.licenseExpiryDate}
+                      onChange={(event) => setForm((prev) => ({ ...prev, licenseExpiryDate: event.target.value }))}
+                      required
+                    />
+                  </label>
                 </div>
-              </div>
 
-              <div className="dashboard-card" style={{ background: '#f4f9ff' }}>
-                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <strong>Indirizzi di residenza</strong>
-                  <button type="button" className="primary-button compact-button" onClick={addAddress}><ButtonContent icon={<AddIcon />}>Aggiungi indirizzo</ButtonContent></button>
+                <div className="driver-form-license-types">
+                  <span className="driver-form-field-label">Tipo patente (uno o più)</span>
+                  <div className="driver-license-picker">
+                    {licenseTypeOptions.map((type) => {
+                      const selected = form.licenseTypes.includes(type);
+                      return (
+                        <button
+                          key={type}
+                          type="button"
+                          className={`driver-license-chip ${selected ? 'is-selected' : ''}`}
+                          onClick={() => toggleLicenseType(type)}
+                          aria-pressed={selected}
+                        >
+                          {type}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+              </section>
+
+              <section className="driver-form-section">
+                <div className="driver-form-section-header">
+                  <h4 className="driver-form-section-title">Indirizzi di residenza</h4>
+                  <button type="button" className="secondary-button compact-button" onClick={addAddress}>
+                    <ButtonContent icon={<AddIcon />}>Aggiungi</ButtonContent>
+                  </button>
+                </div>
+                <div className="driver-form-address-list">
                   {form.residentialAddresses.map((address, index) => (
-                    <div key={`address-${index}`} className="address-row" style={{ display: 'flex', gap: 8 }}>
+                    <div key={`address-${index}`} className="driver-form-address-row">
                       <input
                         className="form-input"
                         value={address}
@@ -631,32 +721,31 @@ export function GestionaleDriversPanel() {
                       />
                       <button
                         type="button"
-                        className="primary-button compact-button"
-                        style={{ background: '#d32f2f' }}
+                        className="secondary-button compact-button driver-form-address-remove"
                         onClick={() => removeAddress(index)}
                         disabled={form.residentialAddresses.length <= 1}
+                        aria-label={`Rimuovi indirizzo ${index + 1}`}
                       >
-                        <ButtonContent icon={<DeleteIcon />}>Rimuovi</ButtonContent>
+                        <span className="button-icon" aria-hidden="true"><DeleteIcon /></span>
                       </button>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              <div className="form-actions sticky-mobile" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button type="submit" className="primary-button compact-button" disabled={submitting}>
-                  <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : editingDriverId ? 'Aggiorna driver' : 'Crea driver'}</ButtonContent>
-                </button>
+              <div className="driver-form-actions">
                 <button
                   type="button"
-                  className="primary-button compact-button"
-                  style={{ background: '#607d8b' }}
+                  className="secondary-button compact-button"
                   onClick={() => {
                     setIsFormOpen(false);
                     resetForm();
                   }}
                 >
                   <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
+                </button>
+                <button type="submit" className="primary-button compact-button" disabled={submitting}>
+                  <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : editingDriverId ? 'Aggiorna driver' : 'Crea driver'}</ButtonContent>
                 </button>
               </div>
             </form>
