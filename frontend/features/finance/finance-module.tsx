@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import { AddIcon, ButtonContent, FilterIcon, ResetIcon } from '../../components/action-icons';
+import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, FilterIcon, ResetIcon } from '../../components/action-icons';
 import { StatusNotice } from '../../components/status-notice';
 import { formatCurrencyEUR } from '../../lib/currency';
 import {
@@ -62,6 +62,8 @@ type VehicleListItem = {
   plate: string;
 };
 
+const PAGE_SIZE = 25;
+
 export function FinanceModule({ section = 'overview' }: { section?: 'overview' | 'movements' }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -77,6 +79,7 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
   const [serviceOptions, setServiceOptions] = useState<ServiceFilterOption[]>([]);
   const [vehicleOptions, setVehicleOptions] = useState<VehicleFilterOption[]>([]);
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
   const [dashboard, setDashboard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -264,6 +267,19 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
     );
   }, [dashboard, year]);
 
+  const totalPages = Math.max(1, Math.ceil(transactions.length / PAGE_SIZE));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedTransactions = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return transactions.slice(start, start + PAGE_SIZE);
+  }, [transactions, currentPage]);
+
   return (
     <section style={{ display: 'grid', gap: 16 }}>
       <header style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
@@ -402,11 +418,21 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
                   <option value="asc">Ascendente</option>
                 </select>
               </label>
-              <button type="button" className="primary-button" onClick={loadTransactions}><ButtonContent icon={<FilterIcon />}>Applica filtri</ButtonContent></button>
+              <button
+                type="button"
+                className="primary-button"
+                onClick={() => {
+                  setCurrentPage(1);
+                  loadTransactions();
+                }}
+              >
+                <ButtonContent icon={<FilterIcon />}>Applica filtri</ButtonContent>
+              </button>
               <button
                 type="button"
                 className="logout-button"
                 onClick={() => {
+                  setCurrentPage(1);
                   setFromDate('');
                   setToDate('');
                   setFilterType('');
@@ -454,7 +480,7 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
 
             <div style={{ marginTop: 14 }}>
               <FinanceTransactionsTable
-                items={transactions}
+                items={paginatedTransactions}
                 onEdit={(item) => {
                   setEditing(item);
                   setFormOpen(true);
@@ -462,6 +488,37 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
                 }}
                 onVoid={onVoid}
               />
+            </div>
+
+            <div className="services-list-footer">
+              <div className="services-list-footer-size">
+                <span>Mostra</span>
+                <select className="services-list-pagesize-select" value={PAGE_SIZE} disabled aria-label="Numero risultati per pagina">
+                  <option value={25}>25</option>
+                </select>
+                <span>di {transactions.length} risultati</span>
+              </div>
+              <div className="services-list-footer-pagination">
+                <button
+                  type="button"
+                  className="services-list-page-btn"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  aria-label="Pagina precedente"
+                >
+                  <ButtonContent icon={<ArrowLeftIcon />}>Prec</ButtonContent>
+                </button>
+                <span className="services-list-page-info">Pagina {currentPage} di {totalPages}</span>
+                <button
+                  type="button"
+                  className="services-list-page-btn"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  aria-label="Pagina successiva"
+                >
+                  <ButtonContent icon={<ArrowRightIcon />}>Succ</ButtonContent>
+                </button>
+              </div>
             </div>
           </article>
         </>
