@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AddIcon, ButtonContent, CancelIcon, CopyIcon, SaveIcon, SearchIcon } from './action-icons';
+import { StatusNotice } from './status-notice';
 
 type TenantOperationalStatus = 'ACTIVE' | 'SUSPENDED';
 type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
@@ -471,8 +472,8 @@ export function AdminTenantsPanel() {
         </label>
       </form>
 
-      {error && <p className="error-text">{error}</p>}
-      {success && <p className="success-text">{success}</p>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
+      {success && <StatusNotice tone="success">{success}</StatusNotice>}
 
       {selectedTenant && (
         <TenantDetailView

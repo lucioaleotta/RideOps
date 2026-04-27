@@ -36,9 +36,6 @@ export default async function FleetPage({ searchParams }: FleetPageProps) {
 
   return (
     <main>
-      <h1>Gestione Flotta</h1>
-      <p>Gestione completa veicolo: anagrafica, scadenze/manutenzioni e piani ricorrenti.</p>
-      <FleetDeadlinesAlerts />
       <FleetVehicleManagement userRole={user?.role ?? 'UNKNOWN'} initialVehicleId={initialVehicleId} />
     </main>
   );

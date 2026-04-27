@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, FilterIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon } from './action-icons';
 import { PasswordInput } from './password-input';
+import { StatusNotice } from './status-notice';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
 
@@ -203,6 +204,8 @@ export function GestionaleDriversPanel() {
   const [driverQuery, setDriverQuery] = useState('');
   const [selectedDriverId, setSelectedDriverId] = useState<number | null>(null);
   const [editingDriverId, setEditingDriverId] = useState<number | null>(null);
+  const [rowMenuDriverId, setRowMenuDriverId] = useState<number | null>(null);
+  const [rowMenuDriverAnchor, setRowMenuDriverAnchor] = useState<{ top: number; right: number } | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [newButtonPortalTarget, setNewButtonPortalTarget] = useState<HTMLElement | null>(null);
   const [form, setForm] = useState<DriverFormState>(defaultForm);
@@ -278,6 +281,30 @@ export function GestionaleDriversPanel() {
 
   useEffect(() => {
     setNewButtonPortalTarget(document.getElementById('gestionale-driver-new-button-portal'));
+  }, []);
+
+  useEffect(() => {
+    function onDocumentClick(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target && target.closest('.services-row-menu')) {
+        return;
+      }
+      setRowMenuDriverId(null);
+    }
+
+    function onDocumentKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setRowMenuDriverId(null);
+      }
+    }
+
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onDocumentKeyDown);
+
+    return () => {
+      document.removeEventListener('click', onDocumentClick);
+      document.removeEventListener('keydown', onDocumentKeyDown);
+    };
   }, []);
 
   async function onToggleIncludeDeleted(checked: boolean) {
@@ -498,88 +525,90 @@ export function GestionaleDriversPanel() {
         </button>
       </div>
 
-      <section className="gestionale-driver-kpi-grid" aria-label="Statistiche driver">
-        <article className="dashboard-card gestionale-driver-kpi-card">
-          <div className="gestionale-driver-kpi-top">
-            <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--active" aria-hidden="true"><DriverActiveIcon /></div>
-            <p className="gestionale-driver-kpi-label">
-              <span className="gestionale-driver-kpi-label-desktop">Driver attivi</span>
-              <span className="gestionale-driver-kpi-label-mobile">Attivi</span>
-            </p>
-          </div>
-          <p className="gestionale-driver-kpi-value">{stats.active}</p>
-        </article>
+      <div className="gestionale-driver-informative-stack">
+        <section className="gestionale-driver-kpi-grid" aria-label="Statistiche driver">
+          <article className="dashboard-card gestionale-driver-kpi-card">
+            <div className="gestionale-driver-kpi-top">
+              <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--active" aria-hidden="true"><DriverActiveIcon /></div>
+              <p className="gestionale-driver-kpi-label">
+                <span className="gestionale-driver-kpi-label-desktop">Driver attivi</span>
+                <span className="gestionale-driver-kpi-label-mobile">Attivi</span>
+              </p>
+            </div>
+            <p className="gestionale-driver-kpi-value">{stats.active}</p>
+          </article>
 
-        <article className="dashboard-card gestionale-driver-kpi-card">
-          <div className="gestionale-driver-kpi-top">
-            <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--expiry" aria-hidden="true"><DriverExpiryIcon /></div>
-            <p className="gestionale-driver-kpi-label">
-              <span className="gestionale-driver-kpi-label-desktop">Patenti in scadenza (90gg)</span>
-              <span className="gestionale-driver-kpi-label-mobile">Scadenza</span>
-            </p>
-          </div>
-          <p className="gestionale-driver-kpi-value">{stats.expiringIn90Days}</p>
-        </article>
+          <article className="dashboard-card gestionale-driver-kpi-card">
+            <div className="gestionale-driver-kpi-top">
+              <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--expiry" aria-hidden="true"><DriverExpiryIcon /></div>
+              <p className="gestionale-driver-kpi-label">
+                <span className="gestionale-driver-kpi-label-desktop">Patenti in scadenza (90gg)</span>
+                <span className="gestionale-driver-kpi-label-mobile">Scadenza</span>
+              </p>
+            </div>
+            <p className="gestionale-driver-kpi-value">{stats.expiringIn90Days}</p>
+          </article>
 
-        <article className="dashboard-card gestionale-driver-kpi-card">
-          <div className="gestionale-driver-kpi-top">
-            <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--disabled" aria-hidden="true"><DriverDisabledIcon /></div>
-            <p className="gestionale-driver-kpi-label">
-              <span className="gestionale-driver-kpi-label-desktop">Disattivati</span>
-              <span className="gestionale-driver-kpi-label-mobile">Disatt.</span>
-            </p>
-          </div>
-          <p className="gestionale-driver-kpi-value">{stats.disabled}</p>
-        </article>
-      </section>
+          <article className="dashboard-card gestionale-driver-kpi-card">
+            <div className="gestionale-driver-kpi-top">
+              <div className="gestionale-driver-kpi-icon gestionale-driver-kpi-icon--disabled" aria-hidden="true"><DriverDisabledIcon /></div>
+              <p className="gestionale-driver-kpi-label">
+                <span className="gestionale-driver-kpi-label-desktop">Disattivati</span>
+                <span className="gestionale-driver-kpi-label-mobile">Disatt.</span>
+              </p>
+            </div>
+            <p className="gestionale-driver-kpi-value">{stats.disabled}</p>
+          </article>
+        </section>
 
-      {selectedDriver && (
-        <article className="dashboard-card gestionale-driver-selected-card">
-          <div className="gestionale-driver-selected-header">
-            <div className="gestionale-driver-selected-title-wrap">
-              <span className="gestionale-driver-selected-label">Driver selezionato</span>
-              <h4 className="gestionale-driver-selected-name">{selectedDriver.firstName ?? '-'} {selectedDriver.lastName ?? '-'}</h4>
+        {selectedDriver && (
+          <article className="dashboard-card gestionale-driver-selected-card">
+            <div className="gestionale-driver-selected-header">
+              <div className="gestionale-driver-selected-title-wrap">
+                <span className="gestionale-driver-selected-label">Driver selezionato</span>
+                <h4 className="gestionale-driver-selected-name">{selectedDriver.firstName ?? '-'} {selectedDriver.lastName ?? '-'}</h4>
+              </div>
+              <div className="gestionale-driver-selected-actions">
+                <button type="button" className="primary-button compact-button" onClick={() => onEditDriver(selectedDriver)}>
+                  <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
+                </button>
+                <button
+                  type="button"
+                  className="gestionale-driver-selected-close"
+                  aria-label="Deseleziona driver"
+                  onClick={() => setSelectedDriverId(null)}
+                >
+                  ×
+                </button>
+              </div>
             </div>
-            <div className="gestionale-driver-selected-actions">
-              <button type="button" className="primary-button compact-button" onClick={() => onEditDriver(selectedDriver)}>
-                <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
-              </button>
-              <button
-                type="button"
-                className="gestionale-driver-selected-close"
-                aria-label="Deseleziona driver"
-                onClick={() => setSelectedDriverId(null)}
-              >
-                ×
-              </button>
-            </div>
-          </div>
 
-          <div className="gestionale-driver-selected-meta-grid">
-            <div className="gestionale-driver-selected-meta-item">
-              <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverMailIcon /></span>
-              <span className="gestionale-driver-selected-meta-value">{selectedDriver.email || '-'}</span>
+            <div className="gestionale-driver-selected-meta-grid">
+              <div className="gestionale-driver-selected-meta-item">
+                <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverMailIcon /></span>
+                <span className="gestionale-driver-selected-meta-value">{selectedDriver.email || '-'}</span>
+              </div>
+              <div className="gestionale-driver-selected-meta-item">
+                <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverPhoneIcon /></span>
+                <span className="gestionale-driver-selected-meta-value">{selectedDriver.mobilePhone || '-'}</span>
+              </div>
+              <div className="gestionale-driver-selected-meta-item">
+                <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverLicenseIcon /></span>
+                <span className="gestionale-driver-selected-meta-value">
+                  {selectedDriver.licenseNumber ?? '-'}
+                  {selectedDriver.licenseTypes?.length ? ` (${selectedDriver.licenseTypes.join(', ')})` : ''}
+                </span>
+              </div>
+              <div className="gestionale-driver-selected-meta-item gestionale-driver-selected-meta-item--address">
+                <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverAddressIcon /></span>
+                <span className="gestionale-driver-selected-meta-value">
+                  {(selectedDriver.residentialAddresses ?? []).join(' | ') || '-'}
+                </span>
+              </div>
             </div>
-            <div className="gestionale-driver-selected-meta-item">
-              <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverPhoneIcon /></span>
-              <span className="gestionale-driver-selected-meta-value">{selectedDriver.mobilePhone || '-'}</span>
-            </div>
-            <div className="gestionale-driver-selected-meta-item">
-              <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverLicenseIcon /></span>
-              <span className="gestionale-driver-selected-meta-value">
-                {selectedDriver.licenseNumber ?? '-'}
-                {selectedDriver.licenseTypes?.length ? ` (${selectedDriver.licenseTypes.join(', ')})` : ''}
-              </span>
-            </div>
-            <div className="gestionale-driver-selected-meta-item gestionale-driver-selected-meta-item--address">
-              <span className="gestionale-driver-selected-meta-icon" aria-hidden="true"><DriverAddressIcon /></span>
-              <span className="gestionale-driver-selected-meta-value">
-                {(selectedDriver.residentialAddresses ?? []).join(' | ') || '-'}
-              </span>
-            </div>
-          </div>
-        </article>
-      )}
+          </article>
+        )}
+      </div>
 
       <article className="dashboard-card gestionale-driver-list-card">
         <div className="panel-header gestionale-driver-toolbar">
@@ -651,31 +680,76 @@ export function GestionaleDriversPanel() {
                       {isExpirySoon && <small className="warning-text">Scade tra {daysLeft} gg</small>}
                     </td>
                     <td>
-                      <div className="table-actions gestionale-driver-table-actions">
-                        <button type="button" className="primary-button compact-button" onClick={() => onSelectDriver(driver)}>
-                          <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
+                      <div className="services-row-menu">
+                        <button
+                          type="button"
+                          className="services-row-menu-btn"
+                          aria-label={`Azioni driver ${driver.id}`}
+                          title="Azioni"
+                          onClick={(e) => {
+                            const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                            setRowMenuDriverAnchor({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                            setRowMenuDriverId((prev) => (prev === driver.id ? null : driver.id));
+                          }}
+                        >
+                          ...
                         </button>
-                        <button type="button" className="primary-button compact-button" onClick={() => onEditDriver(driver)}>
-                          <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
-                        </button>
-                        {driver.enabled ? (
-                          <button
-                            type="button"
-                            className="primary-button compact-button"
-                            style={{ background: '#d32f2f' }}
-                            onClick={() => onDeleteDriver(driver.id)}
+
+                        {rowMenuDriverId === driver.id && rowMenuDriverAnchor && (
+                          <div
+                            className="services-row-menu-dropdown"
+                            style={{ position: 'fixed', top: `${rowMenuDriverAnchor.top}px`, right: `${rowMenuDriverAnchor.right}px`, zIndex: 9999 }}
                           >
-                            <ButtonContent icon={<DeleteIcon />}>Cancella</ButtonContent>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="primary-button compact-button"
-                            style={{ background: '#7cb342' }}
-                            onClick={() => onRestoreDriver(driver.id)}
-                          >
-                            <ButtonContent icon={<ResetIcon />}>Ripristina</ButtonContent>
-                          </button>
+                            <button
+                              type="button"
+                              className="services-row-menu-item"
+                              onClick={() => {
+                                setRowMenuDriverId(null);
+                                onSelectDriver(driver);
+                              }}
+                            >
+                              <span className="services-row-menu-item-icon"><SelectIcon /></span>
+                              Seleziona
+                            </button>
+
+                            <button
+                              type="button"
+                              className="services-row-menu-item"
+                              onClick={() => {
+                                setRowMenuDriverId(null);
+                                onEditDriver(driver);
+                              }}
+                            >
+                              <span className="services-row-menu-item-icon"><EditIcon /></span>
+                              Modifica
+                            </button>
+
+                            {driver.enabled ? (
+                              <button
+                                type="button"
+                                className="services-row-menu-item"
+                                onClick={() => {
+                                  setRowMenuDriverId(null);
+                                  onDeleteDriver(driver.id);
+                                }}
+                              >
+                                <span className="services-row-menu-item-icon"><DeleteIcon /></span>
+                                Cancella
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="services-row-menu-item"
+                                onClick={() => {
+                                  setRowMenuDriverId(null);
+                                  onRestoreDriver(driver.id);
+                                }}
+                              >
+                                <span className="services-row-menu-item-icon"><ResetIcon /></span>
+                                Ripristina
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </td>
@@ -1034,8 +1108,8 @@ export function GestionaleDriversPanel() {
         </div>
       )}
 
-      {error && <p className="error-text">{error}</p>}
-      {success && <p className="success-text">{success}</p>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
+      {success && <StatusNotice tone="success">{success}</StatusNotice>}
     </section>
   );
 }

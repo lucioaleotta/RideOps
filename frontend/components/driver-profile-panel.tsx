@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, SaveIcon } from './action-icons';
+import { StatusNotice } from './status-notice';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
 
@@ -220,13 +221,13 @@ export function DriverProfilePanel() {
   }
 
   if (!profile || !form) {
-    return <p className="error-text">Profilo non disponibile.</p>;
+    return <StatusNotice tone="error">Profilo non disponibile.</StatusNotice>;
   }
 
   return (
     <section className="responsive-panel driver-profile-panel" style={{ display: 'grid', gap: 16 }}>
-      {error && <p className="error-text">{error}</p>}
-      {success && <p className="success-text">{success}</p>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
+      {success && <StatusNotice tone="success">{success}</StatusNotice>}
 
       {/* Card patenti in scadenza */}
       {(() => {

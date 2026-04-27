@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, LockIcon, SaveIcon } from './action-icons';
+import { StatusNotice } from './status-notice';
 
 type VehicleType = 'SEDAN' | 'VAN' | 'MINIBUS' | 'SUV' | 'OTHER';
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
@@ -471,8 +472,8 @@ export function FleetVehiclesPanel() {
           </form>
         )}
 
-        {error && <p className="error-text" style={{ marginTop: 8 }}>{error}</p>}
-        {success && <p className="success-text" style={{ marginTop: 8 }}>{success}</p>}
+        {error && <StatusNotice tone="error" className="fleet-inline-notice">{error}</StatusNotice>}
+        {success && <StatusNotice tone="success" className="fleet-inline-notice">{success}</StatusNotice>}
       </article>
 
       <article className="dashboard-card">

@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeftIcon, ArrowRightIcon, ButtonContent, LockIcon, OpenIcon, SelectIcon, TodayIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
+import { StatusNotice } from './status-notice';
 
 type ViewMode = 'month' | 'week' | 'day';
 type ServiceType = 'TRANSFER' | 'TOUR';
@@ -666,7 +667,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
           </div>
         </div>
 
-        <div className="responsive-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
+        <div className="responsive-filters-grid portal-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
           {!driverMode && (
             <label>
               Driver
@@ -713,8 +714,8 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
         </div>
       </article>
 
-      {error && <p className="error-text">{error}</p>}
-      {success && <p className="success-text">{success}</p>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
+      {success && <StatusNotice tone="success">{success}</StatusNotice>}
       {loading && <p>Caricamento calendario...</p>}
 
       {!loading && !error && (

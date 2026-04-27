@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ButtonContent, LoginIcon } from './action-icons';
 import { PasswordInput } from './password-input';
+import { StatusNotice } from './status-notice';
 
 export function LoginForm() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export function LoginForm() {
         <ButtonContent icon={<LoginIcon />}>{loading ? 'Accesso...' : 'Accedi'}</ButtonContent>
       </button>
 
-      {error && <p className="error-text">{error}</p>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
 
       <p>
         <Link href="/forgot-password">Password dimenticata?</Link>

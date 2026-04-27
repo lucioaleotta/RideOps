@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ButtonContent, SaveIcon } from './action-icons';
 import { PasswordInput } from './password-input';
+import { StatusNotice } from './status-notice';
 
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -70,8 +71,8 @@ export function ResetPasswordForm() {
         <ButtonContent icon={<SaveIcon />}>{loading ? 'Aggiornamento...' : 'Aggiorna password'}</ButtonContent>
       </button>
 
-      {message && <p className="success-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+      {message && <StatusNotice tone="success">{message}</StatusNotice>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
     </form>
   );
 }

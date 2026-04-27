@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import { ButtonContent, LoginIcon } from './action-icons';
+import { StatusNotice } from './status-notice';
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState('admin@rideops.local');
@@ -47,8 +48,8 @@ export function ForgotPasswordForm() {
       <button type="submit" disabled={loading} className="primary-button">
         <ButtonContent icon={<LoginIcon />}>{loading ? 'Invio...' : 'Invia link reset'}</ButtonContent>
       </button>
-      {message && <p className="success-text">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+      {message && <StatusNotice tone="success">{message}</StatusNotice>}
+      {error && <StatusNotice tone="error">{error}</StatusNotice>}
       <p>
         In MVP il link di reset è inviato su outbox/log backend.
       </p>
