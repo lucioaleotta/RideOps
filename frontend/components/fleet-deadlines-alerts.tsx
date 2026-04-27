@@ -217,6 +217,10 @@ export function FleetDeadlinesAlerts({
     return 'Altro';
   }
 
+  if (!loading && !error && orderedItems.length === 0) {
+    return null;
+  }
+
   return (
     <article className="dashboard-card">
       <button

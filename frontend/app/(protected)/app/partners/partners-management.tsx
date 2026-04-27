@@ -100,6 +100,11 @@ function valueOrDash(value: string | null | undefined) {
   return value;
 }
 
+function referenteLabel(partner: PartnerItem) {
+  const fullName = `${partner.nomeReferente ?? ''} ${partner.cognomeReferente ?? ''}`.trim();
+  return fullName || '—';
+}
+
 function currencyEur(value: number | null | undefined) {
   const amount = value ?? 0;
   return `€ ${amount.toFixed(2)}`;
@@ -168,6 +173,8 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPartnerId, setEditingPartnerId] = useState<number | null>(null);
+  const [rowMenuPartnerId, setRowMenuPartnerId] = useState<number | null>(null);
+  const [rowMenuAnchor, setRowMenuAnchor] = useState<{ top: number; right: number } | null>(null);
   const [form, setForm] = useState<PartnerFormState>(defaultForm);
   const [newButtonPortalTarget, setNewButtonPortalTarget] = useState<HTMLElement | null>(null);
 
@@ -254,6 +261,29 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
     setNewButtonPortalTarget(document.getElementById('partners-new-button-portal'));
   }, []);
 
+  useEffect(() => {
+    function onDocumentClick(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      if (target && target.closest('.services-row-menu')) {
+        return;
+      }
+      setRowMenuPartnerId(null);
+    }
+
+    function onDocumentKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setRowMenuPartnerId(null);
+      }
+    }
+
+    document.addEventListener('click', onDocumentClick);
+    document.addEventListener('keydown', onDocumentKeyDown);
+
+    return () => {
+      document.removeEventListener('click', onDocumentClick);
+      document.removeEventListener('keydown', onDocumentKeyDown);
+    };
+  }, []);
   const visiblePartners = useMemo(() => {
     // Safety fallback: if API ignores includeDeleted, still hide deleted by default.
     if (!showDeleted) {
@@ -286,6 +316,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
     return {
       type: current.type,
       ragioneSociale: current.ragioneSociale,
+
       nomeReferente: current.nomeReferente || null,
       cognomeReferente: current.cognomeReferente || null,
       telefono: current.telefono || null,
@@ -476,6 +507,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
             <thead>
               <tr>
                 <th>Ragione Sociale</th>
+                <th>Referente</th>
                 <th>Telefono</th>
                 <th>Email</th>
                 <th>Azioni</th>
@@ -490,21 +522,56 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
                     className={`gestionale-partner-row ${isSelected ? 'is-selected' : ''} ${partner.deleted ? 'is-deleted' : ''}`}
                   >
                     <td>{partner.ragioneSociale}</td>
+                    <td>{referenteLabel(partner)}</td>
                     <td>{partner.telefono ?? '-'}</td>
                     <td>{partner.email ?? '-'}</td>
                     <td>
-                      <div className="table-actions gestionale-partner-table-actions">
-                        <button type="button" className="primary-button compact-button" onClick={() => selectPartner(partner.id)}>
-                          <ButtonContent icon={<SelectIcon />}>Seleziona</ButtonContent>
-                        </button>
+                      <div className="services-row-menu">
                         <button
                           type="button"
-                          className="primary-button compact-button"
-                          onClick={() => openEditModal(partner.id)}
-                          disabled={partner.deleted}
+                          className="services-row-menu-btn"
+                          aria-label={`Azioni partner ${partner.id}`}
+                          title="Azioni"
+                          onClick={(e) => {
+                            const rect = (e.currentTarget as HTMLButtonElement).getBoundingClientRect();
+                            setRowMenuAnchor({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                            setRowMenuPartnerId((prev) => (prev === partner.id ? null : partner.id));
+                          }}
                         >
-                          <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
+                          ...
                         </button>
+
+                        {rowMenuPartnerId === partner.id && rowMenuAnchor && (
+                          <div
+                            className="services-row-menu-dropdown"
+                            style={{ position: 'fixed', top: `${rowMenuAnchor.top}px`, right: `${rowMenuAnchor.right}px`, zIndex: 9999 }}
+                          >
+                            <button
+                              type="button"
+                              className="services-row-menu-item"
+                              onClick={() => {
+                                setRowMenuPartnerId(null);
+                                selectPartner(partner.id);
+                              }}
+                            >
+                              <span className="services-row-menu-item-icon"><SelectIcon /></span>
+                              Seleziona
+                            </button>
+
+                            <button
+                              type="button"
+                              className="services-row-menu-item"
+                              onClick={() => {
+                                setRowMenuPartnerId(null);
+                                void openEditModal(partner.id);
+                              }}
+                              disabled={partner.deleted}
+                            >
+                              <span className="services-row-menu-item-icon"><EditIcon /></span>
+                              Modifica
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>

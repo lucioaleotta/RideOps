@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, LockIcon, ResetIcon, SaveIcon } from './action-icons';
 import { StatusNotice } from './status-notice';
+import { FilterDropdown } from './filter-dropdown';
 
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
 type DeadlineStatus = 'DA_ESEGUIRE' | 'IN_SCADENZA' | 'SCADUTA' | 'PAGATA' | 'ESEGUITA' | 'ANNULLATA';
@@ -292,29 +293,33 @@ export function FleetDeadlinesPanel() {
           </button>
         </div>
 
-        <div className="responsive-filters-grid" style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginTop: 8 }}>
-          <label>
-            Vista
-            <select className="form-input" value={viewMode} onChange={(event) => setViewMode(event.target.value as ViewMode)}>
-              <option value="vehicle">Storico veicolo</option>
-              <option value="upcoming">In scadenza</option>
-              <option value="overdue">Scadute</option>
-            </select>
-          </label>
+        <div className="responsive-filters-grid portal-filters-grid" style={{ display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginTop: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7f9d', paddingLeft: 2 }}>Vista</span>
+            <FilterDropdown
+              label="Vista"
+              value={viewMode}
+              options={[
+                { value: 'vehicle', label: 'Storico veicolo' },
+                { value: 'upcoming', label: 'In scadenza' },
+                { value: 'overdue', label: 'Scadute' },
+              ]}
+              onChange={(v) => setViewMode(v as ViewMode)}
+            />
+          </div>
 
-          <label>
-            Veicolo
-            <select
-              className="form-input"
-              value={selectedVehicleId}
-              onChange={(event) => setSelectedVehicleId(event.target.value ? Number(event.target.value) : '')}
-            >
-              <option value="">Seleziona...</option>
-              {vehicles.map((vehicle) => (
-                <option key={vehicle.id} value={vehicle.id}>{vehicle.plate}</option>
-              ))}
-            </select>
-          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#6b7f9d', paddingLeft: 2 }}>Veicolo</span>
+            <FilterDropdown
+              label="Veicolo"
+              value={selectedVehicleId !== '' ? String(selectedVehicleId) : ''}
+              options={[
+                { value: '', label: 'Seleziona...' },
+                ...vehicles.map((vehicle) => ({ value: String(vehicle.id), label: vehicle.plate })),
+              ]}
+              onChange={(v) => setSelectedVehicleId(v ? Number(v) : '')}
+            />
+          </div>
 
           {viewMode === 'upcoming' && (
             <label>

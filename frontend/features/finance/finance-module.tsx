@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, FilterIcon, ResetIcon } from '../../components/action-icons';
+import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, FilterIcon, SearchIcon } from '../../components/action-icons';
 import { StatusNotice } from '../../components/status-notice';
 import { formatCurrencyEUR } from '../../lib/currency';
 import {
@@ -21,7 +21,7 @@ import { FinanceCategoryDistribution, FinanceMonthlyBars, FinanceYearComparisonC
 import { FinanceSubnav } from './components/finance-subnav';
 import { FinanceTransactionForm } from './components/finance-transaction-form';
 import { FinanceTransactionsTable } from './components/finance-transactions-table';
-
+import { FilterDropdown } from '../../components/filter-dropdown';
 const financeCategories: FinancialTransactionCategory[] = [
   'SERVIZIO',
   'SERVIZIO_ESTERNO',
@@ -40,29 +40,20 @@ const financeCategories: FinancialTransactionCategory[] = [
   'ALTRO_COSTO'
 ];
 
-type ServiceFilterOption = {
-  id: number;
-  label: string;
-};
-
-type VehicleFilterOption = {
-  id: number;
-  label: string;
-};
-
-type ServiceListItem = {
-  id: number;
-  startAt: string;
-  pickupLocation: string;
-  destination: string;
-};
-
-type VehicleListItem = {
-  id: number;
-  plate: string;
-};
+type FinanceStatusFilter = '' | 'AUTO' | 'MANUALE' | 'ANNULLATO';
 
 const PAGE_SIZE = 25;
+
+function toTitleCase(str: string): string {
+  return str.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function getTransactionStatus(item: FinancialTransaction): Exclude<FinanceStatusFilter, ''> {
+  if (item.voided) {
+    return 'ANNULLATO';
+  }
+  return item.autoCreated ? 'AUTO' : 'MANUALE';
+}
 
 export function FinanceModule({ section = 'overview' }: { section?: 'overview' | 'movements' }) {
   const now = new Date();
@@ -71,13 +62,9 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [filterType, setFilterType] = useState<FinancialTransactionType | ''>('');
+  const [filterStatus, setFilterStatus] = useState<FinanceStatusFilter>('');
   const [filterCategory, setFilterCategory] = useState<FinancialTransactionCategory | ''>('');
-  const [filterServiceId, setFilterServiceId] = useState<number | ''>('');
-  const [filterVehicleId, setFilterVehicleId] = useState<number | ''>('');
-  const [sortBy, setSortBy] = useState<'transactionDate' | 'amount' | 'category'>('transactionDate');
-  const [direction, setDirection] = useState<'asc' | 'desc'>('desc');
-  const [serviceOptions, setServiceOptions] = useState<ServiceFilterOption[]>([]);
-  const [vehicleOptions, setVehicleOptions] = useState<VehicleFilterOption[]>([]);
+  const [descriptionQuery, setDescriptionQuery] = useState('');
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [dashboard, setDashboard] = useState<any>(null);
@@ -87,6 +74,7 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
   const [success, setSuccess] = useState<string | null>(null);
   const [editing, setEditing] = useState<FinancialTransaction | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const showOverview = section === 'overview';
   const showMovements = section === 'movements';
@@ -115,10 +103,8 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
         toDate: toDate || undefined,
         type: filterType || undefined,
         category: filterCategory || undefined,
-        serviceId: filterServiceId || undefined,
-        vehicleId: filterVehicleId || undefined,
-        sortBy,
-        direction
+        sortBy: 'transactionDate',
+        direction: 'desc'
       });
 
       setTransactions(nextTransactions);
@@ -126,38 +112,6 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
       setError(err instanceof Error ? err.message : 'Errore caricamento movimenti finance');
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function loadFilterOptions() {
-    try {
-      const [servicesResponse, vehiclesResponse] = await Promise.all([
-        fetch('/api/services', { cache: 'no-store' }),
-        fetch('/api/fleet/vehicles', { cache: 'no-store' })
-      ]);
-
-      if (servicesResponse.ok) {
-        const services = (await servicesResponse.json().catch(() => [])) as ServiceListItem[];
-        setServiceOptions(
-          services
-            .map((service) => ({
-              id: service.id,
-              label: `#${service.id} - ${service.pickupLocation} -> ${service.destination} (${new Date(service.startAt).toLocaleDateString('it-IT')})`
-            }))
-            .sort((left, right) => right.id - left.id)
-        );
-      }
-
-      if (vehiclesResponse.ok) {
-        const vehicles = (await vehiclesResponse.json().catch(() => [])) as VehicleListItem[];
-        setVehicleOptions(
-          vehicles
-            .map((vehicle) => ({ id: vehicle.id, label: vehicle.plate }))
-            .sort((left, right) => left.label.localeCompare(right.label))
-        );
-      }
-    } catch {
-      // Options are non-blocking for loading the finance module.
     }
   }
 
@@ -174,9 +128,8 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
       return;
     }
 
-    loadFilterOptions();
     loadTransactions();
-  }, [showMovements]);
+  }, [showMovements, fromDate, toDate, filterType, filterCategory]);
 
   async function onSave(payload: SaveFinancialTransactionPayload) {
     setSubmitting(true);
@@ -267,7 +220,21 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
     );
   }, [dashboard, year]);
 
-  const totalPages = Math.max(1, Math.ceil(transactions.length / PAGE_SIZE));
+  const filteredTransactions = useMemo(() => {
+    const normalizedQuery = descriptionQuery.trim().toLocaleLowerCase();
+
+    return transactions.filter((item) => {
+      if (filterStatus && getTransactionStatus(item) !== filterStatus) {
+        return false;
+      }
+      if (normalizedQuery.length > 0 && !item.description.toLocaleLowerCase().includes(normalizedQuery)) {
+        return false;
+      }
+      return true;
+    });
+  }, [transactions, filterStatus, descriptionQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -275,10 +242,25 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
     }
   }, [currentPage, totalPages]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [fromDate, toDate, filterType, filterStatus, filterCategory, descriptionQuery]);
+
   const paginatedTransactions = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE;
-    return transactions.slice(start, start + PAGE_SIZE);
-  }, [transactions, currentPage]);
+    return filteredTransactions.slice(start, start + PAGE_SIZE);
+  }, [filteredTransactions, currentPage]);
+
+  const hasActiveFilters = Boolean(fromDate || toDate || filterType || filterStatus || filterCategory || descriptionQuery.trim());
+
+  function clearAllFilters() {
+    setFromDate('');
+    setToDate('');
+    setFilterType('');
+    setFilterStatus('');
+    setFilterCategory('');
+    setDescriptionQuery('');
+  }
 
   return (
     <section style={{ display: 'grid', gap: 16 }}>
@@ -303,6 +285,19 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
               <input className="form-input" type="number" min={1} max={12} value={month} onChange={(event) => setMonth(Number(event.target.value))} />
             </label>
           </div>
+        )}
+
+        {showMovements && (
+          <button
+            type="button"
+            className="primary-button"
+            onClick={() => {
+              setEditing(null);
+              setFormOpen(true);
+            }}
+          >
+            <ButtonContent icon={<AddIcon />}>Nuovo movimento</ButtonContent>
+          </button>
         )}
       </header>
 
@@ -339,144 +334,131 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
 
       {!loading && showMovements && (
         <>
-          <article className="dashboard-card">
-            <h3>Filtri movimenti</h3>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'end', flexWrap: 'wrap' }}>
-              <label>
-                Dal
-                <input type="date" className="form-input" value={fromDate} onChange={(event) => setFromDate(event.target.value)} />
-              </label>
-              <label>
-                Al
-                <input type="date" className="form-input" value={toDate} onChange={(event) => setToDate(event.target.value)} />
-              </label>
-              <label>
-                Tipo
-                <select className="form-input" value={filterType} onChange={(event) => setFilterType(event.target.value as FinancialTransactionType | '')}>
-                  <option value="">Tutti</option>
-                  <option value="RICAVO">Ricavo</option>
-                  <option value="COSTO">Costo</option>
-                </select>
-              </label>
-              <label>
-                Categoria
-                <select
-                  className="form-input"
-                  value={filterCategory}
-                  onChange={(event) => setFilterCategory(event.target.value as FinancialTransactionCategory | '')}
-                >
-                  <option value="">Tutte</option>
-                  {financeCategories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Servizio
-                <select
-                  className="form-input"
-                  value={filterServiceId}
-                  onChange={(event) => setFilterServiceId(event.target.value ? Number(event.target.value) : '')}
-                >
-                  <option value="">Tutti</option>
-                  {serviceOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Veicolo
-                <select
-                  className="form-input"
-                  value={filterVehicleId}
-                  onChange={(event) => setFilterVehicleId(event.target.value ? Number(event.target.value) : '')}
-                >
-                  <option value="">Tutti</option>
-                  {vehicleOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Ordina per
-                <select className="form-input" value={sortBy} onChange={(event) => setSortBy(event.target.value as 'transactionDate' | 'amount' | 'category')}>
-                  <option value="transactionDate">Data</option>
-                  <option value="amount">Importo</option>
-                  <option value="category">Categoria</option>
-                </select>
-              </label>
-              <label>
-                Direzione
-                <select className="form-input" value={direction} onChange={(event) => setDirection(event.target.value as 'asc' | 'desc')}>
-                  <option value="desc">Discendente</option>
-                  <option value="asc">Ascendente</option>
-                </select>
-              </label>
+          <article className="dashboard-card finance-movements-filters-card portal-filters-surface">
+            <div className="finance-movements-filters-header">
+              <h3 style={{ margin: 0 }}>Filtri movimenti</h3>
               <button
                 type="button"
-                className="primary-button"
-                onClick={() => {
-                  setCurrentPage(1);
-                  loadTransactions();
-                }}
+                className="finance-movements-filters-toggle"
+                onClick={() => setMobileFiltersOpen((prev) => !prev)}
+                aria-expanded={mobileFiltersOpen}
               >
-                <ButtonContent icon={<FilterIcon />}>Applica filtri</ButtonContent>
-              </button>
-              <button
-                type="button"
-                className="logout-button"
-                onClick={() => {
-                  setCurrentPage(1);
-                  setFromDate('');
-                  setToDate('');
-                  setFilterType('');
-                  setFilterCategory('');
-                  setFilterServiceId('');
-                  setFilterVehicleId('');
-                  setSortBy('transactionDate');
-                  setDirection('desc');
-                  setTimeout(() => loadTransactions(), 0);
-                }}
-              >
-                <ButtonContent icon={<ResetIcon />}>Reset</ButtonContent>
+                <ButtonContent icon={<FilterIcon />}>{mobileFiltersOpen ? 'Nascondi filtri' : 'Mostra filtri'}</ButtonContent>
               </button>
             </div>
+
+            <div className={`finance-movements-filters-body${mobileFiltersOpen ? '' : ' is-hidden-mobile'}`}>
+            <div className="finance-movements-filters-row">
+              <label className="finance-movements-filter-field finance-movements-filter-search">
+                <span className="finance-movements-filter-search-icon" aria-hidden="true"><SearchIcon /></span>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={descriptionQuery}
+                  onChange={(event) => setDescriptionQuery(event.target.value)}
+                  placeholder="Cerca per descrizione..."
+                  aria-label="Ricerca descrizione"
+                />
+              </label>
+
+              <div className="finance-movements-filter-field">
+                <FilterDropdown
+                  label="Tipo"
+                  value={filterType}
+                  options={[
+                    { value: '', label: 'Tipo' },
+                    { value: 'RICAVO', label: 'Ricavo' },
+                    { value: 'COSTO', label: 'Costo' },
+                  ]}
+                  onChange={(v) => setFilterType(v as FinancialTransactionType | '')}
+                />
+              </div>
+
+              <div className="finance-movements-filter-field">
+                <FilterDropdown
+                  label="Stato"
+                  value={filterStatus}
+                  options={[
+                    { value: '', label: 'Stato' },
+                    { value: 'AUTO', label: 'Auto' },
+                    { value: 'MANUALE', label: 'Manuale' },
+                    { value: 'ANNULLATO', label: 'Annullato' },
+                  ]}
+                  onChange={(v) => setFilterStatus(v as FinanceStatusFilter)}
+                />
+              </div>
+
+              <div className="finance-movements-filter-field">
+                <FilterDropdown
+                  label="Categoria"
+                  value={filterCategory}
+                  options={[
+                    { value: '', label: 'Categoria' },
+                    ...financeCategories.map((cat) => ({ value: cat, label: toTitleCase(cat) })),
+                  ]}
+                  onChange={(v) => setFilterCategory(v as FinancialTransactionCategory | '')}
+                />
+              </div>
+            </div>
+
+            <div className="finance-movements-filters-row finance-movements-filters-row-dates">
+              <label className="finance-movements-filter-field">
+                <input type="date" className="form-input" value={fromDate} onChange={(event) => setFromDate(event.target.value)} aria-label="Data inizio" />
+              </label>
+              <label className="finance-movements-filter-field">
+                <input type="date" className="form-input" value={toDate} onChange={(event) => setToDate(event.target.value)} aria-label="Data fine" />
+              </label>
+            </div>
+
+            {hasActiveFilters && (
+              <div className="finance-movements-active-filters">
+                {filterType && (
+                  <button type="button" className="finance-movements-filter-chip" onClick={() => setFilterType('')}>
+                    Tipo: {filterType}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
+                {filterStatus && (
+                  <button type="button" className="finance-movements-filter-chip" onClick={() => setFilterStatus('')}>
+                    Stato: {filterStatus}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
+                {filterCategory && (
+                  <button type="button" className="finance-movements-filter-chip" onClick={() => setFilterCategory('')}>
+                    Categoria: {toTitleCase(filterCategory)}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
+                {fromDate && (
+                  <button type="button" className="finance-movements-filter-chip" onClick={() => setFromDate('')}>
+                    Dal: {fromDate}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
+                {toDate && (
+                  <button type="button" className="finance-movements-filter-chip" onClick={() => setToDate('')}>
+                    Al: {toDate}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
+                {descriptionQuery.trim() && (
+                  <button type="button" className="finance-movements-filter-chip" onClick={() => setDescriptionQuery('')}>
+                    Ricerca: {descriptionQuery.trim()}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                )}
+
+                <button type="button" className="finance-movements-filters-clear-all" onClick={clearAllFilters}>
+                  Pulisci filtri
+                </button>
+              </div>
+            )}
+            </div>{/* end finance-movements-filters-body */}
           </article>
 
           <article className="dashboard-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <h3 style={{ margin: 0 }}>Movimenti finanziari</h3>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={() => {
-                  setEditing(null);
-                  setFormOpen(true);
-                }}
-              >
-                <ButtonContent icon={<AddIcon />}>Nuovo movimento</ButtonContent>
-              </button>
-            </div>
-
-            {formOpen && (
-              <div style={{ marginTop: 12 }}>
-                <FinanceTransactionForm
-                  initial={editing}
-                  onSubmit={onSave}
-                  onCancel={() => {
-                    setEditing(null);
-                    setFormOpen(false);
-                  }}
-                  submitting={submitting}
-                />
-              </div>
-            )}
+            <h3 style={{ margin: 0 }}>Movimenti finanziari</h3>
 
             <div style={{ marginTop: 14 }}>
               <FinanceTransactionsTable
@@ -496,7 +478,7 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
                 <select className="services-list-pagesize-select" value={PAGE_SIZE} disabled aria-label="Numero risultati per pagina">
                   <option value={25}>25</option>
                 </select>
-                <span>di {transactions.length} risultati</span>
+                <span>di {filteredTransactions.length} risultati</span>
               </div>
               <div className="services-list-footer-pagination">
                 <button
@@ -521,6 +503,47 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
               </div>
             </div>
           </article>
+
+          {formOpen && (
+            <div
+              className="services-modal-backdrop"
+              role="dialog"
+              aria-modal="true"
+              aria-label={editing ? `Modifica movimento ${editing.id}` : 'Nuovo movimento'}
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(false);
+              }}
+            >
+              <article className="services-modal" onClick={(event) => event.stopPropagation()}>
+                <div className="services-modal-header">
+                  <h3 className="services-modal-title">{editing ? `Modifica movimento #${editing.id}` : 'Nuovo movimento'}</h3>
+                  <button
+                    type="button"
+                    className="services-modal-close"
+                    onClick={() => {
+                      setEditing(null);
+                      setFormOpen(false);
+                    }}
+                    aria-label="Chiudi modale movimento"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="services-modal-body">
+                  <FinanceTransactionForm
+                    initial={editing}
+                    onSubmit={onSave}
+                    onCancel={() => {
+                      setEditing(null);
+                      setFormOpen(false);
+                    }}
+                    submitting={submitting}
+                  />
+                </div>
+              </article>
+            </div>
+          )}
         </>
       )}
     </section>

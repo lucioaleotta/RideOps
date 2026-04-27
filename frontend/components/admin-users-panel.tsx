@@ -191,7 +191,7 @@ export function AdminUsersPanel() {
         {success && <StatusNotice tone="success">{success}</StatusNotice>}
 
         {/* Filtri */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
+        <div className="portal-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
           <label>
             User ID
             <input className="form-input" value={filterUserId} onChange={(e) => setFilterUserId(e.target.value)} placeholder="cerca..." />
@@ -392,7 +392,7 @@ export function AdminUsersPanel() {
 
         {journalOpen && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 12 }}>
+            <div className="portal-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 12 }}>
               <label>
                 Data modifica
                 <input

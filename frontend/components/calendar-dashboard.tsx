@@ -667,7 +667,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
           </div>
         </div>
 
-        <div className="responsive-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
+        <div className="responsive-filters-grid portal-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
           {!driverMode && (
             <label>
               Driver

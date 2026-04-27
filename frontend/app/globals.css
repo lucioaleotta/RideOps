@@ -1013,19 +1013,25 @@ a:hover {
 }
 
 .tenant-search-field .form-input {
-  min-height: 52px;
-  border-radius: 12px;
-  padding-left: 48px;
+  min-height: 58px;
+  border: 1.5px solid #d0dcea;
+  border-radius: 14px;
+  padding: 12px 16px 12px 56px;
+  background: #ffffff;
+  color: #1e2d3d;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .tenant-search-icon {
   position: absolute;
   top: 50%;
-  left: 14px;
+  left: 12px;
   transform: translateY(-50%);
-  color: #67819d;
-  width: 20px;
-  height: 20px;
+  color: #8ca0b8;
+  width: 16px;
+  height: 16px;
 }
 
 .tenant-search-icon svg {
@@ -1510,11 +1516,11 @@ a:hover {
 .gestionale-partner-search-icon {
   position: absolute;
   top: 50%;
-  left: 14px;
-  width: 22px;
-  height: 22px;
+  left: 12px;
+  width: 16px;
+  height: 16px;
   transform: translateY(-50%);
-  color: #6f829b;
+  color: #8ca0b8;
 }
 
 .gestionale-partner-search-icon svg {
@@ -1525,24 +1531,25 @@ a:hover {
 
 .gestionale-partner-search-input {
   width: 100%;
-  min-height: 46px;
-  border: 1px solid #ccd7e5;
-  border-radius: 10px;
-  padding: 10px 14px 10px 52px;
-  background: #f8fbff;
-  color: #243449;
-  font-size: 14px;
+  min-height: 58px;
+  border: 1.5px solid #d0dcea;
+  border-radius: 14px;
+  padding: 12px 16px 12px 56px;
+  background: #ffffff;
+  color: #1e2d3d;
+  font-size: 16px;
   font-weight: 500;
   font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .gestionale-partner-search-input::placeholder {
-  color: #6f829b;
+  color: #a0b0c3;
 }
 
 .gestionale-partner-search-input:focus {
-  outline: none;
-  border-color: #8fb4de;
+  border-color: #1e88e5;
   box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.12);
 }
 
@@ -1592,8 +1599,12 @@ a:hover {
   border-bottom: 1px solid #e0e7f1;
   color: #273447;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   vertical-align: middle;
+}
+
+.gestionale-partner-table tbody td:first-child {
+  font-weight: 700;
 }
 
 .gestionale-partner-row.is-selected {
@@ -1700,6 +1711,11 @@ a:hover {
   gap: 16px;
 }
 
+.gestionale-driver-informative-stack {
+  display: grid;
+  gap: 12px;
+}
+
 .gestionale-driver-kpi-card {
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -1766,7 +1782,7 @@ a:hover {
 .gestionale-driver-kpi-value {
   margin: auto 0 0;
   color: #111827;
-  font-size: 28px;
+  font-size: 26px;
   line-height: 1.1;
   font-weight: 700;
   text-align: center;
@@ -1815,11 +1831,11 @@ a:hover {
 .gestionale-driver-search-icon {
   position: absolute;
   top: 50%;
-  left: 14px;
-  width: 22px;
-  height: 22px;
+  left: 12px;
+  width: 16px;
+  height: 16px;
   transform: translateY(-50%);
-  color: #6f829b;
+  color: #8ca0b8;
 }
 
 .gestionale-driver-search-icon svg {
@@ -1830,24 +1846,25 @@ a:hover {
 
 .gestionale-driver-search-input {
   width: 100%;
-  min-height: 46px;
-  border: 1px solid #ccd7e5;
-  border-radius: 10px;
-  padding: 10px 14px 10px 52px;
-  background: #f8fbff;
-  color: #243449;
-  font-size: 14px;
+  min-height: 58px;
+  border: 1.5px solid #d0dcea;
+  border-radius: 14px;
+  padding: 12px 16px 12px 56px;
+  background: #ffffff;
+  color: #1e2d3d;
+  font-size: 16px;
   font-weight: 500;
   font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .gestionale-driver-search-input::placeholder {
-  color: #6f829b;
+  color: #a0b0c3;
 }
 
 .gestionale-driver-search-input:focus {
-  outline: none;
-  border-color: #8fb4de;
+  border-color: #1e88e5;
   box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.12);
 }
 
@@ -2101,7 +2118,7 @@ a:hover {
 
 .gestionale-driver-selected-name {
   margin: 0;
-  font-size: 29px;
+  font-size: 27px;
   line-height: 1.08;
   letter-spacing: -0.02em;
   color: #1e2b3d;
@@ -2462,7 +2479,7 @@ a:hover {
   }
 
   .gestionale-driver-kpi-value {
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1;
     margin: 0;
     text-align: left;
@@ -2509,12 +2526,12 @@ a:hover {
 
   .gestionale-driver-mobile-search-icon {
     position: absolute;
-    left: 14px;
+    left: 12px;
     top: 50%;
     transform: translateY(-50%);
-    width: 22px;
-    height: 22px;
-    color: #7d8ea6;
+    width: 16px;
+    height: 16px;
+    color: #8ca0b8;
   }
 
   .gestionale-driver-mobile-search-icon svg {
@@ -2524,18 +2541,20 @@ a:hover {
 
   .gestionale-driver-mobile-search-input {
     width: 100%;
-    height: 52px;
-    border: 1px solid #ccd5e2;
-    border-radius: 12px;
-    padding: 0 14px 0 56px;
-    background: #f8fbff;
-    color: #34465d;
-    font-size: 14px;
+    min-height: 58px;
+    border: 1.5px solid #d0dcea;
+    border-radius: 14px;
+    padding: 12px 16px 12px 56px;
+    background: #ffffff;
+    color: #1e2d3d;
+    font-size: 16px;
     font-weight: 500;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }
 
   .gestionale-driver-mobile-search-input::placeholder {
-    color: #72869f;
+    color: #a0b0c3;
   }
 
   .gestionale-driver-mobile-filter-btn {
@@ -2781,7 +2800,7 @@ a:hover {
   }
 
   .gestionale-driver-selected-name {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .gestionale-driver-selected-meta-grid {
@@ -3975,9 +3994,10 @@ a:hover {
   border-radius: 14px;
   min-height: 58px;
   padding: 12px 44px 12px 18px;
-  font-size: 16px;
+  font-size: 17px;
   color: #1e2d3d;
   background: #ffffff;
+  text-transform: capitalize;
   outline: none;
   min-width: 180px;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -3994,10 +4014,11 @@ a:hover {
   border-radius: 15px;
   min-height: 58px;
   padding: 12px 16px 12px 18px;
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 500;
   color: #1f2937;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+  background: #ffffff;
+  text-transform: capitalize;
   outline: none;
   display: inline-flex;
   align-items: center;
@@ -4009,7 +4030,7 @@ a:hover {
 }
 
 .services-filter-dropdown-trigger:hover {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background: #f8fafc;
 }
 
 .services-filter-dropdown-trigger:focus {
@@ -4068,9 +4089,10 @@ a:hover {
   background: transparent;
   color: #1f2937;
   padding: 12px 14px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   text-align: left;
+  text-transform: capitalize;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -4120,6 +4142,83 @@ a:hover {
 .services-filter-input:focus {
   border-color: #1e88e5;
   box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.12);
+}
+
+/* === Portal filters system (aligned to /services) === */
+.portal-filters-surface {
+  padding: 18px 26px;
+  margin-top: 0;
+  border: 1px solid #d9e1eb;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.portal-filters-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  align-items: end;
+}
+
+.portal-filters-grid > label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6b7f9d;
+  padding-left: 2px;
+}
+
+.portal-filters-grid .form-input,
+.portal-filters-grid .form-input[type='date'],
+.finance-movements-filter-field .form-input {
+  min-height: 58px;
+  border: 1.5px solid #d0dcea;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 17px;
+  color: #1e2d3d;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.portal-filters-grid select.form-input,
+.finance-movements-filter-field select.form-input {
+  padding-right: 44px;
+  text-transform: capitalize;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6' fill='none' stroke='%236e84a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.portal-filters-grid .form-input:focus,
+.finance-movements-filter-field .form-input:focus,
+.tenant-search-field .form-input:focus,
+.gestionale-partner-search-input:focus,
+.gestionale-driver-search-input:focus,
+.gestionale-driver-mobile-search-input:focus {
+  border-color: #1e88e5;
+  box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.12);
+}
+
+.tenant-search-field .form-input,
+.gestionale-partner-search-input,
+.gestionale-driver-search-input,
+.gestionale-driver-mobile-search-input {
+  border-width: 1.5px;
+  border-color: #d0dcea;
+  border-radius: 14px;
+  min-height: 58px;
+  background: #ffffff;
+}
+
+.finance-movements-filters-card .finance-movements-filter-search .form-input {
+  padding-left: 42px;
 }
 
 .services-filter-unassigned-btn {
@@ -4299,6 +4398,342 @@ a:hover {
 
 .finance-bar.category {
   background: linear-gradient(90deg, #ef6c00, #ffb300);
+}
+
+.finance-movements-filters-card {
+  display: grid;
+  gap: 12px;
+}
+
+.finance-movements-filters-row {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.6fr) repeat(3, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.finance-movements-filters-row-dates {
+  grid-template-columns: repeat(2, minmax(170px, 1fr));
+  max-width: 420px;
+}
+
+.finance-movements-filter-field {
+  display: block;
+}
+
+.finance-movements-filter-search {
+  position: relative;
+}
+
+.finance-movements-filter-search .form-input {
+  padding-left: 42px;
+}
+
+.finance-movements-filter-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #6d809a;
+  display: inline-grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.finance-movements-filter-search-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.finance-movements-active-filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.finance-movements-filter-chip {
+  border: 1px solid #d8e1ec;
+  background: #eef2f6;
+  color: #283545;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.finance-movements-filter-chip:hover {
+  background: #e6edf5;
+}
+
+.finance-movements-filter-chip span {
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.finance-movements-filters-clear-all {
+  border: none;
+  background: transparent;
+  color: #1f2a37;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.finance-movements-filters-clear-all:hover {
+  color: #0c5a99;
+}
+
+@media (max-width: 1180px) {
+  .finance-movements-filters-row {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+
+  .finance-movements-filters-row-dates {
+    max-width: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .finance-movements-filters-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Finance movements filters header (mobile toggle) ─────────── */
+.finance-movements-filters-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.finance-movements-filters-toggle {
+  display: none;
+  border: 1px solid #c8d7ea;
+  border-radius: 10px;
+  padding: 7px 14px;
+  background: #f0f6fc;
+  color: #1f4f84;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ── Finance mobile card list ─────────────────────────────────── */
+.finance-movements-mobile-list {
+  display: none;
+}
+
+.finance-movement-card {
+  background: #ffffff;
+  border: 1px solid #c8d5e7;
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(15, 52, 87, 0.07);
+  display: grid;
+  gap: 10px;
+}
+
+.finance-movement-card.is-voided {
+  opacity: 0.7;
+}
+
+.finance-movement-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.finance-movement-card-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.finance-movement-card-desc {
+  font-size: 14px;
+  color: #243142;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.finance-movement-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.finance-movement-card-date {
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a6278;
+  white-space: nowrap;
+}
+
+.finance-movement-card-category {
+  font-size: 12px;
+  font-weight: 700;
+  color: #647992;
+  letter-spacing: 0.03em;
+  background: #eef3f8;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+
+.finance-movement-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.finance-movements-filters-body {
+  display: grid;
+  gap: 12px;
+}
+
+
+.finance-movements-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dce4ef;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.finance-movements-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 980px;
+}
+
+.finance-movements-th {
+  text-align: left;
+  border-bottom: 1px solid #dce4ef;
+  padding: 16px 18px;
+  font-size: 12px;
+  color: #60748f;
+  font-weight: 700;
+}
+
+.finance-movements-th-amount {
+  text-align: right;
+}
+
+.finance-movements-th-actions {
+  text-align: center;
+  width: 76px;
+}
+
+.finance-movements-td {
+  border-bottom: 1px solid #e9eef5;
+  padding: 14px 18px;
+  color: #243142;
+  font-size: 13px;
+}
+
+.finance-movements-table tbody tr:last-child .finance-movements-td {
+  border-bottom: none;
+}
+
+.finance-movements-date {
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.finance-movements-category {
+  color: #647992;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.finance-movements-description {
+  min-width: 360px;
+}
+
+.finance-movements-amount-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.finance-movements-amount {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.finance-movements-amount-revenue {
+  color: #2ca557;
+}
+
+.finance-movements-amount-cost {
+  color: #e53935;
+}
+
+.finance-movements-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.finance-movements-pill-revenue {
+  background: #2ca557;
+  color: #ffffff;
+}
+
+.finance-movements-pill-cost {
+  background: #e53935;
+  color: #ffffff;
+}
+
+.finance-movements-pill-auto {
+  background: #2b9ad9;
+  color: #ffffff;
+}
+
+.finance-movements-pill-manual {
+  background: #f2f5f8;
+  color: #344150;
+  border: 1px solid #d4dce7;
+}
+
+.finance-movements-pill-voided {
+  background: #fce8e7;
+  color: #b63a36;
+  border: 1px solid #f0c8c6;
+}
+
+.finance-movements-actions-cell {
+  text-align: center;
+}
+
+.finance-movements-empty {
+  padding: 16px 18px;
+  color: #5f7693;
+  font-size: 14px;
+}
+
+.finance-movements-actions-cell .services-row-menu {
+  display: inline-block;
 }
 
 .print-page {
@@ -4606,7 +5041,7 @@ a:hover {
   color: #6b7280;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 960px) {
   .services-stat-cards {
     grid-template-columns: 1fr;
   }
@@ -4696,7 +5131,7 @@ a:hover {
   color: #ffffff;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 960px) {
   .services-selected-detail {
     padding: 12px;
     border-radius: 16px;
@@ -5108,6 +5543,46 @@ a:hover {
     display: none;
   }
 
+  /* Finance movements mobile */
+  .finance-movements-filters-toggle {
+    display: inline-flex;
+  }
+
+  .finance-movements-filters-body.is-hidden-mobile {
+    display: none !important;
+  }
+
+  .finance-movements-desktop-table {
+    display: none;
+  }
+
+  .finance-movements-mobile-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  .finance-movements-filters-header {
+    margin-bottom: 0;
+  }
+
+  /* Riduci il testo filtri quando la tendina e aperta */
+  .services-filters-grid:not(.is-hidden-mobile) .services-filter-label,
+  .services-filters-grid:not(.is-hidden-mobile) .services-filter-select,
+  .services-filters-grid:not(.is-hidden-mobile) .services-filter-dropdown-trigger,
+  .services-filters-grid:not(.is-hidden-mobile) .services-filter-input,
+  .services-filters-grid:not(.is-hidden-mobile) .services-filter-unassigned-btn,
+  .services-filters-grid:not(.is-hidden-mobile) .services-search-input,
+  .services-filters-grid:not(.is-hidden-mobile) .services-filter-dropdown-option {
+    font-size: 13px;
+  }
+
+  .finance-movements-filters-body:not(.is-hidden-mobile) .form-input,
+  .finance-movements-filters-body:not(.is-hidden-mobile) .finance-movements-filter-chip,
+  .finance-movements-filters-body:not(.is-hidden-mobile) .finance-movements-filters-clear-all {
+    font-size: 13px;
+  }
+
   .services-mobile-list {
     display: grid;
     gap: 12px;
@@ -5342,6 +5817,7 @@ a:hover {
   }
 
   .responsive-filters-grid,
+  .portal-filters-grid,
   .responsive-form-grid {
     grid-template-columns: 1fr !important;
   }
@@ -5561,6 +6037,59 @@ a:hover {
       margin: 16px 0 12px;
       line-height: 1;
     }
+}
+
+/* ── Vehicle modal ── */
+.fleet-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 30, 50, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.fleet-modal {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(15, 30, 50, 0.22);
+  padding: 28px 24px 24px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.fleet-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.fleet-modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #1f2b3b;
+}
+
+.fleet-modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 20px;
+  color: #7a90aa;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.fleet-modal-close:hover {
+  background: #f0f4f8;
+  color: #1f2b3b;
 }
 
 @page {
