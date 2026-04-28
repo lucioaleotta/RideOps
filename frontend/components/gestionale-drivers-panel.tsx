@@ -339,7 +339,8 @@ export function GestionaleDriversPanel() {
       licenseTypes: normalizedLicenseTypes.length > 0 ? normalizedLicenseTypes : ['B'],
       residentialAddresses: driver.residentialAddresses?.length ? driver.residentialAddresses : [''],
       mobilePhone: driver.mobilePhone ?? '',
-      licenseExpiryDate: driver.licenseExpiryDate ?? ''
+      licenseExpiryDate: driver.licenseExpiryDate ?? '',
+      role: driver.role === 'DRIVER_FREELANCER' ? 'DRIVER_FREELANCER' : 'DRIVER'
     };
   }
 
