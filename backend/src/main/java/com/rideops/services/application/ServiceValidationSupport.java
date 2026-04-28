@@ -40,7 +40,7 @@ final class ServiceValidationSupport {
         if (type == ServiceType.TOUR && (durationHours == null || durationHours <= 0)) {
             throw new ServiceValidationException("Per TOUR la durata in ore e` obbligatoria");
         }
-        if (type == ServiceType.TRANSFER && durationHours != null && durationHours <= 0) {
+        if ((type == ServiceType.TRANSFER || type == ServiceType.DISPOSIZIONE) && durationHours != null && durationHours <= 0) {
             throw new ServiceValidationException("La durata in ore deve essere positiva quando valorizzata");
         }
     }

@@ -7,7 +7,7 @@ import { formatCurrencyEUR } from '../lib/currency';
 import { StatusNotice } from './status-notice';
 
 type ViewMode = 'month' | 'week' | 'day';
-type ServiceType = 'TRANSFER' | 'TOUR';
+type ServiceType = 'TRANSFER' | 'TOUR' | 'DISPOSIZIONE';
 type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
 
 type ServiceItem = {
@@ -467,7 +467,9 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
   }
 
   function typeLabel(type: ServiceType) {
-    return type === 'TRANSFER' ? 'Transfer' : 'Tour';
+    if (type === 'TRANSFER') return 'Transfer';
+    if (type === 'DISPOSIZIONE') return 'Disposizione';
+    return 'Tour';
   }
 
   function vehicleLabel(vehicleId: number | null) {
@@ -709,6 +711,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
               <option value="">Tutte</option>
               <option value="TRANSFER">TRANSFER</option>
               <option value="TOUR">TOUR</option>
+              <option value="DISPOSIZIONE">DISPOSIZIONE</option>
             </select>
           </label>
         </div>
