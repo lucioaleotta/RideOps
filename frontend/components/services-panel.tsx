@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CalendarIcon, CancelIcon, CursorIcon, FilterIcon, LockIcon, OpenIcon, PartnerIcon as SharedPartnerIcon, PrintIcon as SharedPrintIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon, UserIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
 
-type ServiceType = 'TRANSFER' | 'TOUR';
+type ServiceType = 'TRANSFER' | 'TOUR' | 'DISPOSIZIONE';
 type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
 type ServiceAssignmentType = 'INTERNAL' | 'OUTSOURCED' | 'INCOMING';
 
@@ -554,6 +554,9 @@ export function ServicesPanel() {
   function typeLabel(type: ServiceType) {
     if (type === 'TRANSFER') {
       return 'Transfer';
+    }
+    if (type === 'DISPOSIZIONE') {
+      return 'Disposizione';
     }
     return 'Tour';
   }
@@ -1276,7 +1279,8 @@ export function ServicesPanel() {
   const typeFilterOptions: FilterOption[] = [
     { value: '', label: 'Tutti' },
     { value: 'TRANSFER', label: 'Transfer' },
-    { value: 'TOUR', label: 'Tour' }
+    { value: 'TOUR', label: 'Tour' },
+    { value: 'DISPOSIZIONE', label: 'Disposizione' }
   ];
 
   const activeFilterChips = [
@@ -2259,6 +2263,7 @@ export function ServicesPanel() {
               >
                 <option value="TRANSFER">TRANSFER</option>
                 <option value="TOUR">TOUR</option>
+                <option value="DISPOSIZIONE">DISPOSIZIONE</option>
               </select>
             </label>
 
