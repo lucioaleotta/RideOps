@@ -37,6 +37,7 @@ type DriverFormState = {
   residentialAddresses: string[];
   mobilePhone: string;
   licenseExpiryDate: string;
+  role: 'DRIVER' | 'DRIVER_FREELANCER';
 };
 
 type DriverStats = {
@@ -58,7 +59,8 @@ const defaultForm: DriverFormState = {
   licenseTypes: ['B'],
   residentialAddresses: [''],
   mobilePhone: '',
-  licenseExpiryDate: ''
+  licenseExpiryDate: '',
+  role: 'DRIVER'
 };
 
 function formatDate(value: string | null) {
@@ -462,6 +464,7 @@ export function GestionaleDriversPanel() {
         userId: form.userId,
         email: form.email,
         password: form.password,
+        role: form.role,
         ...payloadToSend
       };
 
@@ -1007,6 +1010,19 @@ export function GestionaleDriversPanel() {
                         required
                         autoComplete="new-password"
                       />
+                    </label>
+                  </div>
+                  <div className="driver-form-grid driver-form-grid--two-col" style={{ marginTop: 12 }}>
+                    <label className="driver-form-field">
+                      <span>Tipo profilo</span>
+                      <select
+                        className="form-input"
+                        value={form.role}
+                        onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as 'DRIVER' | 'DRIVER_FREELANCER' }))}
+                      >
+                        <option value="DRIVER">Driver</option>
+                        <option value="DRIVER_FREELANCER">Driver Freelancer</option>
+                      </select>
                     </label>
                   </div>
                 </section>

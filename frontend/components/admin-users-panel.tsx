@@ -5,7 +5,7 @@ import { ButtonContent, CancelIcon, EditIcon, FilterIcon, JournalIcon, LockIcon,
 import { PasswordInput } from './password-input';
 import { StatusNotice } from './status-notice';
 
-type UserRole = 'ADMIN' | 'GESTIONALE' | 'DRIVER';
+type UserRole = 'ADMIN' | 'GESTIONALE' | 'DRIVER' | 'DRIVER_FREELANCER';
 
 type UserItem = {
   id: number;
@@ -36,7 +36,7 @@ type JournalItem = {
   createdAt: string;
 };
 
-const roles: UserRole[] = ['ADMIN', 'GESTIONALE', 'DRIVER'];
+const roles: UserRole[] = ['ADMIN', 'GESTIONALE', 'DRIVER', 'DRIVER_FREELANCER'];
 
 export function AdminUsersPanel() {
   const [users, setUsers] = useState<UserItem[]>([]);

@@ -15,7 +15,7 @@ function roleAllowed(pathname: string, role: string | undefined) {
   }
 
   if (pathname.startsWith('/app/driver')) {
-    return role === 'ADMIN' || role === 'DRIVER';
+    return role === 'ADMIN' || role === 'DRIVER' || role === 'DRIVER_FREELANCER';
   }
 
   if (pathname.startsWith('/app/services') || pathname.startsWith('/services/')) {

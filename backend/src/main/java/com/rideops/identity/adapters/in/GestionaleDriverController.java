@@ -109,11 +109,14 @@ public class GestionaleDriverController {
     }
 
     private CreateUserCommand toCreateCommand(CreateDriverRequest request, Long tenantId) {
+        UserRole role = request.role() == UserRole.DRIVER_FREELANCER
+            ? UserRole.DRIVER_FREELANCER
+            : UserRole.DRIVER;
         return new CreateUserCommand(
             request.userId(),
             request.email(),
             request.password(),
-            UserRole.DRIVER,
+            role,
             tenantId,
             request.firstName(),
             request.lastName(),
@@ -136,7 +139,8 @@ public class GestionaleDriverController {
                                @NotEmpty List<@NotBlank String> licenseTypes,
                                @NotEmpty List<@NotBlank String> residentialAddresses,
                                @NotBlank String mobilePhone,
-                               @NotNull LocalDate licenseExpiryDate) {
+                               @NotNull LocalDate licenseExpiryDate,
+                               UserRole role) {
     }
 
     record UpdateDriverRequest(@NotBlank String firstName,

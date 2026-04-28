@@ -64,7 +64,7 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/gestionale/**").hasAnyRole("ADMIN", "GESTIONALE")
-                .requestMatchers("/driver/**").hasAnyRole("ADMIN", "DRIVER")
+                .requestMatchers("/driver/**").hasAnyRole("ADMIN", "DRIVER", "DRIVER_FREELANCER")
                 .requestMatchers("/services/**").hasAnyRole("ADMIN", "GESTIONALE")
                 .requestMatchers("/finance/**").hasAnyRole("ADMIN", "GESTIONALE")
                 .anyRequest().authenticated()

@@ -124,6 +124,7 @@ function sameDate(left: Date, right: Date) {
 
 type CalendarDashboardProps = {
   driverMode?: boolean;
+  hidePrice?: boolean;
 };
 
 function CalClockIcon() {
@@ -225,7 +226,7 @@ function CalDetailRow({ icon, label, value, bold = false }: { icon: ReactNode; l
 
 const calDetailDivider = <hr style={{ border: 'none', borderTop: '1px solid #dce8f5', margin: '10px 0' }} />;
 
-export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps) {
+export function CalendarDashboard({ driverMode = false, hidePrice = false }: CalendarDashboardProps) {
   const [view, setView] = useState<ViewMode>('month');
   const [cursorDate, setCursorDate] = useState(() => startOfDay(new Date()));
   const [filters, setFilters] = useState<FilterState>(filtersDefault);
@@ -771,7 +772,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                 <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
                   <CalDetailRow icon={<CalUserIcon />} label="Driver" value={selectedServiceDriverLabel} />
                   <CalDetailRow icon={<CalCarIcon />} label="Veicolo" value={vehicleLabel(selectedService.assignedVehicleId)} />
-                  <CalDetailRow icon={<CalEuroIcon />} label="Prezzo" value={formatCurrencyEUR(selectedService.price)} bold />
+                  {!hidePrice && <CalDetailRow icon={<CalEuroIcon />} label="Prezzo" value={formatCurrencyEUR(selectedService.price)} bold />}
                 </div>
 
                 {calDetailDivider}

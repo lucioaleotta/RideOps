@@ -23,7 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/driver/profile")
-@PreAuthorize("hasAnyRole('ADMIN','DRIVER')")
+@PreAuthorize("hasAnyRole('ADMIN','DRIVER','DRIVER_FREELANCER')")
 public class DriverProfileController {
 
     private final GetDriverProfileUseCase getDriverProfileUseCase;
