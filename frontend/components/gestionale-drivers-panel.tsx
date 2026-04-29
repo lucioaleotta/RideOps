@@ -87,6 +87,28 @@ function daysToDate(value: string | null) {
   return Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+function DriverRoleChip({ role }: { role: string }) {
+  const isFreelancer = role === 'DRIVER_FREELANCER';
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        padding: '2px 8px',
+        borderRadius: 12,
+        fontSize: '0.72rem',
+        fontWeight: 600,
+        letterSpacing: '0.02em',
+        background: isFreelancer ? '#fff3e0' : '#e3f2fd',
+        color: isFreelancer ? '#e65100' : '#1565c0',
+        border: `1px solid ${isFreelancer ? '#ffb74d' : '#90caf9'}`,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {isFreelancer ? 'Freelancer' : 'Driver'}
+    </span>
+  );
+}
+
 function DriverMailIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -453,7 +475,8 @@ export function GestionaleDriversPanel() {
       licenseTypes: form.licenseTypes,
       residentialAddresses: normalizedAddresses,
       mobilePhone: form.mobilePhone,
-      licenseExpiryDate: form.licenseExpiryDate
+      licenseExpiryDate: form.licenseExpiryDate,
+      role: form.role
     };
 
     const targetUrl = editingDriverId ? `/api/gestionale/drivers/${editingDriverId}` : '/api/gestionale/drivers';
@@ -571,6 +594,7 @@ export function GestionaleDriversPanel() {
               <div className="gestionale-driver-selected-title-wrap">
                 <span className="gestionale-driver-selected-label">Driver selezionato</span>
                 <h4 className="gestionale-driver-selected-name">{selectedDriver.firstName ?? '-'} {selectedDriver.lastName ?? '-'}</h4>
+                <DriverRoleChip role={selectedDriver.role} />
               </div>
               <div className="gestionale-driver-selected-actions">
                 <button type="button" className="primary-button compact-button" onClick={() => onEditDriver(selectedDriver)}>
@@ -645,6 +669,7 @@ export function GestionaleDriversPanel() {
               <tr>
                 <th>Nome</th>
                 <th>Cognome</th>
+                <th>Tipologia</th>
                 <th>Nascita</th>
                 <th>Patente</th>
                 <th>Scadenza</th>
@@ -664,6 +689,7 @@ export function GestionaleDriversPanel() {
                   >
                     <td>{driver.firstName ?? '-'}</td>
                     <td>{driver.lastName ?? '-'}</td>
+                    <td><DriverRoleChip role={driver.role} /></td>
                     <td>{formatDate(driver.birthDate)}</td>
                     <td>
                       <div className="gestionale-driver-license">
@@ -829,6 +855,7 @@ export function GestionaleDriversPanel() {
               <div className="gestionale-driver-mobile-sheet-header-text">
                 <h4>{selectedDriver.firstName ?? '-'} {selectedDriver.lastName ?? '-'}</h4>
                 <p>{selectedDriver.enabled ? 'Driver attivo' : 'Driver disattivato'}</p>
+                <DriverRoleChip role={selectedDriver.role} />
               </div>
             </header>
 
@@ -1028,6 +1055,23 @@ export function GestionaleDriversPanel() {
                   </div>
                 </section>
               )}
+
+              <section className="driver-form-section">
+                <h4 className="driver-form-section-title">Tipologia</h4>
+                <div className="driver-form-grid driver-form-grid--two-col">
+                  <label className="driver-form-field">
+                    <span>Tipo profilo</span>
+                    <select
+                      className="form-input"
+                      value={form.role}
+                      onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as 'DRIVER' | 'DRIVER_FREELANCER' }))}
+                    >
+                      <option value="DRIVER">Driver</option>
+                      <option value="DRIVER_FREELANCER">Driver Freelancer</option>
+                    </select>
+                  </label>
+                </div>
+              </section>
 
               <section className="driver-form-section">
                 <h4 className="driver-form-section-title">Patente</h4>

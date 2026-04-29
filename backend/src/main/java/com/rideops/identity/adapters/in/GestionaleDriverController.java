@@ -81,7 +81,8 @@ public class GestionaleDriverController {
             request.licenseTypes(),
             request.residentialAddresses(),
             request.mobilePhone(),
-            request.licenseExpiryDate()
+            request.licenseExpiryDate(),
+            request.role()
         );
     }
 
@@ -150,7 +151,8 @@ public class GestionaleDriverController {
                                @NotEmpty List<@NotBlank String> licenseTypes,
                                @NotEmpty List<@NotBlank String> residentialAddresses,
                                @NotBlank String mobilePhone,
-                               @NotNull LocalDate licenseExpiryDate) {
+                               @NotNull LocalDate licenseExpiryDate,
+                               UserRole role) {
     }
 
     record UpdateEnabledRequest(@NotNull Boolean enabled) {
