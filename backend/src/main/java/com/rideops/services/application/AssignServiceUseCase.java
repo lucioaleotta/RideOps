@@ -35,7 +35,7 @@ public class AssignServiceUseCase {
         UserEntity driver = userAdminRepositoryPort.findById(safeDriverId)
             .orElseThrow(() -> new ServiceValidationException("Driver non trovato"));
 
-        if (driver.getRole() != UserRole.DRIVER || !driver.isEnabled()) {
+        if ((driver.getRole() != UserRole.DRIVER && driver.getRole() != UserRole.DRIVER_FREELANCER) || !driver.isEnabled()) {
             throw new ServiceValidationException("L'utente selezionato non e` un DRIVER attivo");
         }
 
