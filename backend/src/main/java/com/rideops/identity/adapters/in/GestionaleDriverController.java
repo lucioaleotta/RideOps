@@ -17,6 +17,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -37,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/gestionale/drivers")
 @PreAuthorize("hasAnyRole('ADMIN','GESTIONALE')")
 public class GestionaleDriverController {
+    private static final Logger logger = LoggerFactory.getLogger(GestionaleDriverController.class);
 
     private final CreateUserUseCase createUserUseCase;
     private final ListDriversUseCase listDriversUseCase;
@@ -110,9 +114,9 @@ public class GestionaleDriverController {
     }
 
     private CreateUserCommand toCreateCommand(CreateDriverRequest request, Long tenantId) {
-        UserRole role = request.role() == UserRole.DRIVER_FREELANCER
-            ? UserRole.DRIVER_FREELANCER
-            : UserRole.DRIVER;
+        logger.info("[DEBUG] request.role(): {}", request.role());
+        UserRole role = request.role();
+        logger.info("[DEBUG] role (assegnato): {}", role);
         return new CreateUserCommand(
             request.userId(),
             request.email(),

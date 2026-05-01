@@ -1040,19 +1040,6 @@ export function GestionaleDriversPanel() {
                       />
                     </label>
                   </div>
-                  <div className="driver-form-grid driver-form-grid--two-col" style={{ marginTop: 12 }}>
-                    <label className="driver-form-field">
-                      <span>Tipo profilo</span>
-                      <select
-                        className="form-input"
-                        value={form.role}
-                        onChange={(event) => setForm((prev) => ({ ...prev, role: event.target.value as 'DRIVER' | 'DRIVER_FREELANCER' }))}
-                      >
-                        <option value="DRIVER">Driver</option>
-                        <option value="DRIVER_FREELANCER">Driver Freelancer</option>
-                      </select>
-                    </label>
-                  </div>
                 </section>
               )}
 

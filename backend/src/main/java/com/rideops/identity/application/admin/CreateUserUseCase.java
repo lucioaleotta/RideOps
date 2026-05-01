@@ -90,7 +90,7 @@ public class CreateUserUseCase {
     }
 
     DriverProfile validateAndBuildProfile(CreateUserCommand command) {
-        if (command.role() != UserRole.DRIVER) {
+        if (command.role() != UserRole.DRIVER && command.role() != UserRole.DRIVER_FREELANCER) {
             return DriverProfile.empty();
         }
 

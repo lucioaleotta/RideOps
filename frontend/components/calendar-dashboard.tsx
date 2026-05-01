@@ -795,6 +795,18 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
 
                 {calDetailDivider}
 
+                {/* Sezione note e itinerario */}
+                <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
+                  {selectedService.itinerary && (
+                    <CalDetailRow icon={<CalDocIcon />} label="Itinerario" value={selectedService.itinerary} />
+                  )}
+                  {selectedService.notes && (
+                    <CalDetailRow icon={<CalDocIcon />} label="Note" value={selectedService.notes} />
+                  )}
+                </div>
+
+                {(selectedService.itinerary || selectedService.notes) && calDetailDivider}
+
                 {/* Azioni */}
                 <div style={{ display: 'grid', gap: 8 }}>
                   <Link

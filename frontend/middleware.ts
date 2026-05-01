@@ -18,8 +18,12 @@ function roleAllowed(pathname: string, role: string | undefined) {
     return role === 'ADMIN' || role === 'DRIVER' || role === 'DRIVER_FREELANCER';
   }
 
-  if (pathname.startsWith('/app/services') || pathname.startsWith('/services/')) {
+  if (pathname.startsWith('/app/services')) {
     return role === 'ADMIN' || role === 'GESTIONALE';
+  }
+
+  if (pathname.startsWith('/services/')) {
+    return role === 'ADMIN' || role === 'GESTIONALE' || role === 'DRIVER' || role === 'DRIVER_FREELANCER';
   }
 
   if (pathname.startsWith('/app/finance')) {
