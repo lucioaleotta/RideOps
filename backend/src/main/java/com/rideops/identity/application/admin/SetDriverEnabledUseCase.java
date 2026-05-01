@@ -22,7 +22,7 @@ public class SetDriverEnabledUseCase {
         var driver = userAdminRepositoryPort.findById(safeDriverId)
             .orElseThrow(() -> new UserAdminNotFoundException("Driver non trovato"));
 
-        if (driver.getRole() != UserRole.DRIVER) {
+        if (driver.getRole() != UserRole.DRIVER && driver.getRole() != UserRole.DRIVER_FREELANCER) {
             throw new UserAdminValidationException("L'utente non e` un driver");
         }
 
