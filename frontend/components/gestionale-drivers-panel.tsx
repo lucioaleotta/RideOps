@@ -488,7 +488,6 @@ export function GestionaleDriversPanel() {
         userId: form.userId,
         email: form.email,
         password: form.password,
-        role: form.role,
         ...payloadToSend
       };
 
