@@ -56,14 +56,20 @@ export default async function ServicePrintPage({ params }: { params: { id: strin
     redirect('/login');
   }
 
-  if (role !== 'ADMIN' && role !== 'GESTIONALE') {
+  if (role !== 'ADMIN' && role !== 'GESTIONALE' && role !== 'DRIVER' && role !== 'DRIVER_FREELANCER') {
     redirect('/app');
   }
 
   const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
   const authHeaders = { Authorization: `Bearer ${token}` };
 
-  const response = await fetch(`${backendUrl}/services/${params.id}`, {
+  const isDriver = role === 'DRIVER' || role === 'DRIVER_FREELANCER';
+  const isDriverFreelancer = role === 'DRIVER_FREELANCER';
+  const serviceEndpoint = isDriver
+    ? `${backendUrl}/driver/services/${params.id}`
+    : `${backendUrl}/services/${params.id}`;
+
+  const response = await fetch(serviceEndpoint, {
     headers: authHeaders,
     cache: 'no-store'
   });
@@ -81,15 +87,17 @@ export default async function ServicePrintPage({ params }: { params: { id: strin
 
   const service = (await response.json()) as ServiceDetail;
 
-  // Fetch parallelo di driver e veicolo se assegnati
-  const [driversRes, vehiclesRes] = await Promise.all([
-    service.assignedDriverId
-      ? fetch(`${backendUrl}/gestionale/drivers`, { headers: authHeaders, cache: 'no-store' })
-      : Promise.resolve(null),
-    service.assignedVehicleId
-      ? fetch(`${backendUrl}/fleet/vehicles`, { headers: authHeaders, cache: 'no-store' })
-      : Promise.resolve(null)
-  ]);
+  // Fetch parallelo di driver e veicolo se assegnati (solo per ruoli gestionale/admin)
+  const [driversRes, vehiclesRes] = isDriver
+    ? [null, null]
+    : await Promise.all([
+        service.assignedDriverId
+          ? fetch(`${backendUrl}/gestionale/drivers`, { headers: authHeaders, cache: 'no-store' })
+          : Promise.resolve(null),
+        service.assignedVehicleId
+          ? fetch(`${backendUrl}/fleet/vehicles`, { headers: authHeaders, cache: 'no-store' })
+          : Promise.resolve(null)
+      ]);
 
   const driversList: DriverDetail[] = driversRes?.ok ? (await driversRes.json()) as DriverDetail[] : [];
   const driver: DriverDetail | null = driversList.find((d) => d.id === service.assignedDriverId) ?? null;
@@ -133,10 +141,12 @@ export default async function ServicePrintPage({ params }: { params: { id: strin
             <strong>Durata ore</strong>
             <p>{service.durationHours ?? '-'}</p>
           </div>
-          <div>
-            <strong>Prezzo</strong>
-            <p>{formatCurrencyEUR(service.price)}</p>
-          </div>
+          {!isDriverFreelancer && (
+            <div>
+              <strong>Prezzo</strong>
+              <p>{formatCurrencyEUR(service.price)}</p>
+            </div>
+          )}
           <div>
             <strong>Rif. prenotazione esterno</strong>
             <p>{service.externalBookingReference ?? '-'}</p>

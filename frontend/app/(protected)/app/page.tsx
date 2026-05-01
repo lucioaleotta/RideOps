@@ -9,7 +9,7 @@ export default function AppHomePage() {
     redirect('/app/admin-home');
   }
 
-  const isDriver = role === 'DRIVER';
+  const isDriver = role === 'DRIVER' || role === 'DRIVER_FREELANCER';
 
   return (
     <main>
@@ -19,7 +19,7 @@ export default function AppHomePage() {
           ? 'Vista operativa dei servizi assegnati al driver loggato, con navigazione mese / settimana / giorno.'
           : 'Vista operativa servizi con navigazione mese / settimana / giorno.'}
       </p>
-      <CalendarDashboard driverMode={isDriver} />
+      <CalendarDashboard driverMode={isDriver} hidePrice={role === 'DRIVER_FREELANCER'} />
     </main>
   );
 }
