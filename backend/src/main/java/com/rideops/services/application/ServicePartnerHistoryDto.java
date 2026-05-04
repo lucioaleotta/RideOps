@@ -12,6 +12,9 @@ public record ServicePartnerHistoryDto(
     String partnerEmail,
     BigDecimal pricePartner,
     BigDecimal margin,
+    Long outgoingPartnerId,
+    String outgoingPartnerRagioneSociale,
+    String outgoingPartnerEmail,
     List<ServicePartnerCommunicationDto> communications
 ) {
 }

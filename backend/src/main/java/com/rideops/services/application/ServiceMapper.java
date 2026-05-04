@@ -33,6 +33,7 @@ public final class ServiceMapper {
             entity.getPartnerId(),
             entity.getPricePartner(),
             entity.getMargin(),
+            entity.getOutgoingPartnerId(),
             entity.getCreatedAt(),
             entity.getUpdatedAt()
         );

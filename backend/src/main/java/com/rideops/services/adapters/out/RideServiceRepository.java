@@ -20,6 +20,12 @@ public interface RideServiceRepository extends JpaRepository<RideServiceEntity, 
 
     long countByAssignedDriverIdIsNullAndStatusAndTenantId(ServiceStatus status, Long tenantId);
 
+    long countByAssignedDriverIdIsNullAndStatusAndServiceAssignmentTypeNotInAndTenantId(
+        ServiceStatus status,
+        Collection<ServiceAssignmentType> serviceAssignmentTypes,
+        Long tenantId
+    );
+
     long countByAssignedDriverIdAndStatusInAndTenantId(Long assignedDriverId, Collection<ServiceStatus> statuses, Long tenantId);
 
     long countByAssignedVehicleIdAndStartAtGreaterThanEqualAndStartAtLessThanAndStatusInAndTenantId(

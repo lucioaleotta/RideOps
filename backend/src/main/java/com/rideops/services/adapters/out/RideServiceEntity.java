@@ -87,7 +87,7 @@ public class RideServiceEntity {
     private LocalDateTime assignedAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "service_assignment_type", nullable = false, length = 20)
+    @Column(name = "service_assignment_type", nullable = false, length = 25)
     private ServiceAssignmentType serviceAssignmentType = ServiceAssignmentType.INTERNAL;
 
     @Column(name = "partner_id")
@@ -98,6 +98,9 @@ public class RideServiceEntity {
 
     @Column(name = "margin", precision = 12, scale = 2)
     private BigDecimal margin;
+
+    @Column(name = "outgoing_partner_id")
+    private Long outgoingPartnerId;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -332,5 +335,13 @@ public class RideServiceEntity {
 
     public void setMargin(BigDecimal margin) {
         this.margin = margin;
+    }
+
+    public Long getOutgoingPartnerId() {
+        return outgoingPartnerId;
+    }
+
+    public void setOutgoingPartnerId(Long outgoingPartnerId) {
+        this.outgoingPartnerId = outgoingPartnerId;
     }
 }

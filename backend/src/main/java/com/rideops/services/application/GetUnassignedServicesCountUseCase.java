@@ -1,6 +1,5 @@
 package com.rideops.services.application;
 
-import com.rideops.services.domain.ServiceStatus;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -13,6 +12,6 @@ public class GetUnassignedServicesCountUseCase {
     }
 
     public long execute() {
-        return serviceRepositoryPort.countByAssignedDriverIdIsNullAndStatus(ServiceStatus.OPEN);
+        return serviceRepositoryPort.countUnassignedOpenInternalServices();
     }
 }

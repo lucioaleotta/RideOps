@@ -30,8 +30,7 @@ public record ServiceDto(
     ServiceAssignmentType serviceAssignmentType,
     Long partnerId,
     BigDecimal pricePartner,
-    BigDecimal margin,
-    LocalDateTime createdAt,
+    BigDecimal margin,    Long outgoingPartnerId,    LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {
 }

@@ -58,7 +58,9 @@ public class UpdateServiceUseCase {
             command.partnerId(),
             command.pricePartner()
         );
+        boolean partnerManagedAssignment = ServiceValidationSupport.isPartnerManaged(targetAssignmentType);
         validatePartnerIfPresent(command.partnerId());
+        validatePartnerIfPresent(command.outgoingPartnerId());
 
         entity.setStartAt(command.startAt());
         entity.setPickupLocation(command.pickupLocation().trim());
@@ -75,12 +77,31 @@ public class UpdateServiceUseCase {
         entity.setItinerary(cleanNullable(command.itinerary()));
         entity.setServiceAssignmentType(targetAssignmentType);
         entity.setPartnerId(command.partnerId());
-        entity.setPricePartner(command.pricePartner());
-        entity.setMargin(ServiceValidationSupport.calculateMargin(command.price(), command.pricePartner()));
-        entity.setAssignedVehicleId(command.assignedVehicleId());
-        if (command.status() != null) {
-            entity.setStatus(command.status());
+        entity.setOutgoingPartnerId(
+            targetAssignmentType == ServiceAssignmentType.INCOMING_OUTSOURCED
+                ? command.outgoingPartnerId()
+                : null
+        );
+        java.math.BigDecimal effectivePricePartner = command.pricePartner();
+        if (targetAssignmentType == ServiceAssignmentType.INCOMING_OUTSOURCED && command.outgoingPartnerId() == null) {
+            effectivePricePartner = null;
         }
+        entity.setPricePartner(effectivePricePartner);
+        entity.setMargin(ServiceValidationSupport.calculateMargin(command.price(), effectivePricePartner));
+        if (partnerManagedAssignment) {
+            entity.setAssignedDriverId(null);
+            entity.setAssignedByUserId(null);
+            entity.setAssignedAt(null);
+            entity.setAssignedVehicleId(null);
+        } else {
+            entity.setAssignedVehicleId(command.assignedVehicleId());
+        }
+
+        ServiceStatus targetStatus = command.status() == null ? entity.getStatus() : command.status();
+        if (partnerManagedAssignment && targetStatus == ServiceStatus.ASSIGNED) {
+            targetStatus = ServiceStatus.OPEN;
+        }
+        entity.setStatus(targetStatus);
 
         return ServiceMapper.toDto(serviceRepositoryPort.save(entity));
     }

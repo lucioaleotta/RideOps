@@ -23,7 +23,7 @@ public interface ServiceRepositoryPort {
                                           ServiceStatus status,
                                           ServiceType type);
 
-    long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status);
+    long countUnassignedOpenInternalServices();
 
     long countByAssignedDriverIdAndStatusIn(Long driverId, Collection<ServiceStatus> statuses);
 

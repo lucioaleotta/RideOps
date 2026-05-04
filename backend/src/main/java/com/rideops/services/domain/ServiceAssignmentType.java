@@ -10,5 +10,10 @@ package com.rideops.services.domain;
 public enum ServiceAssignmentType {
     INTERNAL,
     OUTSOURCED,
-    INCOMING
+    INCOMING,
+    /**
+     * Servizio ricevuto da un partner (Agenzia A) e successivamente affidato
+     * in esecuzione a un'altra NCC (partner esecutore).
+     */
+    INCOMING_OUTSOURCED
 }

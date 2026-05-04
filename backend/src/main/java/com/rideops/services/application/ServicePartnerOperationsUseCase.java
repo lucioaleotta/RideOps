@@ -37,6 +37,22 @@ public class ServicePartnerOperationsUseCase {
         PartnerEntity partner = findPartnerLinkedToService(service);
         Long tenantId = tenantContext.requireTenantId();
 
+        Long outgoingPartnerId = null;
+        String outgoingPartnerRagioneSociale = null;
+        String outgoingPartnerEmail = null;
+
+        if (service.getServiceAssignmentType() == com.rideops.services.domain.ServiceAssignmentType.INCOMING_OUTSOURCED
+                && service.getOutgoingPartnerId() != null) {
+            java.util.Optional<PartnerEntity> outgoingPartnerOpt = partnerRepository
+                .findByIdAndTenantId(service.getOutgoingPartnerId(), tenantId);
+            if (outgoingPartnerOpt.isPresent()) {
+                PartnerEntity outgoingPartner = outgoingPartnerOpt.get();
+                outgoingPartnerId = outgoingPartner.getId();
+                outgoingPartnerRagioneSociale = outgoingPartner.getRagioneSociale();
+                outgoingPartnerEmail = outgoingPartner.getEmail();
+            }
+        }
+
         List<ServicePartnerCommunicationDto> communications = communicationRepository
             .findAllByServiceIdAndTenantIdOrderByCreatedAtDesc(service.getId(), tenantId)
             .stream()
@@ -57,6 +73,9 @@ public class ServicePartnerOperationsUseCase {
             partner.getEmail(),
             service.getPricePartner(),
             service.getMargin(),
+            outgoingPartnerId,
+            outgoingPartnerRagioneSociale,
+            outgoingPartnerEmail,
             communications
         );
     }
@@ -112,7 +131,10 @@ public class ServicePartnerOperationsUseCase {
     }
 
     private PartnerEntity findPartnerLinkedToService(RideServiceEntity service) {
-        Long partnerId = service.getPartnerId();
+        // Per INCOMING_OUTSOURCED l'email viene inviata al partner esecutore (outgoingPartnerId)
+        Long partnerId = service.getServiceAssignmentType() == com.rideops.services.domain.ServiceAssignmentType.INCOMING_OUTSOURCED
+            ? service.getOutgoingPartnerId()
+            : service.getPartnerId();
         if (partnerId == null) {
             throw new ServiceValidationException("Il servizio selezionato non e` associato a un partner");
         }

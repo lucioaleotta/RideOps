@@ -4,10 +4,9 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeftIcon, ArrowRightIcon, ButtonContent, LockIcon, OpenIcon, SelectIcon, TodayIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
-import { StatusNotice } from './status-notice';
 
 type ViewMode = 'month' | 'week' | 'day';
-type ServiceType = 'TRANSFER' | 'TOUR' | 'DISPOSIZIONE';
+type ServiceType = 'TRANSFER' | 'TOUR';
 type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
 
 type ServiceItem = {
@@ -19,7 +18,7 @@ type ServiceItem = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
-  externalBookingReference: string | null;
+  externalBookingReference: number | null;
   internalBookingReference: string | null;
   clientName: string | null;
   clientPhone: string | null;
@@ -280,6 +279,10 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
   }, [driverMode]);
 
   useEffect(() => {
+    if (driverMode) {
+      return;
+    }
+
     async function loadVehicles() {
       const response = await fetch('/api/fleet/vehicles', { cache: 'no-store' });
       const payload = (await response.json().catch(() => [])) as VehicleItem[] | { message?: string };
@@ -467,9 +470,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
   }
 
   function typeLabel(type: ServiceType) {
-    if (type === 'TRANSFER') return 'Transfer';
-    if (type === 'DISPOSIZIONE') return 'Disposizione';
-    return 'Tour';
+    return type === 'TRANSFER' ? 'Transfer' : 'Tour';
   }
 
   function vehicleLabel(vehicleId: number | null) {
@@ -669,7 +670,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
           </div>
         </div>
 
-        <div className="responsive-filters-grid portal-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
+        <div className="responsive-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
           {!driverMode && (
             <label>
               Driver
@@ -711,14 +712,13 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
               <option value="">Tutte</option>
               <option value="TRANSFER">TRANSFER</option>
               <option value="TOUR">TOUR</option>
-              <option value="DISPOSIZIONE">DISPOSIZIONE</option>
             </select>
           </label>
         </div>
       </article>
 
-      {error && <StatusNotice tone="error">{error}</StatusNotice>}
-      {success && <StatusNotice tone="success">{success}</StatusNotice>}
+      {error && <p className="error-text">{error}</p>}
+      {success && <p className="success-text">{success}</p>}
       {loading && <p>Caricamento calendario...</p>}
 
       {!loading && !error && (
@@ -779,7 +779,7 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                 {/* Sezione riferimenti */}
                 <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
                   <CalDetailRow icon={<CalDocIcon />} label="Rif. interno" value={selectedService.internalBookingReference ?? '—'} />
-                  <CalDetailRow icon={<CalDocIcon />} label="Rif. esterno" value={selectedService.externalBookingReference ?? '—'} />
+                  <CalDetailRow icon={<CalDocIcon />} label="Rif. esterno" value={selectedService.externalBookingReference != null ? String(selectedService.externalBookingReference) : '—'} />
                 </div>
 
                 {calDetailDivider}

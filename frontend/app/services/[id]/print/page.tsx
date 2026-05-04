@@ -11,7 +11,7 @@ type ServiceDetail = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
-  externalBookingReference: string | null;
+  externalBookingReference: number | null;
   internalBookingReference: string | null;
   clientName: string | null;
   clientPhone: string | null;

@@ -29,6 +29,9 @@ public class AssignServiceUseCase {
         if (service.getStatus() == ServiceStatus.CLOSED || service.getStatus() == ServiceStatus.EXECUTED) {
             throw new ServiceValidationException("Non e` possibile assegnare un servizio ESEGUITO/CLOSED");
         }
+        if (ServiceValidationSupport.isPartnerManaged(service.getServiceAssignmentType())) {
+            throw new ServiceValidationException("Rimuovi prima l'assegnazione al partner OUTSOURCED prima di assegnare driver o veicolo");
+        }
 
         Long safeDriverId = Objects.requireNonNull(driverId, "driverId obbligatorio");
 
