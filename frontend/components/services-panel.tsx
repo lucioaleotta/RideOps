@@ -519,6 +519,7 @@ export function ServicesPanel() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [newButtonPortalTarget, setNewButtonPortalTarget] = useState<HTMLElement | null>(null);
   const [rowMenuServiceId, setRowMenuServiceId] = useState<number | null>(null);
+  const [deleteConfirmServiceId, setDeleteConfirmServiceId] = useState<number | null>(null);
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
 
@@ -1651,19 +1652,19 @@ export function ServicesPanel() {
                     />
                     <ServiceDetailRow
                       icon={<DetailUserIcon />}
-                      label="Partner"
+                      label="Partner Fornitore"
                       value={partnerLabel(selectedService.partnerId)}
                     />
                     {selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
                       <ServiceDetailRow
                         icon={<DetailUserIcon />}
-                        label="NCC esecutore"
+                        label="Partner Esecutore"
                         value={partnerLabel(selectedService.outgoingPartnerId)}
                       />
                     )}
                     <ServiceDetailRow
                       icon={<DetailEuroIcon />}
-                      label="Prezzo partner"
+                      label="Prezzo Partner Esecutore"
                       value={formatCurrencyEUR(selectedService.pricePartner)}
                     />
                     <ServiceDetailRow
@@ -1733,7 +1734,7 @@ export function ServicesPanel() {
                   <button
                     type="button"
                     className="primary-button compact-button services-selected-delete"
-                    onClick={() => onDelete(selectedService.id)}
+                    onClick={() => setDeleteConfirmServiceId(selectedService.id)}
                   >
                     <span className="action-button-icon"><ActionDeleteIcon /></span>
                     Elimina
@@ -2274,7 +2275,7 @@ export function ServicesPanel() {
               </label>
 
               <label className="services-outsource-modal-field">
-                Prezzo partner
+                Prezzo al Partner Esecutore
                 <div className="services-outsource-input-wrap">
                   <span className="services-outsource-input-icon" aria-hidden="true">€</span>
                   <input
@@ -2303,6 +2304,46 @@ export function ServicesPanel() {
                   <ButtonContent icon={<SharedPartnerIcon />}>{submitting ? 'Salvataggio...' : 'Conferma affidamento'}</ButtonContent>
                 </button>
                 <button type="button" className="logout-button compact-button services-outsource-cancel" onClick={closeOutsourceModal}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
+              </div>
+            </div>
+          </article>
+        </div>
+      )}
+
+      {deleteConfirmServiceId && (
+        <div className="services-modal-overlay" role="dialog" aria-modal="true" aria-label="Conferma eliminazione servizio">
+          <article className="dashboard-card services-modal-card" style={{ maxWidth: 400 }}>
+            <div className="services-outsource-modal-header">
+              <h3 className="services-outsource-modal-title">Conferma eliminazione</h3>
+              <button
+                type="button"
+                className="services-outsource-modal-close"
+                onClick={() => setDeleteConfirmServiceId(null)}
+                aria-label="Chiudi finestra"
+                title="Chiudi"
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <p style={{ margin: 0, color: 'var(--color-text, #333)' }}>
+                Sei sicuro di voler eliminare il servizio #{deleteConfirmServiceId}? Questa azione non può essere annullata.
+              </p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button type="button" className="logout-button compact-button" onClick={() => setDeleteConfirmServiceId(null)}>
+                  <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
+                </button>
+                <button
+                  type="button"
+                  className="primary-button compact-button"
+                  onClick={() => {
+                    setDeleteConfirmServiceId(null);
+                    onDelete(deleteConfirmServiceId);
+                  }}
+                  style={{ background: '#d32f2f' }}
+                >
+                  <ButtonContent icon={<ActionDeleteIcon />}>Elimina</ButtonContent>
+                </button>
               </div>
             </div>
           </article>
@@ -2532,7 +2573,7 @@ export function ServicesPanel() {
 
             {formPartnerManagedAssignment && (
               <label>
-                Prezzo partner
+                Prezzo al Partner Esecutore
                 <input
                   className="form-input"
                   type="number"
@@ -2554,22 +2595,11 @@ export function ServicesPanel() {
             )}
 
             {editingId && (form.serviceAssignmentType === 'OUTSOURCED' || form.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
-              <div style={{ display: 'grid', gap: 8 }}>
-                <label>
-                  Modalita` gestione servizio
-                  <input
-                    className="form-input"
-                    value={assignmentTypeLabel(form.serviceAssignmentType)}
-                    readOnly
-                    disabled
-                  />
-                </label>
-                <div className="services-notice services-notice--info" role="status" aria-live="polite">
-                  <span className="services-notice-icon" aria-hidden="true"><ServiceNoticeIcon tone="info" /></span>
-                  <div className="services-notice-text">
-                    <strong className="services-notice-title">Assegnazione interna bloccata</strong>
-                    <span>Per inserire driver o veicolo e` necessario prima cancellare l&apos;assegnazione al Partner Esecutore.</span>
-                  </div>
+              <div className="services-notice services-notice--info" role="status" aria-live="polite">
+                <span className="services-notice-icon" aria-hidden="true"><ServiceNoticeIcon tone="info" /></span>
+                <div className="services-notice-text">
+                  <strong className="services-notice-title">Assegnazione interna bloccata</strong>
+                  <span>Per inserire driver o veicolo e` necessario prima cancellare l&apos;assegnazione al Partner Esecutore.</span>
                 </div>
               </div>
             )}
