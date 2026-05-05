@@ -7,10 +7,14 @@ import com.rideops.services.domain.ServiceStatus;
 import com.rideops.multitenancy.TenantContext;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CreateServiceUseCase {
+
+    private static final Logger log = LoggerFactory.getLogger(CreateServiceUseCase.class);
 
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final VehicleAssignmentValidationService vehicleAssignmentValidationService;
@@ -71,7 +75,10 @@ public class CreateServiceUseCase {
         entity.setMargin(ServiceValidationSupport.calculateMargin(command.price(), command.pricePartner()));
         entity.setAssignedVehicleId(command.assignedVehicleId());
 
-        return ServiceMapper.toDto(serviceRepositoryPort.save(entity));
+        ServiceDto result = ServiceMapper.toDto(serviceRepositoryPort.save(entity));
+        log.info("action=service.create serviceId={} assignmentType={} status={} tenantId={} outcome=success",
+            result.id(), assignmentType, initialStatus, entity.getTenantId());
+        return result;
     }
 
     private void validateStartAt(LocalDateTime startAt) {

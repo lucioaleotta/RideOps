@@ -6,10 +6,14 @@ import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OutsourceServiceUseCase {
+
+    private static final Logger log = LoggerFactory.getLogger(OutsourceServiceUseCase.class);
 
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final PartnerRepository partnerRepository;
@@ -72,6 +76,9 @@ public class OutsourceServiceUseCase {
             entity.setStatus(ServiceStatus.OPEN);
         }
 
-        return ServiceMapper.toDto(serviceRepositoryPort.save(entity));
+        ServiceDto result = ServiceMapper.toDto(serviceRepositoryPort.save(entity));
+        log.info("action=service.outsource serviceId={} partnerId={} assignmentType={} outcome=success",
+            serviceId, partnerId, entity.getServiceAssignmentType());
+        return result;
     }
 }

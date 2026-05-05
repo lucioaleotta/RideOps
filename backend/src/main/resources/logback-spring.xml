@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <springProperty scope="context" name="APP_NAME"
+                    source="spring.application.name" defaultValue="rideops"/>
+
+    <!-- ── JSON appender — usato in produzione ──────────────────────────── -->
+    <appender name="JSON_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <fieldNames>
+                <!-- rinomina i campi logstash ai nomi richiesti dal contratto di log -->
+                <timestamp>timestamp</timestamp>
+                <message>message</message>
+                <logger>logger</logger>
+                <thread>thread</thread>
+                <!-- rimuove campi inutili in produzione -->
+                <version>[ignore]</version>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+            <customFields>{"service":"${APP_NAME}"}</customFields>
+            <timestampPattern>yyyy-MM-dd'T'HH:mm:ss.SSS'Z'</timestampPattern>
+            <timeZone>UTC</timeZone>
+            <!-- In produzione: stack trace solo per ERROR, compressa -->
+            <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                <maxDepthPerCause>8</maxDepthPerCause>
+                <rootCauseFirst>true</rootCauseFirst>
+            </throwableConverter>
+        </encoder>
+    </appender>
+
+    <!-- ── Appender leggibile — sviluppo locale ─────────────────────────── -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%X{traceId}] %logger{36} — %msg%n%ex{5}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ── Profilo produzione: solo JSON, solo INFO+ ─────────────────────── -->
+    <springProfile name="prod">
+        <root level="INFO">
+            <appender-ref ref="JSON_STDOUT"/>
+        </root>
+        <!-- Silenzia il rumore del framework -->
+        <logger name="org.springframework.web.servlet.mvc.method" level="WARN"/>
+        <logger name="org.hibernate.SQL"                           level="WARN"/>
+        <logger name="org.flywaydb"                                level="WARN"/>
+    </springProfile>
+
+    <!-- ── Tutti gli altri profili (dev, test, …): console leggibile ─────── -->
+    <springProfile name="!prod">
+        <root level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+        <logger name="com.rideops"        level="DEBUG"/>
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.hibernate.SQL"   level="DEBUG"/>
+        <logger name="org.flywaydb"        level="INFO"/>
+    </springProfile>
+
+</configuration>
