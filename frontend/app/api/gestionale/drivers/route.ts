@@ -55,7 +55,8 @@ export async function POST(request: Request) {
     || !Array.isArray(body.residentialAddresses)
     || body.residentialAddresses.length === 0
     || !body.mobilePhone
-    || !body.licenseExpiryDate) {
+    || !body.licenseExpiryDate
+    || (body.role !== 'DRIVER' && body.role !== 'DRIVER_FREELANCER')) {
     return NextResponse.json({ message: 'Payload non valido' }, { status: 400 });
   }
 
@@ -77,7 +78,8 @@ export async function POST(request: Request) {
       licenseTypes: body.licenseTypes,
       residentialAddresses: body.residentialAddresses,
       mobilePhone: body.mobilePhone,
-      licenseExpiryDate: body.licenseExpiryDate
+      licenseExpiryDate: body.licenseExpiryDate,
+      role: body.role,
     }),
     cache: 'no-store'
   });

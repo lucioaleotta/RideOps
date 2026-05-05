@@ -1,6 +1,6 @@
 export type JwtPayload = {
   sub?: string;
-  role?: 'ADMIN' | 'GESTIONALE' | 'DRIVER' | string;
+  role?: 'ADMIN' | 'GESTIONALE' | 'DRIVER' | 'DRIVER_FREELANCER' | string;
   exp?: number;
   [key: string]: unknown;
 };

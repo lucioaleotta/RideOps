@@ -17,6 +17,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -37,7 +38,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/gestionale/drivers")
 @PreAuthorize("hasAnyRole('ADMIN','GESTIONALE')")
 public class GestionaleDriverController {
-
     private final CreateUserUseCase createUserUseCase;
     private final ListDriversUseCase listDriversUseCase;
     private final UpdateDriverUseCase updateDriverUseCase;
@@ -81,7 +81,8 @@ public class GestionaleDriverController {
             request.licenseTypes(),
             request.residentialAddresses(),
             request.mobilePhone(),
-            request.licenseExpiryDate()
+            request.licenseExpiryDate(),
+            request.role()
         );
     }
 
@@ -109,11 +110,12 @@ public class GestionaleDriverController {
     }
 
     private CreateUserCommand toCreateCommand(CreateDriverRequest request, Long tenantId) {
+        UserRole role = request.role();
         return new CreateUserCommand(
             request.userId(),
             request.email(),
             request.password(),
-            UserRole.DRIVER,
+            role,
             tenantId,
             request.firstName(),
             request.lastName(),
@@ -136,7 +138,8 @@ public class GestionaleDriverController {
                                @NotEmpty List<@NotBlank String> licenseTypes,
                                @NotEmpty List<@NotBlank String> residentialAddresses,
                                @NotBlank String mobilePhone,
-                               @NotNull LocalDate licenseExpiryDate) {
+                               @NotNull LocalDate licenseExpiryDate,
+                               @NotNull UserRole role) {
     }
 
     record UpdateDriverRequest(@NotBlank String firstName,
@@ -146,7 +149,8 @@ public class GestionaleDriverController {
                                @NotEmpty List<@NotBlank String> licenseTypes,
                                @NotEmpty List<@NotBlank String> residentialAddresses,
                                @NotBlank String mobilePhone,
-                               @NotNull LocalDate licenseExpiryDate) {
+                               @NotNull LocalDate licenseExpiryDate,
+                               @NotNull UserRole role) {
     }
 
     record UpdateEnabledRequest(@NotNull Boolean enabled) {

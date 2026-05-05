@@ -2,6 +2,7 @@ package com.rideops.services.adapters.in;
 
 import com.rideops.identity.application.IdentityUserDetails;
 import com.rideops.services.application.CloseServiceUseCase;
+import com.rideops.services.application.GetServiceUseCase;
 import com.rideops.services.application.ListDriverServicesUseCase;
 import com.rideops.services.application.ServiceDto;
 import com.rideops.services.application.ServiceNotFoundException;
@@ -27,16 +28,19 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/driver/services")
-@PreAuthorize("hasAnyRole('ADMIN','DRIVER')")
+@PreAuthorize("hasAnyRole('ADMIN','DRIVER','DRIVER_FREELANCER')")
 public class DriverServicesController {
 
     private final ListDriverServicesUseCase listDriverServicesUseCase;
     private final CloseServiceUseCase closeServiceUseCase;
+    private final GetServiceUseCase getServiceUseCase;
 
     public DriverServicesController(ListDriverServicesUseCase listDriverServicesUseCase,
-                                    CloseServiceUseCase closeServiceUseCase) {
+                                    CloseServiceUseCase closeServiceUseCase,
+                                    GetServiceUseCase getServiceUseCase) {
         this.listDriverServicesUseCase = listDriverServicesUseCase;
         this.closeServiceUseCase = closeServiceUseCase;
+        this.getServiceUseCase = getServiceUseCase;
     }
 
     @GetMapping
@@ -54,6 +58,19 @@ public class DriverServicesController {
         }
         // Single entry point for driver service listing, optionally constrained by time/status/type.
         return listDriverServicesUseCase.execute(user.getId(), from, to, status, type);
+    }
+
+    @GetMapping("/{serviceId}")
+    public ServiceDto getById(@PathVariable Long serviceId,
+                              @AuthenticationPrincipal IdentityUserDetails user) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non autorizzato");
+        }
+        ServiceDto service = getServiceUseCase.execute(serviceId);
+        if (!Objects.equals(service.assignedDriverId(), user.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accesso non consentito a questo servizio");
+        }
+        return service;
     }
 
     @PatchMapping("/{serviceId}/close")
