@@ -26,7 +26,8 @@ public class UpdateDriverUseCase {
                                   List<String> licenseTypes,
                                   List<String> residentialAddresses,
                                   String mobilePhone,
-                                  LocalDate licenseExpiryDate) {
+                                  LocalDate licenseExpiryDate,
+                                  UserRole role) {
         Long safeDriverId = Objects.requireNonNull(driverId, "driverId obbligatorio");
         var driver = userAdminRepositoryPort.findById(safeDriverId)
             .orElseThrow(() -> new UserAdminNotFoundException("Driver non trovato"));
@@ -34,6 +35,9 @@ public class UpdateDriverUseCase {
         if (!driver.getRole().isDriverRole()) {
             throw new UserAdminValidationException("L'utente non e` un driver");
         }
+
+        UserRole safeRole = (role == UserRole.DRIVER_FREELANCER) ? UserRole.DRIVER_FREELANCER : UserRole.DRIVER;
+        driver.setRole(safeRole);
 
         var profile = createUserUseCase.validateAndBuildDriverProfile(
             firstName,
