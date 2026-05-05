@@ -723,6 +723,7 @@ export function ServicesPanel() {
   useEffect(() => {
     loadServices();
     setCurrentPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.status, filters.driverId, filters.fromDate, filters.toDate, filters.onlyUnassigned]);
 
   function resetForm() {
@@ -1260,6 +1261,7 @@ export function ServicesPanel() {
     if (!orderedServices.some((item) => item.id === selectedServiceId)) {
       selectService(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderedServices, selectedServiceId]);
 
   useEffect(() => {

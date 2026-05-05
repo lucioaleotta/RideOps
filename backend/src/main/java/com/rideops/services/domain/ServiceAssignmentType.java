@@ -27,10 +27,10 @@ package com.rideops.services.domain;
  *
  * Transizioni consentite tra tipi in fase di aggiornamento:
  * <pre>
- * INTERNAL            -> OUTSOURCED, INCOMING, INCOMING_OUTSOURCED
- * OUTSOURCED          -> INTERNAL, INCOMING, INCOMING_OUTSOURCED
- * INCOMING            -> INTERNAL, OUTSOURCED, INCOMING_OUTSOURCED
- * INCOMING_OUTSOURCED -> INTERNAL, OUTSOURCED, INCOMING
+ * INTERNAL            {@literal ->} OUTSOURCED, INCOMING, INCOMING_OUTSOURCED
+ * OUTSOURCED          {@literal ->} INTERNAL, INCOMING, INCOMING_OUTSOURCED
+ * INCOMING            {@literal ->} INTERNAL, OUTSOURCED, INCOMING_OUTSOURCED
+ * INCOMING_OUTSOURCED {@literal ->} INTERNAL, OUTSOURCED, INCOMING
  * </pre>
  */
 public enum ServiceAssignmentType {
