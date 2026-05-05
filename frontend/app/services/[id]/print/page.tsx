@@ -87,20 +87,26 @@ export default async function ServicePrintPage({ params }: { params: { id: strin
 
   const service = (await response.json()) as ServiceDetail;
 
-  // Fetch parallelo di driver e veicolo se assegnati (solo per ruoli gestionale/admin)
-  const [driversRes, vehiclesRes] = isDriver
-    ? [null, null]
-    : await Promise.all([
-        service.assignedDriverId
-          ? fetch(`${backendUrl}/gestionale/drivers`, { headers: authHeaders, cache: 'no-store' })
-          : Promise.resolve(null),
-        service.assignedVehicleId
-          ? fetch(`${backendUrl}/fleet/vehicles`, { headers: authHeaders, cache: 'no-store' })
-          : Promise.resolve(null)
-      ]);
+  // Fetch driver e veicolo: per i driver usiamo /driver/profile e /fleet/vehicles,
+  // per gestionale/admin usiamo /gestionale/drivers e /fleet/vehicles
+  const driverProfileEndpoint = isDriver ? `${backendUrl}/driver/profile` : null;
+  const driversListEndpoint = !isDriver && service.assignedDriverId ? `${backendUrl}/gestionale/drivers` : null;
+  const vehiclesEndpoint = service.assignedVehicleId ? `${backendUrl}/fleet/vehicles` : null;
 
-  const driversList: DriverDetail[] = driversRes?.ok ? (await driversRes.json()) as DriverDetail[] : [];
-  const driver: DriverDetail | null = driversList.find((d) => d.id === service.assignedDriverId) ?? null;
+  const [driverProfileRes, driversListRes, vehiclesRes] = await Promise.all([
+    driverProfileEndpoint ? fetch(driverProfileEndpoint, { headers: authHeaders, cache: 'no-store' }) : Promise.resolve(null),
+    driversListEndpoint ? fetch(driversListEndpoint, { headers: authHeaders, cache: 'no-store' }) : Promise.resolve(null),
+    vehiclesEndpoint ? fetch(vehiclesEndpoint, { headers: authHeaders, cache: 'no-store' }) : Promise.resolve(null)
+  ]);
+
+  let driver: DriverDetail | null = null;
+  if (isDriver && driverProfileRes?.ok) {
+    driver = (await driverProfileRes.json()) as DriverDetail;
+  } else if (!isDriver && driversListRes?.ok) {
+    const driversList: DriverDetail[] = (await driversListRes.json()) as DriverDetail[];
+    driver = driversList.find((d) => d.id === service.assignedDriverId) ?? null;
+  }
+
   const vehiclesList: VehicleDetail[] = vehiclesRes?.ok ? (await vehiclesRes.json()) as VehicleDetail[] : [];
   const vehicle: VehicleDetail | null = vehiclesList.find((v) => v.id === service.assignedVehicleId) ?? null;
 

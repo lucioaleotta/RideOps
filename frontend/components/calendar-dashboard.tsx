@@ -284,10 +284,6 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
   }, [driverMode]);
 
   useEffect(() => {
-    if (driverMode) {
-      return;
-    }
-
     async function loadVehicles() {
       const response = await fetch('/api/fleet/vehicles', { cache: 'no-store' });
       const payload = (await response.json().catch(() => [])) as VehicleItem[] | { message?: string };
@@ -760,6 +756,15 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
                     <span className="services-selected-chip" style={{ background: '#f0f4f9', color: '#4a5568', border: '1px solid #dce8f5' }}>
                       {selectedService.internalBookingReference}
                     </span>
+                  )}
+                  {!driverMode && selectedService.serviceAssignmentType === 'INCOMING' && (
+                    <span className="services-selected-chip services-selected-chip-partner-incoming">Ricevuto</span>
+                  )}
+                  {!driverMode && selectedService.serviceAssignmentType === 'OUTSOURCED' && (
+                    <span className="services-selected-chip services-selected-chip-partner-outsourced">Affidato</span>
+                  )}
+                  {!driverMode && selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
+                    <span className="services-selected-chip services-selected-chip-status assigned">Ricevuto/Affidato</span>
                   )}
                 </div>
 
