@@ -62,19 +62,30 @@ class OutsourceServiceUseCaseTest {
     }
 
     @Test
-    void rejectOutsourceWhenServiceIncoming() {
+    void outsourceServiceWhenIncoming() {
         RideServiceEntity entity = sampleService();
         entity.setServiceAssignmentType(ServiceAssignmentType.INCOMING);
+        entity.setPartnerId(999L);
+        entity.setAssignedDriverId(77L);
+        entity.setAssignedByUserId(88L);
+        entity.setAssignedAt(LocalDateTime.now().minusMinutes(5));
+        entity.setAssignedVehicleId(99L);
+        entity.setStatus(ServiceStatus.ASSIGNED);
+        PartnerEntity partner = new PartnerEntity();
+        partner.setDeleted(false);
 
         when(serviceRepositoryPort.findById(10L)).thenReturn(Optional.of(entity));
+        when(partnerRepository.findByIdAndTenantId(20L, 1L)).thenReturn(Optional.of(partner));
+        when(serviceRepositoryPort.save(entity)).thenReturn(entity);
 
-        ServiceValidationException exception = assertThrows(
-            ServiceValidationException.class,
-            () -> useCase.execute(10L, 20L, new BigDecimal("50"))
-        );
+        ServiceDto result = useCase.execute(10L, 20L, new BigDecimal("50"));
 
-        assertEquals("Un servizio INCOMING non puo` essere affidato a partner", exception.getMessage());
-        verify(serviceRepositoryPort, never()).save(entity);
+        assertEquals(ServiceAssignmentType.INCOMING_OUTSOURCED, result.serviceAssignmentType());
+        assertEquals(20L, result.outgoingPartnerId());
+        assertEquals(999L, result.partnerId());
+        assertEquals(new BigDecimal("50"), result.pricePartner());
+        assertNull(result.assignedDriverId());
+        verify(serviceRepositoryPort).save(entity);
     }
 
     @Test
