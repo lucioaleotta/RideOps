@@ -1,10 +1,12 @@
 package com.rideops.services.adapters.out;
 
 import com.rideops.services.application.ServiceRepositoryPort;
+import com.rideops.services.domain.ServiceAssignmentType;
 import com.rideops.services.domain.ServiceStatus;
 import com.rideops.services.domain.ServiceType;
 import com.rideops.multitenancy.TenantContext;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -82,8 +84,12 @@ public class RideServiceJpaAdapter implements ServiceRepositoryPort {
     }
 
     @Override
-    public long countByAssignedDriverIdIsNullAndStatus(ServiceStatus status) {
-        return rideServiceRepository.countByAssignedDriverIdIsNullAndStatusAndTenantId(status, tenantContext.requireTenantId());
+    public long countUnassignedOpenInternalServices() {
+        return rideServiceRepository.countByAssignedDriverIdIsNullAndStatusAndServiceAssignmentTypeNotInAndTenantId(
+            ServiceStatus.OPEN,
+            EnumSet.of(ServiceAssignmentType.OUTSOURCED, ServiceAssignmentType.INCOMING_OUTSOURCED),
+            tenantContext.requireTenantId()
+        );
     }
 
     @Override

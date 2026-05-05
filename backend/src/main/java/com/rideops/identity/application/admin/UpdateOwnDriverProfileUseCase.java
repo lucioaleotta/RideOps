@@ -37,7 +37,7 @@ public class UpdateOwnDriverProfileUseCase {
         var user = userAdminRepositoryPort.findById(safeUserId)
             .orElseThrow(() -> new UserAdminNotFoundException("Driver non trovato"));
 
-        if (user.getRole() != UserRole.DRIVER && user.getRole() != UserRole.DRIVER_FREELANCER) {
+        if (!user.getRole().isDriverRole()) {
             throw new UserAdminValidationException("L'utente non e` un driver");
         }
 

@@ -41,10 +41,6 @@ public class OutsourceServiceUseCase {
             throw new ServiceValidationException("Un servizio ESEGUITO/CLOSED non puo` essere affidato a partner");
         }
 
-        if (entity.getServiceAssignmentType() == ServiceAssignmentType.INCOMING) {
-            throw new ServiceValidationException("Un servizio INCOMING non puo` essere affidato a partner");
-        }
-
         if (pricePartner.signum() < 0) {
             throw new ServiceValidationException("Il prezzo partner non puo` essere negativo");
         }
@@ -56,10 +52,25 @@ public class OutsourceServiceUseCase {
             throw new ServiceValidationException("Partner non valido o non attivo");
         }
 
-        entity.setServiceAssignmentType(ServiceAssignmentType.OUTSOURCED);
-        entity.setPartnerId(partnerId);
+        if (entity.getServiceAssignmentType() == ServiceAssignmentType.INCOMING) {
+            // Servizio ricevuto da Agenzia A (entity.partnerId rimane invariato) e
+            // ora affidato in esecuzione a NCC B (outgoingPartnerId).
+            entity.setServiceAssignmentType(ServiceAssignmentType.INCOMING_OUTSOURCED);
+            entity.setOutgoingPartnerId(partnerId);
+        } else {
+            entity.setServiceAssignmentType(ServiceAssignmentType.OUTSOURCED);
+            entity.setPartnerId(partnerId);
+            entity.setOutgoingPartnerId(null);
+        }
         entity.setPricePartner(pricePartner);
         entity.setMargin(ServiceValidationSupport.calculateMargin(entity.getPrice(), pricePartner));
+        entity.setAssignedDriverId(null);
+        entity.setAssignedByUserId(null);
+        entity.setAssignedAt(null);
+        entity.setAssignedVehicleId(null);
+        if (entity.getStatus() == ServiceStatus.ASSIGNED) {
+            entity.setStatus(ServiceStatus.OPEN);
+        }
 
         return ServiceMapper.toDto(serviceRepositoryPort.save(entity));
     }

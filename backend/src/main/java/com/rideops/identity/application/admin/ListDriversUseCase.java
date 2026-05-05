@@ -3,7 +3,6 @@ package com.rideops.identity.application.admin;
 import com.rideops.identity.domain.UserRole;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,10 +15,8 @@ public class ListDriversUseCase {
     }
 
     public List<UserSummaryDto> execute(boolean includeDeleted) {
-        return Stream.concat(
-                userAdminRepositoryPort.findAllByRoleOrderByCreatedAtDesc(UserRole.DRIVER).stream(),
-                userAdminRepositoryPort.findAllByRoleOrderByCreatedAtDesc(UserRole.DRIVER_FREELANCER).stream()
-            )
+        return userAdminRepositoryPort.findAllByRoleInOrderByCreatedAtDesc(UserRole.driverRoles())
+            .stream()
             .filter(user -> includeDeleted || user.isEnabled())
             .sorted(Comparator
                 .comparing((com.rideops.identity.adapters.out.UserEntity user) -> user.isEnabled() ? 0 : 1)

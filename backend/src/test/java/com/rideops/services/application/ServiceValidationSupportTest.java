@@ -1,5 +1,6 @@
 package com.rideops.services.application;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,16 +61,18 @@ class ServiceValidationSupportTest {
     }
 
     @Test
-    void rejectIncomingToInternalTransition() {
-        ServiceValidationException exception = assertThrows(
-            ServiceValidationException.class,
-            () -> ServiceValidationSupport.validateAssignmentTransition(
-                ServiceAssignmentType.INCOMING,
-                ServiceAssignmentType.INTERNAL
-            )
-        );
-
-        assertEquals("Un servizio INCOMING non puo` diventare INTERNAL", exception.getMessage());
+    void allowAllAssignmentTypeTransitions() {
+        // Tutte le transizioni tra tipi sono consentite.
+        assertDoesNotThrow(() -> ServiceValidationSupport.validateAssignmentTransition(
+            ServiceAssignmentType.INCOMING, ServiceAssignmentType.INTERNAL));
+        assertDoesNotThrow(() -> ServiceValidationSupport.validateAssignmentTransition(
+            ServiceAssignmentType.INCOMING_OUTSOURCED, ServiceAssignmentType.INTERNAL));
+        assertDoesNotThrow(() -> ServiceValidationSupport.validateAssignmentTransition(
+            ServiceAssignmentType.INCOMING_OUTSOURCED, ServiceAssignmentType.OUTSOURCED));
+        assertDoesNotThrow(() -> ServiceValidationSupport.validateAssignmentTransition(
+            ServiceAssignmentType.INTERNAL, ServiceAssignmentType.OUTSOURCED));
+        assertDoesNotThrow(() -> ServiceValidationSupport.validateAssignmentTransition(
+            ServiceAssignmentType.OUTSOURCED, ServiceAssignmentType.INCOMING));
     }
 
     @Test

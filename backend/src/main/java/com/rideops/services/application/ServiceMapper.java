@@ -8,6 +8,12 @@ public final class ServiceMapper {
     }
 
     public static ServiceDto toDto(RideServiceEntity entity) {
+        return toDto(entity, null, null);
+    }
+
+    public static ServiceDto toDto(RideServiceEntity entity,
+                                   String partnerRagioneSociale,
+                                   String outgoingPartnerRagioneSociale) {
         return new ServiceDto(
             entity.getId(),
             entity.getStartAt(),
@@ -31,8 +37,11 @@ public final class ServiceMapper {
             entity.getAssignedAt(),
             entity.getServiceAssignmentType(),
             entity.getPartnerId(),
+            partnerRagioneSociale,
             entity.getPricePartner(),
             entity.getMargin(),
+            entity.getOutgoingPartnerId(),
+            outgoingPartnerRagioneSociale,
             entity.getCreatedAt(),
             entity.getUpdatedAt()
         );

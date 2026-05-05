@@ -78,13 +78,30 @@ final class ServiceValidationSupport {
             return;
         }
 
-        if (partnerId == null) {
-            throw new ServiceValidationException("Il partner e` obbligatorio per servizi OUTSOURCED/INCOMING");
-        }
-
         if (safeType == ServiceAssignmentType.OUTSOURCED) {
+            if (partnerId == null) {
+                throw new ServiceValidationException("Il partner e` obbligatorio per servizi OUTSOURCED/INCOMING");
+            }
             if (pricePartner == null || pricePartner.signum() < 0) {
                 throw new ServiceValidationException("Il prezzo partner e` obbligatorio e non negativo per OUTSOURCED");
+            }
+            return;
+        }
+
+        if (safeType == ServiceAssignmentType.INCOMING) {
+            if (partnerId == null) {
+                throw new ServiceValidationException("Il partner e` obbligatorio per servizi OUTSOURCED/INCOMING");
+            }
+            if (pricePartner != null && pricePartner.signum() < 0) {
+                throw new ServiceValidationException("Il prezzo partner non puo` essere negativo");
+            }
+            return;
+        }
+
+        if (safeType == ServiceAssignmentType.INCOMING_OUTSOURCED) {
+            // In update mode i partner incoming/outgoing possono essere modificati o azzerati.
+            if (pricePartner != null && pricePartner.signum() < 0) {
+                throw new ServiceValidationException("Il prezzo partner non puo` essere negativo");
             }
             return;
         }
@@ -95,12 +112,14 @@ final class ServiceValidationSupport {
     }
 
     static void validateAssignmentTransition(ServiceAssignmentType currentType, ServiceAssignmentType targetType) {
-        ServiceAssignmentType safeCurrent = sanitizeCreateAssignmentType(currentType);
-        ServiceAssignmentType safeTarget = sanitizeCreateAssignmentType(targetType);
+        // Tutte le transizioni tra tipi sono consentite.
+        // Vedere ServiceAssignmentType per la matrice completa delle transizioni.
+    }
 
-        if (safeCurrent == ServiceAssignmentType.INCOMING && safeTarget == ServiceAssignmentType.INTERNAL) {
-            throw new ServiceValidationException("Un servizio INCOMING non puo` diventare INTERNAL");
-        }
+    static boolean isPartnerManaged(ServiceAssignmentType assignmentType) {
+        ServiceAssignmentType safeType = sanitizeCreateAssignmentType(assignmentType);
+        return safeType == ServiceAssignmentType.OUTSOURCED
+            || safeType == ServiceAssignmentType.INCOMING_OUTSOURCED;
     }
 
     static BigDecimal calculateMargin(BigDecimal servicePrice, BigDecimal pricePartner) {

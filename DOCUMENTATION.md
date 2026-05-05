@@ -251,7 +251,73 @@ git push -u origin feature/ISSUE-XXX-description
 
 ---
 
-## 🚨 Emergency Contacts & Escalation
+## � Regole di Business: Tipi di Assegnazione Servizio (`ServiceAssignmentType`)
+
+Ogni servizio ha un tipo di assegnazione che determina **chi ha fornito il servizio** e **chi lo esegue**. Queste regole sono fondamentali e impattano frontend (form, dettaglio, storico) e backend (validazioni).
+
+### I quattro tipi
+
+| Tipo | Chi acquisisce | Chi esegue | `partnerId` | `outgoingPartnerId` | `pricePartner` |
+|---|---|---|---|---|---|
+| `INTERNAL` | Azienda | Azienda (driver interno) | — | — | — |
+| `OUTSOURCED` | Azienda | Partner esecutore (NCC) | Partner Esecutore | — | obbligatorio |
+| `INCOMING` | Partner fornitore | Azienda (driver interno) | Partner Fornitore | — | — |
+| `INCOMING_OUTSOURCED` | Partner fornitore | Partner esecutore (NCC) | Partner Fornitore | Partner Esecutore | obbligatorio |
+
+### Transizioni consentite
+
+Tutte le transizioni tra i quattro tipi sono permesse (nessuna restrizione):
+
+```
+INTERNAL            → OUTSOURCED, INCOMING, INCOMING_OUTSOURCED
+OUTSOURCED          → INTERNAL, INCOMING, INCOMING_OUTSOURCED
+INCOMING            → INTERNAL, OUTSOURCED, INCOMING_OUTSOURCED
+INCOMING_OUTSOURCED → INTERNAL, OUTSOURCED, INCOMING
+```
+
+> Implementato in `ServiceValidationSupport.validateAssignmentTransition` (metodo no-op, nessuna restrizione).
+
+### Comportamento del pannello dettaglio
+
+- **INTERNAL**: nessun campo partner mostrato.
+- **OUTSOURCED**: mostra "Partner Esecutore" (`partnerId`) + "Prezzo Partner Esecutore" + "Margine". Mostra il tasto **Chiudi servizio** (cambia status → `CLOSED`) perché il workflow tradizionale (ESEGUITO) non si applica.
+- **INCOMING**: mostra solo "Partner Fornitore" (`partnerId`). Nessun prezzo partner né margine.
+- **INCOMING_OUTSOURCED**: mostra "Partner Fornitore" (`partnerId`) + "Partner Esecutore" (`outgoingPartnerId`) + "Prezzo Partner Esecutore" + "Margine". Mostra il tasto **Chiudi servizio** per lo stesso motivo di OUTSOURCED.
+
+Il pannello **Storico partner servizio** è visibile solo per i tipi partner-managed (`OUTSOURCED`, `INCOMING_OUTSOURCED`).
+
+### Comportamento della form di modifica
+
+I campi della form si adattano dinamicamente al tipo:
+
+| Tipo | Campo visibile | Label |
+|---|---|---|
+| `OUTSOURCED` | `partnerId` | "Partner Esecutore" |
+| `OUTSOURCED` | select aggiuntivo (→ promuove a INCOMING_OUTSOURCED) | "Partner Fornitore (opzionale)" |
+| `INCOMING` | `partnerId` | "Partner Fornitore" |
+| `INCOMING_OUTSOURCED` | `partnerId` | "Partner Fornitore" |
+| `INCOMING_OUTSOURCED` | `outgoingPartnerId` | "Partner Esecutore" |
+| `OUTSOURCED` / `INCOMING_OUTSOURCED` | `pricePartner` | "Prezzo al Partner Esecutore" |
+
+### Logica di promozione/deselection automatica
+
+| Azione | Risultato |
+|---|---|
+| Checkbox "Ricevuto da partner" attivato (da INTERNAL/OUTSOURCED) | → `INCOMING` |
+| Selezione "Partner Fornitore (opzionale)" su OUTSOURCED | → `INCOMING_OUTSOURCED`; l'esecutore corrente passa su `outgoingPartnerId`, il fornitore selezionato diventa `partnerId` |
+| Deselection `partnerId` su INCOMING_OUTSOURCED con esecutore presente | → `OUTSOURCED`; l'esecutore (`outgoingPartnerId`) torna su `partnerId` |
+| Deselection `partnerId` su INCOMING_OUTSOURCED senza esecutore | → `INCOMING` |
+| Deselection `partnerId` su INCOMING | → `INTERNAL` |
+| Deselection `partnerId` su OUTSOURCED | → `INTERNAL` |
+| Deselection `outgoingPartnerId` su INCOMING_OUTSOURCED | → `INCOMING`; `pricePartner` azzerato |
+
+### Chiusura manuale servizi OUTSOURCED / INCOMING_OUTSOURCED
+
+I servizi `OUTSOURCED` e `INCOMING_OUTSOURCED` non passano per il normale workflow `ASSIGNED → EXECUTED`. Il tasto **Chiudi servizio** (visibile nel dettaglio solo per questi due tipi, quando lo status non è già `CLOSED` o `EXECUTED`) chiama `PATCH /api/services/{id}/close` e porta lo status direttamente in `CLOSED`.
+
+---
+
+## �🚨 Emergency Contacts & Escalation
 
 | Issue | Channel | Priority |
 |-------|---------|----------|
@@ -270,6 +336,6 @@ git push -u origin feature/ISSUE-XXX-description
 
 ---
 
-**Last Updated:** March 12, 2026  
+**Last Updated:** May 5, 2026  
 **Version:** 1.0  
 **Maintained By:** Development Team

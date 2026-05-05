@@ -1,6 +1,7 @@
 package com.rideops.services.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -95,6 +96,11 @@ class OutsourceServiceUseCaseTest {
     @Test
     void outsourceServiceAndCalculateMargin() {
         RideServiceEntity entity = sampleService();
+        entity.setAssignedDriverId(77L);
+        entity.setAssignedByUserId(88L);
+        entity.setAssignedAt(LocalDateTime.now().minusMinutes(5));
+        entity.setAssignedVehicleId(99L);
+        entity.setStatus(ServiceStatus.ASSIGNED);
         PartnerEntity partner = new PartnerEntity();
         partner.setDeleted(false);
 
@@ -108,6 +114,9 @@ class OutsourceServiceUseCaseTest {
         assertEquals(20L, dto.partnerId());
         assertEquals(new BigDecimal("95.00"), dto.pricePartner());
         assertEquals(new BigDecimal("55.00"), dto.margin());
+        assertNull(dto.assignedDriverId());
+        assertNull(dto.assignedVehicleId());
+        assertEquals(ServiceStatus.OPEN, dto.status());
         verify(serviceRepositoryPort).save(entity);
     }
 

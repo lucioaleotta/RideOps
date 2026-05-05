@@ -4,10 +4,9 @@ import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeftIcon, ArrowRightIcon, ButtonContent, LockIcon, OpenIcon, SelectIcon, TodayIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
-import { StatusNotice } from './status-notice';
 
 type ViewMode = 'month' | 'week' | 'day';
-type ServiceType = 'TRANSFER' | 'TOUR' | 'DISPOSIZIONE';
+type ServiceType = 'TRANSFER' | 'TOUR';
 type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
 
 type ServiceItem = {
@@ -19,7 +18,7 @@ type ServiceItem = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
-  externalBookingReference: string | null;
+  externalBookingReference: number | null;
   internalBookingReference: string | null;
   clientName: string | null;
   clientPhone: string | null;
@@ -29,7 +28,11 @@ type ServiceItem = {
   status: ServiceStatus;
   assignedDriverId: number | null;
   assignedVehicleId: number | null;
-  serviceAssignmentType: 'INTERNAL' | 'OUTSOURCED' | 'INCOMING';
+  serviceAssignmentType: 'INTERNAL' | 'OUTSOURCED' | 'INCOMING' | 'INCOMING_OUTSOURCED';
+  partnerId: number | null;
+  partnerRagioneSociale: string | null;
+  outgoingPartnerId: number | null;
+  outgoingPartnerRagioneSociale: string | null;
   assignedByUserId: number | null;
   assignedAt: string | null;
   createdAt: string;
@@ -468,9 +471,7 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
   }
 
   function typeLabel(type: ServiceType) {
-    if (type === 'TRANSFER') return 'Transfer';
-    if (type === 'DISPOSIZIONE') return 'Disposizione';
-    return 'Tour';
+    return type === 'TRANSFER' ? 'Transfer' : 'Tour';
   }
 
   function vehicleLabel(vehicleId: number | null) {
@@ -670,7 +671,7 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
           </div>
         </div>
 
-        <div className="responsive-filters-grid portal-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
+        <div className="responsive-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginTop: 12 }}>
           {!driverMode && (
             <label>
               Driver
@@ -712,14 +713,13 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
               <option value="">Tutte</option>
               <option value="TRANSFER">TRANSFER</option>
               <option value="TOUR">TOUR</option>
-              <option value="DISPOSIZIONE">DISPOSIZIONE</option>
             </select>
           </label>
         </div>
       </article>
 
-      {error && <StatusNotice tone="error">{error}</StatusNotice>}
-      {success && <StatusNotice tone="success">{success}</StatusNotice>}
+      {error && <p className="error-text">{error}</p>}
+      {success && <p className="success-text">{success}</p>}
       {loading && <p>Caricamento calendario...</p>}
 
       {!loading && !error && (
@@ -757,6 +757,15 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
                       {selectedService.internalBookingReference}
                     </span>
                   )}
+                  {!driverMode && selectedService.serviceAssignmentType === 'INCOMING' && (
+                    <span className="services-selected-chip services-selected-chip-partner-incoming">Ricevuto</span>
+                  )}
+                  {!driverMode && selectedService.serviceAssignmentType === 'OUTSOURCED' && (
+                    <span className="services-selected-chip services-selected-chip-partner-outsourced">Affidato</span>
+                  )}
+                  {!driverMode && selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
+                    <span className="services-selected-chip services-selected-chip-status assigned">Ricevuto/Affidato</span>
+                  )}
                 </div>
 
                 {/* Sezione logistica */}
@@ -777,10 +786,60 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
 
                 {calDetailDivider}
 
+                {/* Sezione partner (solo per servizi con partner) */}
+                {selectedService.serviceAssignmentType !== 'INTERNAL' && (
+                  <>
+                    <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
+                      {selectedService.serviceAssignmentType === 'OUTSOURCED' && (
+                        <>
+                          <CalDetailRow
+                            icon={<CalUserIcon />}
+                            label="Affidato a"
+                            value={selectedService.partnerRagioneSociale ?? '—'}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #7f8ea3)', paddingLeft: 2 }}>
+                            Servizio affidato a partner esecutore
+                          </span>
+                        </>
+                      )}
+                      {selectedService.serviceAssignmentType === 'INCOMING' && (
+                        <>
+                          <CalDetailRow
+                            icon={<CalUserIcon />}
+                            label="Ricevuto da"
+                            value={selectedService.partnerRagioneSociale ?? '—'}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #7f8ea3)', paddingLeft: 2 }}>
+                            Servizio ricevuto da partner fornitore
+                          </span>
+                        </>
+                      )}
+                      {selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
+                        <>
+                          <CalDetailRow
+                            icon={<CalUserIcon />}
+                            label="Ricevuto da"
+                            value={selectedService.partnerRagioneSociale ?? '—'}
+                          />
+                          <CalDetailRow
+                            icon={<CalUserIcon />}
+                            label="Affidato a"
+                            value={selectedService.outgoingPartnerRagioneSociale ?? '—'}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #7f8ea3)', paddingLeft: 2 }}>
+                            Ricevuto da fornitore e affidato a partner esecutore
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {calDetailDivider}
+                  </>
+                )}
+
                 {/* Sezione riferimenti */}
                 <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
                   <CalDetailRow icon={<CalDocIcon />} label="Rif. interno" value={selectedService.internalBookingReference ?? '—'} />
-                  <CalDetailRow icon={<CalDocIcon />} label="Rif. esterno" value={selectedService.externalBookingReference ?? '—'} />
+                  <CalDetailRow icon={<CalDocIcon />} label="Rif. esterno" value={selectedService.externalBookingReference != null ? String(selectedService.externalBookingReference) : '—'} />
                 </div>
 
                 {calDetailDivider}

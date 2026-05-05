@@ -8,7 +8,7 @@ import { formatCurrencyEUR } from '../lib/currency';
 
 type ServiceType = 'TRANSFER' | 'TOUR' | 'DISPOSIZIONE';
 type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
-type ServiceAssignmentType = 'INTERNAL' | 'OUTSOURCED' | 'INCOMING';
+type ServiceAssignmentType = 'INTERNAL' | 'OUTSOURCED' | 'INCOMING' | 'INCOMING_OUTSOURCED';
 
 type ServiceItem = {
   id: number;
@@ -35,6 +35,7 @@ type ServiceItem = {
   partnerId: number | null;
   pricePartner: number | null;
   margin: number | null;
+  outgoingPartnerId: number | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -61,6 +62,9 @@ type ServicePartnerHistoryItem = {
   partnerEmail: string | null;
   pricePartner: number | null;
   margin: number | null;
+  outgoingPartnerId: number | null;
+  outgoingPartnerRagioneSociale: string | null;
+  outgoingPartnerEmail: string | null;
   communications: ServicePartnerCommunicationItem[];
 };
 
@@ -92,6 +96,7 @@ type ServiceFormState = {
   itinerary: string;
   serviceAssignmentType: ServiceAssignmentType;
   partnerId: number | '';
+  outgoingPartnerId: number | '';
   pricePartner: string;
   receivedFromPartner: boolean;
   assignedDriverId: number | '';
@@ -140,6 +145,7 @@ const defaultForm: ServiceFormState = {
   itinerary: '',
   serviceAssignmentType: 'INTERNAL',
   partnerId: '',
+  outgoingPartnerId: '',
   pricePartner: '',
   receivedFromPartner: false,
   assignedDriverId: '',
@@ -174,6 +180,10 @@ function formatFilterDate(dateValue: string) {
     month: '2-digit',
     year: 'numeric'
   }).format(parsedDate);
+}
+
+function isPartnerManagedAssignment(type: ServiceAssignmentType) {
+  return type === 'OUTSOURCED' || type === 'INCOMING_OUTSOURCED';
 }
 
 function MobileClockIcon() {
@@ -509,6 +519,7 @@ export function ServicesPanel() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [newButtonPortalTarget, setNewButtonPortalTarget] = useState<HTMLElement | null>(null);
   const [rowMenuServiceId, setRowMenuServiceId] = useState<number | null>(null);
+  const [deleteConfirmServiceId, setDeleteConfirmServiceId] = useState<number | null>(null);
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
 
@@ -568,6 +579,9 @@ export function ServicesPanel() {
     if (type === 'INCOMING') {
       return 'Ricevuto';
     }
+    if (type === 'INCOMING_OUTSOURCED') {
+      return 'Ricevuto/Affidato';
+    }
     return 'Interno';
   }
 
@@ -577,6 +591,9 @@ export function ServicesPanel() {
     }
     if (type === 'INCOMING') {
       return 'open';
+    }
+    if (type === 'INCOMING_OUTSOURCED') {
+      return 'assigned';
     }
     return 'closed';
   }
@@ -678,7 +695,9 @@ export function ServicesPanel() {
 
     const nextServices = payload as ServiceItem[];
     const filteredServices = filters.onlyUnassigned
-      ? nextServices.filter((service) => !service.assignedDriverId)
+      ? nextServices.filter(
+          (service) => !service.assignedDriverId && !isPartnerManagedAssignment(service.serviceAssignmentType)
+        )
       : nextServices;
 
     setServices(filteredServices);
@@ -729,6 +748,7 @@ export function ServicesPanel() {
     const assignmentType: ServiceAssignmentType = form.receivedFromPartner
       ? 'INCOMING'
       : form.serviceAssignmentType;
+    const partnerManagedAssignment = isPartnerManagedAssignment(assignmentType);
 
     return {
       startAt: form.startAt,
@@ -747,12 +767,18 @@ export function ServicesPanel() {
       status,
       serviceAssignmentType: assignmentType,
       partnerId: form.partnerId ? Number(form.partnerId) : null,
+      outgoingPartnerId: form.outgoingPartnerId ? Number(form.outgoingPartnerId) : null,
       pricePartner: form.pricePartner.trim() ? Number(form.pricePartner) : null,
-      assignedVehicleId: form.assignedVehicleId ? Number(form.assignedVehicleId) : null
+      assignedVehicleId: partnerManagedAssignment
+        ? null
+        : form.assignedVehicleId ? Number(form.assignedVehicleId) : null
     };
   }
 
   function selectedDriverId(): number | null {
+    if (isPartnerManagedAssignment(form.serviceAssignmentType)) {
+      return null;
+    }
     return form.assignedDriverId ? Number(form.assignedDriverId) : null;
   }
 
@@ -800,11 +826,7 @@ export function ServicesPanel() {
       ? 'INCOMING'
       : form.serviceAssignmentType;
 
-    if ((effectiveAssignmentType === 'INCOMING' || effectiveAssignmentType === 'OUTSOURCED') && !form.partnerId) {
-      setSubmitting(false);
-      setError('Seleziona un partner per servizi ricevuti/affidati');
-      return;
-    }
+
 
     if (effectiveAssignmentType === 'OUTSOURCED' && !form.pricePartner.trim()) {
       setSubmitting(false);
@@ -918,10 +940,11 @@ export function ServicesPanel() {
       itinerary: service.itinerary ?? '',
       serviceAssignmentType: service.serviceAssignmentType,
       partnerId: service.partnerId ?? '',
+      outgoingPartnerId: service.outgoingPartnerId ?? '',
       pricePartner: service.pricePartner != null ? String(service.pricePartner) : '',
-      receivedFromPartner: service.serviceAssignmentType === 'INCOMING',
-      assignedDriverId: service.assignedDriverId ?? '',
-      assignedVehicleId: service.assignedVehicleId ?? ''
+      receivedFromPartner: service.serviceAssignmentType === 'INCOMING' || service.serviceAssignmentType === 'INCOMING_OUTSOURCED',
+      assignedDriverId: isPartnerManagedAssignment(service.serviceAssignmentType) ? '' : service.assignedDriverId ?? '',
+      assignedVehicleId: isPartnerManagedAssignment(service.serviceAssignmentType) ? '' : service.assignedVehicleId ?? ''
     });
   }
 
@@ -961,7 +984,9 @@ export function ServicesPanel() {
   function openOutsourceModal(service: ServiceItem) {
     setOutsourceOpen(true);
     setOutsourcePartnerQuery('');
-    setOutsourcePartnerId(service.partnerId ?? '');
+    // Per INCOMING: il partnerId attuale è l'agenzia mittente (rimane invariato);
+    // il campo esecutore viene scelto dall'utente nel modal → partiamo vuoto.
+    setOutsourcePartnerId(service.serviceAssignmentType === 'INCOMING' ? '' : (service.partnerId ?? ''));
     setOutsourcePricePartner(service.pricePartner != null ? String(service.pricePartner) : '');
     setError(null);
     setSuccess(null);
@@ -1208,6 +1233,23 @@ export function ServicesPanel() {
     }
     return servicePrice - partnerPrice;
   }, [selectedService, outsourcePricePartner]);
+
+  const formPartnerManagedAssignment = useMemo(
+    () => isPartnerManagedAssignment(form.serviceAssignmentType),
+    [form.serviceAssignmentType]
+  );
+
+  const editMarginPreview = useMemo(() => {
+    if (!form.price.trim() || !form.pricePartner.trim()) {
+      return null;
+    }
+    const servicePrice = Number(form.price);
+    const partnerPrice = Number(form.pricePartner);
+    if (Number.isNaN(servicePrice) || Number.isNaN(partnerPrice)) {
+      return null;
+    }
+    return servicePrice - partnerPrice;
+  }, [form.price, form.pricePartner]);
 
   useEffect(() => {
     if (!selectedServiceId) {
@@ -1604,21 +1646,41 @@ export function ServicesPanel() {
                       label="Prezzo"
                       value={formatCurrencyEUR(selectedService.price)}
                     />
-                    <ServiceDetailRow
-                      icon={<DetailUserIcon />}
-                      label="Partner"
-                      value={partnerLabel(selectedService.partnerId)}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailEuroIcon />}
-                      label="Prezzo partner"
-                      value={formatCurrencyEUR(selectedService.pricePartner)}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailEuroIcon />}
-                      label="Margine"
-                      value={formatCurrencyEUR(selectedService.margin)}
-                    />
+                    {(selectedService.serviceAssignmentType === 'INCOMING' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+                      <ServiceDetailRow
+                        icon={<DetailUserIcon />}
+                        label="Partner Fornitore"
+                        value={partnerLabel(selectedService.partnerId)}
+                      />
+                    )}
+                    {(selectedService.serviceAssignmentType === 'OUTSOURCED') && (
+                      <ServiceDetailRow
+                        icon={<DetailUserIcon />}
+                        label="Partner Esecutore"
+                        value={partnerLabel(selectedService.partnerId)}
+                      />
+                    )}
+                    {selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
+                      <ServiceDetailRow
+                        icon={<DetailUserIcon />}
+                        label="Partner Esecutore"
+                        value={partnerLabel(selectedService.outgoingPartnerId)}
+                      />
+                    )}
+                    {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+                      <ServiceDetailRow
+                        icon={<DetailEuroIcon />}
+                        label="Prezzo Partner Esecutore"
+                        value={formatCurrencyEUR(selectedService.pricePartner)}
+                      />
+                    )}
+                    {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+                      <ServiceDetailRow
+                        icon={<DetailEuroIcon />}
+                        label="Margine"
+                        value={formatCurrencyEUR(selectedService.margin)}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -1681,7 +1743,7 @@ export function ServicesPanel() {
                   <button
                     type="button"
                     className="primary-button compact-button services-selected-delete"
-                    onClick={() => onDelete(selectedService.id)}
+                    onClick={() => setDeleteConfirmServiceId(selectedService.id)}
                   >
                     <span className="action-button-icon"><ActionDeleteIcon /></span>
                     Elimina
@@ -1696,7 +1758,19 @@ export function ServicesPanel() {
                       Chiudi
                     </button>
                   )}
-                  {selectedService.serviceAssignmentType === 'INTERNAL'
+                  {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED')
+                    && selectedService.status !== 'CLOSED'
+                    && selectedService.status !== 'EXECUTED' && (
+                    <button
+                      type="button"
+                      className="compact-button services-selected-close-service"
+                      onClick={() => onClose(selectedService.id)}
+                    >
+                      <span className="action-button-icon"><ActionLockIcon /></span>
+                      Chiudi servizio
+                    </button>
+                  )}
+                  {(selectedService.serviceAssignmentType === 'INTERNAL' || selectedService.serviceAssignmentType === 'INCOMING')
                     && selectedService.status !== 'CLOSED'
                     && selectedService.status !== 'EXECUTED' && (
                     <button
@@ -1725,7 +1799,7 @@ export function ServicesPanel() {
               </div>
             )}
 
-            {selectedService && (
+            {selectedService && isPartnerManagedAssignment(selectedService.serviceAssignmentType) && (
               <article className="dashboard-card sph-card">
                 <div className="sph-header">
                   <div className="sph-header-title">
@@ -1756,8 +1830,8 @@ export function ServicesPanel() {
                             <path d="M5.7 18.5c1.4-3.1 3.9-4.7 6.3-4.7s5 1.6 6.3 4.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
                           </svg>
                         </span>
-                        <span className="sph-meta-key">PARTNER</span>
-                        <span className="sph-meta-val">{partnerHistory.partnerRagioneSociale ?? '-'}</span>
+                        <span className="sph-meta-key">PARTNER ESECUTORE</span>
+                        <span className="sph-meta-val">{(partnerHistory.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? partnerHistory.outgoingPartnerRagioneSociale : partnerHistory.partnerRagioneSociale) ?? '-'}</span>
                       </span>
                       <span className="sph-meta-sep" aria-hidden="true" />
                       <span className="sph-meta-item">
@@ -1768,9 +1842,9 @@ export function ServicesPanel() {
                           </svg>
                         </span>
                         <span className="sph-meta-key">EMAIL</span>
-                        {partnerHistory.partnerEmail ? (
-                          <a className="sph-meta-link" href={`mailto:${partnerHistory.partnerEmail}`}>
-                            {partnerHistory.partnerEmail}
+                        {(partnerHistory.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? partnerHistory.outgoingPartnerEmail : partnerHistory.partnerEmail) ? (
+                          <a className="sph-meta-link" href={`mailto:${partnerHistory.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? partnerHistory.outgoingPartnerEmail : partnerHistory.partnerEmail}`}>
+                            {partnerHistory.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? partnerHistory.outgoingPartnerEmail : partnerHistory.partnerEmail}
                           </a>
                         ) : (
                           <span className="sph-meta-val">-</span>
@@ -2140,6 +2214,20 @@ export function ServicesPanel() {
             </div>
 
             <div className="services-outsource-modal-grid">
+              {selectedService.serviceAssignmentType === 'INCOMING' && (
+                <div className="services-outsource-modal-field">
+                  <span className="services-outsource-modal-field-label">Partner mittente (Agenzia)</span>
+                  <input
+                    className="form-input services-outsource-input"
+                    value={partnerLabel(selectedService.partnerId)}
+                    readOnly
+                    disabled
+                  />
+                  <small style={{ color: 'var(--color-text-muted, #888)', marginTop: 2 }}>
+                    Il partner che ha inviato il servizio. Rimarrà invariato.
+                  </small>
+                </div>
+              )}
               <label className="services-outsource-modal-field">
                 Cerca partner
                 <div className="services-outsource-input-wrap">
@@ -2159,7 +2247,7 @@ export function ServicesPanel() {
               </label>
 
               <label className="services-outsource-modal-field">
-                Partner
+                {selectedService.serviceAssignmentType === 'INCOMING' ? 'NCC esecutore' : 'Partner'}
                 <select
                   className="form-input services-outsource-input services-outsource-select"
                   value={outsourcePartnerId}
@@ -2173,7 +2261,7 @@ export function ServicesPanel() {
               </label>
 
               <label className="services-outsource-modal-field">
-                Prezzo partner
+                Prezzo al Partner Esecutore
                 <div className="services-outsource-input-wrap">
                   <span className="services-outsource-input-icon" aria-hidden="true">€</span>
                   <input
@@ -2202,6 +2290,46 @@ export function ServicesPanel() {
                   <ButtonContent icon={<SharedPartnerIcon />}>{submitting ? 'Salvataggio...' : 'Conferma affidamento'}</ButtonContent>
                 </button>
                 <button type="button" className="logout-button compact-button services-outsource-cancel" onClick={closeOutsourceModal}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
+              </div>
+            </div>
+          </article>
+        </div>
+      )}
+
+      {deleteConfirmServiceId && (
+        <div className="services-modal-overlay" role="dialog" aria-modal="true" aria-label="Conferma eliminazione servizio">
+          <article className="dashboard-card services-modal-card" style={{ maxWidth: 400 }}>
+            <div className="services-outsource-modal-header">
+              <h3 className="services-outsource-modal-title">Conferma eliminazione</h3>
+              <button
+                type="button"
+                className="services-outsource-modal-close"
+                onClick={() => setDeleteConfirmServiceId(null)}
+                aria-label="Chiudi finestra"
+                title="Chiudi"
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <p style={{ margin: 0, color: 'var(--color-text, #333)' }}>
+                Sei sicuro di voler eliminare il servizio #{deleteConfirmServiceId}? Questa azione non può essere annullata.
+              </p>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button type="button" className="logout-button compact-button" onClick={() => setDeleteConfirmServiceId(null)}>
+                  <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
+                </button>
+                <button
+                  type="button"
+                  className="primary-button compact-button"
+                  onClick={() => {
+                    setDeleteConfirmServiceId(null);
+                    onDelete(deleteConfirmServiceId);
+                  }}
+                  style={{ background: '#d32f2f' }}
+                >
+                  <ButtonContent icon={<ActionDeleteIcon />}>Elimina</ButtonContent>
+                </button>
               </div>
             </div>
           </article>
@@ -2367,7 +2495,7 @@ export function ServicesPanel() {
               />
             </label>
 
-            {!editingId && (
+            {form.serviceAssignmentType !== 'OUTSOURCED' && form.serviceAssignmentType !== 'INCOMING_OUTSOURCED' && (
               <label className="inline-checkbox" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8 }}>
                 <input
                   type="checkbox"
@@ -2385,19 +2513,40 @@ export function ServicesPanel() {
               </label>
             )}
 
-            {(form.receivedFromPartner || form.serviceAssignmentType === 'INCOMING' || form.serviceAssignmentType === 'OUTSOURCED') && (
+            {(form.receivedFromPartner || form.serviceAssignmentType === 'INCOMING' || form.serviceAssignmentType === 'OUTSOURCED' || form.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
               <label>
-                Partner
+                {form.serviceAssignmentType === 'OUTSOURCED' ? 'Partner Esecutore' : 'Partner Fornitore'}
                 <select
                   className="form-input"
                   value={form.partnerId}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      partnerId: event.target.value ? Number(event.target.value) : ''
-                    }))
-                  }
-                  required={form.receivedFromPartner || form.serviceAssignmentType !== 'INTERNAL'}
+                  onChange={(event) => {
+                    const newPartnerId = event.target.value ? Number(event.target.value) : '';
+                    if (!newPartnerId) {
+                      if (form.serviceAssignmentType === 'INCOMING_OUTSOURCED' && form.outgoingPartnerId) {
+                        // Fornitore rimosso ma esecutore ancora presente → torna a OUTSOURCED
+                        setForm((prev) => ({
+                          ...prev,
+                          serviceAssignmentType: 'OUTSOURCED',
+                          partnerId: prev.outgoingPartnerId as number,
+                          outgoingPartnerId: '',
+                          receivedFromPartner: false,
+                        }));
+                      } else {
+                        const wasIncoming = form.serviceAssignmentType === 'INCOMING'
+                          || form.serviceAssignmentType === 'INCOMING_OUTSOURCED';
+                        setForm((prev) => ({
+                          ...prev,
+                          partnerId: '',
+                          outgoingPartnerId: '',
+                          pricePartner: '',
+                          receivedFromPartner: wasIncoming,
+                          serviceAssignmentType: wasIncoming ? 'INCOMING' : 'INTERNAL'
+                        }));
+                      }
+                    } else {
+                      setForm((prev) => ({ ...prev, partnerId: newPartnerId }));
+                    }
+                  }}
                 >
                   <option value="">Seleziona partner</option>
                   {partners.map((partner) => (
@@ -2407,16 +2556,92 @@ export function ServicesPanel() {
               </label>
             )}
 
-            {editingId && (
+            {form.serviceAssignmentType === 'OUTSOURCED' && (
               <label>
-                Modalita` gestione servizio
+                Partner Fornitore (opzionale)
+                <select
+                  className="form-input"
+                  value=""
+                  onChange={(event) => {
+                    const newFornitoreId = event.target.value ? Number(event.target.value) : '';
+                    if (newFornitoreId) {
+                      setForm((prev) => ({
+                        ...prev,
+                        serviceAssignmentType: 'INCOMING_OUTSOURCED',
+                        outgoingPartnerId: prev.partnerId, // esecutore → outgoing
+                        partnerId: newFornitoreId,          // fornitore → partnerId
+                        receivedFromPartner: false,
+                      }));
+                    }
+                  }}
+                >
+                  <option value="">Nessun fornitore</option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>{partner.ragioneSociale}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {form.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
+              <label>
+                Partner Esecutore
+                <select
+                  className="form-input"
+                  value={form.outgoingPartnerId}
+                  onChange={(event) => {
+                    const newOutgoingId = event.target.value ? Number(event.target.value) : '';
+                    if (!newOutgoingId) {
+                      setForm((prev) => ({
+                        ...prev,
+                        outgoingPartnerId: '',
+                        pricePartner: '',
+                        serviceAssignmentType: 'INCOMING'
+                      }));
+                    } else {
+                      setForm((prev) => ({ ...prev, outgoingPartnerId: newOutgoingId }));
+                    }
+                  }}
+                >
+                  <option value="">Nessun partner</option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>{partner.ragioneSociale}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {formPartnerManagedAssignment && (
+              <label>
+                Prezzo al Partner Esecutore
                 <input
                   className="form-input"
-                  value={assignmentTypeLabel(form.serviceAssignmentType)}
-                  readOnly
-                  disabled
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.pricePartner}
+                  onChange={(event) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      pricePartner: event.target.value
+                    }))
+                  }
+                  required={form.serviceAssignmentType === 'OUTSOURCED'}
                 />
+                <small style={{ color: 'var(--muted)' }}>
+                  Margine previsto: {editMarginPreview == null ? '-' : formatCurrencyEUR(editMarginPreview)}
+                </small>
               </label>
+            )}
+
+            {editingId && (form.serviceAssignmentType === 'OUTSOURCED' || form.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+              <div className="services-notice services-notice--info" role="status" aria-live="polite">
+                <span className="services-notice-icon" aria-hidden="true"><ServiceNoticeIcon tone="info" /></span>
+                <div className="services-notice-text">
+                  <strong className="services-notice-title">Assegnazione interna bloccata</strong>
+                  <span>Per inserire driver o veicolo e` necessario prima cancellare l&apos;assegnazione al Partner Esecutore.</span>
+                </div>
+              </div>
             )}
 
             <label>
@@ -2424,6 +2649,7 @@ export function ServicesPanel() {
               <select
                 className="form-input"
                 value={form.assignedDriverId}
+                disabled={formPartnerManagedAssignment}
                 onChange={(event) =>
                   setForm((prev) => ({
                     ...prev,
@@ -2443,6 +2669,7 @@ export function ServicesPanel() {
               <select
                 className="form-input"
                 value={form.assignedVehicleId}
+                disabled={formPartnerManagedAssignment}
                 onChange={(event) =>
                   setForm((prev) => ({
                     ...prev,

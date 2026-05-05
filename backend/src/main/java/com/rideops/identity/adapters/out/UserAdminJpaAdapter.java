@@ -73,20 +73,20 @@ public class UserAdminJpaAdapter implements UserAdminRepositoryPort {
     }
 
     @Override
-    public List<UserEntity> findAllByRoleAndEnabledTrueOrderByEmailAsc(UserRole role) {
+    public List<UserEntity> findAllByRoleInAndEnabledTrueOrderByEmailAsc(List<UserRole> roles) {
         Long tenantId = tenantContext.getTenantIdOrNull();
         if (tenantId == null) {
-            return userRepository.findAllByRoleAndEnabledTrueOrderByEmailAsc(role);
+            return userRepository.findAllByRoleInAndEnabledTrueOrderByEmailAsc(roles);
         }
-        return userRepository.findAllByRoleAndEnabledTrueAndTenantIdOrderByEmailAsc(role, tenantId);
+        return userRepository.findAllByRoleInAndEnabledTrueAndTenantIdOrderByEmailAsc(roles, tenantId);
     }
 
     @Override
-    public List<UserEntity> findAllByRoleOrderByCreatedAtDesc(UserRole role) {
+    public List<UserEntity> findAllByRoleInOrderByCreatedAtDesc(List<UserRole> roles) {
         Long tenantId = tenantContext.getTenantIdOrNull();
         if (tenantId == null) {
-            return userRepository.findAllByRoleOrderByCreatedAtDesc(role);
+            return userRepository.findAllByRoleInOrderByCreatedAtDesc(roles);
         }
-        return userRepository.findAllByRoleAndTenantIdOrderByCreatedAtDesc(role, tenantId);
+        return userRepository.findAllByRoleInAndTenantIdOrderByCreatedAtDesc(roles, tenantId);
     }
 }

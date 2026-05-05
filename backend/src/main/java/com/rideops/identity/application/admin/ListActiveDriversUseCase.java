@@ -14,7 +14,7 @@ public class ListActiveDriversUseCase {
     }
 
     public List<UserSummaryDto> execute() {
-        return userAdminRepositoryPort.findAllByRoleAndEnabledTrueOrderByEmailAsc(UserRole.DRIVER)
+        return userAdminRepositoryPort.findAllByRoleInAndEnabledTrueOrderByEmailAsc(UserRole.driverRoles())
             .stream()
             .map(UserAdminMapper::toDto)
             .toList();

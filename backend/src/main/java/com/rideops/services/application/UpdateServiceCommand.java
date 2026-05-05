@@ -23,6 +23,7 @@ public record UpdateServiceCommand(
     ServiceStatus status,
     ServiceAssignmentType serviceAssignmentType,
     Long partnerId,
+    Long outgoingPartnerId,
     BigDecimal pricePartner,
     Long assignedVehicleId,
     Boolean overrideVehicleDayConflict,

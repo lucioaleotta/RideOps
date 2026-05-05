@@ -90,7 +90,7 @@ public class CreateUserUseCase {
     }
 
     DriverProfile validateAndBuildProfile(CreateUserCommand command) {
-        if (command.role() != UserRole.DRIVER && command.role() != UserRole.DRIVER_FREELANCER) {
+        if (!command.role().isDriverRole()) {
             return DriverProfile.empty();
         }
 
@@ -197,7 +197,7 @@ public class CreateUserUseCase {
             }
         } else {
             if (tenantId == null) {
-                throw new UserAdminValidationException("Gli utenti GESTIONALE e DRIVER devono essere associati a un tenant");
+                throw new UserAdminValidationException("Gli utenti GESTIONALE e i ruoli DRIVER devono essere associati a un tenant");
             }
         }
     }

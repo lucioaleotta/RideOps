@@ -29,13 +29,16 @@ public class AssignServiceUseCase {
         if (service.getStatus() == ServiceStatus.CLOSED || service.getStatus() == ServiceStatus.EXECUTED) {
             throw new ServiceValidationException("Non e` possibile assegnare un servizio ESEGUITO/CLOSED");
         }
+        if (ServiceValidationSupport.isPartnerManaged(service.getServiceAssignmentType())) {
+            throw new ServiceValidationException("Rimuovi prima l'assegnazione al partner OUTSOURCED prima di assegnare driver o veicolo");
+        }
 
         Long safeDriverId = Objects.requireNonNull(driverId, "driverId obbligatorio");
 
         UserEntity driver = userAdminRepositoryPort.findById(safeDriverId)
             .orElseThrow(() -> new ServiceValidationException("Driver non trovato"));
 
-        if ((driver.getRole() != UserRole.DRIVER && driver.getRole() != UserRole.DRIVER_FREELANCER) || !driver.isEnabled()) {
+        if (!driver.getRole().isDriverRole() || !driver.isEnabled()) {
             throw new ServiceValidationException("L'utente selezionato non e` un DRIVER attivo");
         }
 

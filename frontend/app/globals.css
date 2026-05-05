@@ -2894,6 +2894,18 @@ a:hover {
   background: #f4f7fb;
 }
 
+.services-selected-chip-partner-incoming {
+  color: #1a6b3c;
+  background: #d6f5e3;
+  border-color: #7dd3a8;
+}
+
+.services-selected-chip-partner-outsourced {
+  color: #5b3a9e;
+  background: #ede8fb;
+  border-color: #b9a6ef;
+}
+
 .services-selected-chip-status.assigned {
   color: #0c5f99;
   background: #daeefb;

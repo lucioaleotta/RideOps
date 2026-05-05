@@ -29,8 +29,11 @@ public record ServiceDto(
     LocalDateTime assignedAt,
     ServiceAssignmentType serviceAssignmentType,
     Long partnerId,
+    String partnerRagioneSociale,
     BigDecimal pricePartner,
     BigDecimal margin,
+    Long outgoingPartnerId,
+    String outgoingPartnerRagioneSociale,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {
