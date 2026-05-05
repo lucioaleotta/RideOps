@@ -28,7 +28,11 @@ type ServiceItem = {
   status: ServiceStatus;
   assignedDriverId: number | null;
   assignedVehicleId: number | null;
-  serviceAssignmentType: 'INTERNAL' | 'OUTSOURCED' | 'INCOMING';
+  serviceAssignmentType: 'INTERNAL' | 'OUTSOURCED' | 'INCOMING' | 'INCOMING_OUTSOURCED';
+  partnerId: number | null;
+  partnerRagioneSociale: string | null;
+  outgoingPartnerId: number | null;
+  outgoingPartnerRagioneSociale: string | null;
   assignedByUserId: number | null;
   assignedAt: string | null;
   createdAt: string;
@@ -775,6 +779,56 @@ export function CalendarDashboard({ driverMode = false }: CalendarDashboardProps
                 </div>
 
                 {calDetailDivider}
+
+                {/* Sezione partner (solo per servizi con partner) */}
+                {selectedService.serviceAssignmentType !== 'INTERNAL' && (
+                  <>
+                    <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
+                      {selectedService.serviceAssignmentType === 'OUTSOURCED' && (
+                        <>
+                          <CalDetailRow
+                            icon={<CalUserIcon />}
+                            label="Affidato a"
+                            value={selectedService.partnerRagioneSociale ?? '—'}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #7f8ea3)', paddingLeft: 2 }}>
+                            Servizio affidato a partner esecutore
+                          </span>
+                        </>
+                      )}
+                      {selectedService.serviceAssignmentType === 'INCOMING' && (
+                        <>
+                          <CalDetailRow
+                            icon={<CalUserIcon />}
+                            label="Ricevuto da"
+                            value={selectedService.partnerRagioneSociale ?? '—'}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #7f8ea3)', paddingLeft: 2 }}>
+                            Servizio ricevuto da partner fornitore
+                          </span>
+                        </>
+                      )}
+                      {selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
+                        <>
+                          <CalDetailRow
+                            icon={<CalUserIcon />}
+                            label="Ricevuto da"
+                            value={selectedService.partnerRagioneSociale ?? '—'}
+                          />
+                          <CalDetailRow
+                            icon={<CalUserIcon />}
+                            label="Affidato a"
+                            value={selectedService.outgoingPartnerRagioneSociale ?? '—'}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary, #7f8ea3)', paddingLeft: 2 }}>
+                            Ricevuto da fornitore e affidato a partner esecutore
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    {calDetailDivider}
+                  </>
+                )}
 
                 {/* Sezione riferimenti */}
                 <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>

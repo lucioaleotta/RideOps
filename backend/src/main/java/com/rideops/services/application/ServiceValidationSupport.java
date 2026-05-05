@@ -112,18 +112,8 @@ final class ServiceValidationSupport {
     }
 
     static void validateAssignmentTransition(ServiceAssignmentType currentType, ServiceAssignmentType targetType) {
-        ServiceAssignmentType safeCurrent = sanitizeCreateAssignmentType(currentType);
-        ServiceAssignmentType safeTarget = sanitizeCreateAssignmentType(targetType);
-
-        if (safeCurrent == ServiceAssignmentType.INCOMING && safeTarget == ServiceAssignmentType.INTERNAL) {
-            throw new ServiceValidationException("Un servizio INCOMING non puo` diventare INTERNAL");
-        }
-        if (safeCurrent == ServiceAssignmentType.INCOMING_OUTSOURCED && safeTarget == ServiceAssignmentType.INTERNAL) {
-            throw new ServiceValidationException("Un servizio INCOMING_OUTSOURCED non puo` diventare INTERNAL");
-        }
-        if (safeCurrent == ServiceAssignmentType.INCOMING_OUTSOURCED && safeTarget == ServiceAssignmentType.OUTSOURCED) {
-            throw new ServiceValidationException("Un servizio INCOMING_OUTSOURCED non puo` diventare OUTSOURCED");
-        }
+        // Tutte le transizioni tra tipi sono consentite.
+        // Vedere ServiceAssignmentType per la matrice completa delle transizioni.
     }
 
     static boolean isPartnerManaged(ServiceAssignmentType assignmentType) {

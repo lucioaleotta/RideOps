@@ -15,7 +15,7 @@ public class ListDriversUseCase {
     }
 
     public List<UserSummaryDto> execute(boolean includeDeleted) {
-        return userAdminRepositoryPort.findAllByRoleOrderByCreatedAtDesc(UserRole.DRIVER)
+        return userAdminRepositoryPort.findAllByRoleInOrderByCreatedAtDesc(UserRole.driverRoles())
             .stream()
             .filter(user -> includeDeleted || user.isEnabled())
             .sorted(Comparator

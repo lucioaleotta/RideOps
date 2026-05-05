@@ -29,11 +29,11 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
 
     List<UserEntity> findAllByTenantIdOrderByCreatedAtDesc(Long tenantId);
 
-    List<UserEntity> findAllByRoleAndEnabledTrueOrderByEmailAsc(UserRole role);
+    List<UserEntity> findAllByRoleInAndEnabledTrueOrderByEmailAsc(List<UserRole> roles);
 
-    List<UserEntity> findAllByRoleAndEnabledTrueAndTenantIdOrderByEmailAsc(UserRole role, Long tenantId);
+    List<UserEntity> findAllByRoleInAndEnabledTrueAndTenantIdOrderByEmailAsc(List<UserRole> roles, Long tenantId);
 
-    List<UserEntity> findAllByRoleOrderByCreatedAtDesc(UserRole role);
+    List<UserEntity> findAllByRoleInOrderByCreatedAtDesc(List<UserRole> roles);
 
-    List<UserEntity> findAllByRoleAndTenantIdOrderByCreatedAtDesc(UserRole role, Long tenantId);
+    List<UserEntity> findAllByRoleInAndTenantIdOrderByCreatedAtDesc(List<UserRole> roles, Long tenantId);
 }

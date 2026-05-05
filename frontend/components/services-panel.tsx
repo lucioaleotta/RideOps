@@ -826,11 +826,7 @@ export function ServicesPanel() {
       ? 'INCOMING'
       : form.serviceAssignmentType;
 
-    if ((effectiveAssignmentType === 'INCOMING' || effectiveAssignmentType === 'OUTSOURCED') && !form.partnerId) {
-      setSubmitting(false);
-      setError('Seleziona un partner per servizi ricevuti/affidati');
-      return;
-    }
+
 
     if (effectiveAssignmentType === 'OUTSOURCED' && !form.pricePartner.trim()) {
       setSubmitting(false);
@@ -1650,11 +1646,20 @@ export function ServicesPanel() {
                       label="Prezzo"
                       value={formatCurrencyEUR(selectedService.price)}
                     />
-                    <ServiceDetailRow
-                      icon={<DetailUserIcon />}
-                      label="Partner Fornitore"
-                      value={partnerLabel(selectedService.partnerId)}
-                    />
+                    {(selectedService.serviceAssignmentType === 'INCOMING' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+                      <ServiceDetailRow
+                        icon={<DetailUserIcon />}
+                        label="Partner Fornitore"
+                        value={partnerLabel(selectedService.partnerId)}
+                      />
+                    )}
+                    {(selectedService.serviceAssignmentType === 'OUTSOURCED') && (
+                      <ServiceDetailRow
+                        icon={<DetailUserIcon />}
+                        label="Partner Esecutore"
+                        value={partnerLabel(selectedService.partnerId)}
+                      />
+                    )}
                     {selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
                       <ServiceDetailRow
                         icon={<DetailUserIcon />}
@@ -1662,16 +1667,20 @@ export function ServicesPanel() {
                         value={partnerLabel(selectedService.outgoingPartnerId)}
                       />
                     )}
-                    <ServiceDetailRow
-                      icon={<DetailEuroIcon />}
-                      label="Prezzo Partner Esecutore"
-                      value={formatCurrencyEUR(selectedService.pricePartner)}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailEuroIcon />}
-                      label="Margine"
-                      value={formatCurrencyEUR(selectedService.margin)}
-                    />
+                    {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+                      <ServiceDetailRow
+                        icon={<DetailEuroIcon />}
+                        label="Prezzo Partner Esecutore"
+                        value={formatCurrencyEUR(selectedService.pricePartner)}
+                      />
+                    )}
+                    {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+                      <ServiceDetailRow
+                        icon={<DetailEuroIcon />}
+                        label="Margine"
+                        value={formatCurrencyEUR(selectedService.margin)}
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -1749,6 +1758,18 @@ export function ServicesPanel() {
                       Chiudi
                     </button>
                   )}
+                  {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED')
+                    && selectedService.status !== 'CLOSED'
+                    && selectedService.status !== 'EXECUTED' && (
+                    <button
+                      type="button"
+                      className="compact-button services-selected-close-service"
+                      onClick={() => onClose(selectedService.id)}
+                    >
+                      <span className="action-button-icon"><ActionLockIcon /></span>
+                      Chiudi servizio
+                    </button>
+                  )}
                   {(selectedService.serviceAssignmentType === 'INTERNAL' || selectedService.serviceAssignmentType === 'INCOMING')
                     && selectedService.status !== 'CLOSED'
                     && selectedService.status !== 'EXECUTED' && (
@@ -1778,7 +1799,7 @@ export function ServicesPanel() {
               </div>
             )}
 
-            {selectedService && (
+            {selectedService && isPartnerManagedAssignment(selectedService.serviceAssignmentType) && (
               <article className="dashboard-card sph-card">
                 <div className="sph-header">
                   <div className="sph-header-title">
@@ -1809,8 +1830,8 @@ export function ServicesPanel() {
                             <path d="M5.7 18.5c1.4-3.1 3.9-4.7 6.3-4.7s5 1.6 6.3 4.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
                           </svg>
                         </span>
-                        <span className="sph-meta-key">PARTNER</span>
-                        <span className="sph-meta-val">{partnerHistory.partnerRagioneSociale ?? '-'}</span>
+                        <span className="sph-meta-key">PARTNER ESECUTORE</span>
+                        <span className="sph-meta-val">{(partnerHistory.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? partnerHistory.outgoingPartnerRagioneSociale : partnerHistory.partnerRagioneSociale) ?? '-'}</span>
                       </span>
                       <span className="sph-meta-sep" aria-hidden="true" />
                       <span className="sph-meta-item">
@@ -1821,50 +1842,15 @@ export function ServicesPanel() {
                           </svg>
                         </span>
                         <span className="sph-meta-key">EMAIL</span>
-                        {partnerHistory.partnerEmail ? (
-                          <a className="sph-meta-link" href={`mailto:${partnerHistory.partnerEmail}`}>
-                            {partnerHistory.partnerEmail}
+                        {(partnerHistory.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? partnerHistory.outgoingPartnerEmail : partnerHistory.partnerEmail) ? (
+                          <a className="sph-meta-link" href={`mailto:${partnerHistory.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? partnerHistory.outgoingPartnerEmail : partnerHistory.partnerEmail}`}>
+                            {partnerHistory.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? partnerHistory.outgoingPartnerEmail : partnerHistory.partnerEmail}
                           </a>
                         ) : (
                           <span className="sph-meta-val">-</span>
                         )}
                       </span>
                     </div>
-
-                    {partnerHistory.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
-                      <>
-                        <div className="sph-divider" />
-                        <div className="sph-meta-row">
-                          <span className="sph-meta-item">
-                            <span className="sph-meta-icon" aria-hidden="true">
-                              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                                <circle cx="12" cy="8.3" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.9" />
-                                <path d="M5.7 18.5c1.4-3.1 3.9-4.7 6.3-4.7s5 1.6 6.3 4.7" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
-                              </svg>
-                            </span>
-                            <span className="sph-meta-key">NCC ESECUTORE</span>
-                            <span className="sph-meta-val">{partnerHistory.outgoingPartnerRagioneSociale ?? '-'}</span>
-                          </span>
-                          <span className="sph-meta-sep" aria-hidden="true" />
-                          <span className="sph-meta-item">
-                            <span className="sph-meta-icon" aria-hidden="true">
-                              <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                                <rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />
-                                <polyline points="2 9 12 15 22 9" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
-                              </svg>
-                            </span>
-                            <span className="sph-meta-key">EMAIL ESECUTORE</span>
-                            {partnerHistory.outgoingPartnerEmail ? (
-                              <a className="sph-meta-link" href={`mailto:${partnerHistory.outgoingPartnerEmail}`}>
-                                {partnerHistory.outgoingPartnerEmail}
-                              </a>
-                            ) : (
-                              <span className="sph-meta-val">-</span>
-                            )}
-                          </span>
-                        </div>
-                      </>
-                    )}
 
                     <div className="sph-divider" />
 
@@ -2529,19 +2515,67 @@ export function ServicesPanel() {
 
             {(form.receivedFromPartner || form.serviceAssignmentType === 'INCOMING' || form.serviceAssignmentType === 'OUTSOURCED' || form.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
               <label>
-                {form.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? 'Partner Fornitore' : 'Partner'}
+                {form.serviceAssignmentType === 'OUTSOURCED' ? 'Partner Esecutore' : 'Partner Fornitore'}
                 <select
                   className="form-input"
                   value={form.partnerId}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      partnerId: event.target.value ? Number(event.target.value) : ''
-                    }))
-                  }
-                  required={form.serviceAssignmentType !== 'INCOMING_OUTSOURCED' && (form.receivedFromPartner || form.serviceAssignmentType !== 'INTERNAL')}
+                  onChange={(event) => {
+                    const newPartnerId = event.target.value ? Number(event.target.value) : '';
+                    if (!newPartnerId) {
+                      if (form.serviceAssignmentType === 'INCOMING_OUTSOURCED' && form.outgoingPartnerId) {
+                        // Fornitore rimosso ma esecutore ancora presente → torna a OUTSOURCED
+                        setForm((prev) => ({
+                          ...prev,
+                          serviceAssignmentType: 'OUTSOURCED',
+                          partnerId: prev.outgoingPartnerId as number,
+                          outgoingPartnerId: '',
+                          receivedFromPartner: false,
+                        }));
+                      } else {
+                        const wasIncoming = form.serviceAssignmentType === 'INCOMING'
+                          || form.serviceAssignmentType === 'INCOMING_OUTSOURCED';
+                        setForm((prev) => ({
+                          ...prev,
+                          partnerId: '',
+                          outgoingPartnerId: '',
+                          pricePartner: '',
+                          receivedFromPartner: wasIncoming,
+                          serviceAssignmentType: wasIncoming ? 'INCOMING' : 'INTERNAL'
+                        }));
+                      }
+                    } else {
+                      setForm((prev) => ({ ...prev, partnerId: newPartnerId }));
+                    }
+                  }}
                 >
-                  <option value="">{form.serviceAssignmentType === 'INCOMING_OUTSOURCED' ? 'Nessun partner' : 'Seleziona partner'}</option>
+                  <option value="">Seleziona partner</option>
+                  {partners.map((partner) => (
+                    <option key={partner.id} value={partner.id}>{partner.ragioneSociale}</option>
+                  ))}
+                </select>
+              </label>
+            )}
+
+            {form.serviceAssignmentType === 'OUTSOURCED' && (
+              <label>
+                Partner Fornitore (opzionale)
+                <select
+                  className="form-input"
+                  value=""
+                  onChange={(event) => {
+                    const newFornitoreId = event.target.value ? Number(event.target.value) : '';
+                    if (newFornitoreId) {
+                      setForm((prev) => ({
+                        ...prev,
+                        serviceAssignmentType: 'INCOMING_OUTSOURCED',
+                        outgoingPartnerId: prev.partnerId, // esecutore → outgoing
+                        partnerId: newFornitoreId,          // fornitore → partnerId
+                        receivedFromPartner: false,
+                      }));
+                    }
+                  }}
+                >
+                  <option value="">Nessun fornitore</option>
                   {partners.map((partner) => (
                     <option key={partner.id} value={partner.id}>{partner.ragioneSociale}</option>
                   ))}
@@ -2555,13 +2589,19 @@ export function ServicesPanel() {
                 <select
                   className="form-input"
                   value={form.outgoingPartnerId}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      outgoingPartnerId: event.target.value ? Number(event.target.value) : '',
-                      pricePartner: event.target.value ? prev.pricePartner : ''
-                    }))
-                  }
+                  onChange={(event) => {
+                    const newOutgoingId = event.target.value ? Number(event.target.value) : '';
+                    if (!newOutgoingId) {
+                      setForm((prev) => ({
+                        ...prev,
+                        outgoingPartnerId: '',
+                        pricePartner: '',
+                        serviceAssignmentType: 'INCOMING'
+                      }));
+                    } else {
+                      setForm((prev) => ({ ...prev, outgoingPartnerId: newOutgoingId }));
+                    }
+                  }}
                 >
                   <option value="">Nessun partner</option>
                   {partners.map((partner) => (

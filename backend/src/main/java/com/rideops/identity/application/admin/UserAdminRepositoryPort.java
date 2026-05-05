@@ -22,7 +22,7 @@ public interface UserAdminRepositoryPort {
 
     List<UserEntity> findAllByOrderByCreatedAtDesc();
 
-    List<UserEntity> findAllByRoleAndEnabledTrueOrderByEmailAsc(UserRole role);
+    List<UserEntity> findAllByRoleInAndEnabledTrueOrderByEmailAsc(List<UserRole> roles);
 
-    List<UserEntity> findAllByRoleOrderByCreatedAtDesc(UserRole role);
+    List<UserEntity> findAllByRoleInOrderByCreatedAtDesc(List<UserRole> roles);
 }
