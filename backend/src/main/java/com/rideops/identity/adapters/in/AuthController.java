@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -23,6 +25,8 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthenticationManager authenticationManager;
     private final JwtSecurityService jwtSecurityService;
@@ -44,8 +48,12 @@ public class AuthController {
             );
             IdentityUserDetails principal = (IdentityUserDetails) authentication.getPrincipal();
             String token = jwtSecurityService.generateToken(principal);
+            log.info("action=user.login userId={} role={} outcome=success",
+                principal.getUserId(), principal.getRole());
             return new LoginResponse(token, "Bearer", jwtSecurityService.getExpirationSeconds());
         } catch (BadCredentialsException exception) {
+            // Non loggare il userId (potrebbe contenere email o PII) — solo evento anomalo
+            log.warn("action=user.login outcome=failure reason=bad_credentials");
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenziali non valide");
         }
     }

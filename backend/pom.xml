@@ -22,6 +22,25 @@
         <spring-modulith.version>1.2.5</spring-modulith.version>
     </properties>
 
+    <repositories>
+        <!--
+            Repository locale per dipendenze non scaricabili direttamente da Maven Central
+            a causa di limitazioni del truststore Java (es. ambiente CI con JDK custom).
+            I jar vengono committi nel progetto sotto backend/local-repo/.
+        -->
+        <repository>
+            <id>local-repo</id>
+            <url>file://${project.basedir}/local-repo</url>
+            <releases>
+                <enabled>true</enabled>
+                <checksumPolicy>ignore</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -88,6 +107,12 @@
             <artifactId>jjwt-jackson</artifactId>
             <version>0.12.6</version>
             <scope>runtime</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>7.4</version>
         </dependency>
 
         <dependency>
