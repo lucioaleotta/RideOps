@@ -155,7 +155,7 @@ RideOps/
 - [ ] Add API documentation (OpenAPI/Swagger)
 - [ ] Add deployment runbook
 - [ ] Add troubleshooting guide
-- [ ] Add monitoring & logging setup
+- [x] Add monitoring & logging setup (structured JSON logging + log rotation — see `docs/OPERATIONS.md`)
 - [ ] Add security scan (OWASP, npm audit in CI)
 
 ---

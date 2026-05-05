@@ -81,6 +81,35 @@ EOF
 systemctl enable fail2ban
 systemctl restart fail2ban
 
+echo "=== [Extra] Configurazione logrotate per nginx host ==="
+cat > /etc/logrotate.d/rideops-nginx << 'EOF'
+/opt/rideops/logs/nginx/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    sharedscripts
+    postrotate
+        docker exec rideops-nginx nginx -s reopen 2>/dev/null || true
+    endscript
+}
+EOF
+
+echo "=== [Extra] Configurazione logrotate per Docker container logs ==="
+cat > /etc/logrotate.d/rideops-docker << 'EOF'
+/var/lib/docker/containers/*/*.log {
+    daily
+    rotate 7
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}
+EOF
+
 echo ""
 echo "============================================================"
 echo " Setup completato!"

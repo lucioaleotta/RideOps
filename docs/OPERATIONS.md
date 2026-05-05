@@ -362,6 +362,98 @@ docker system prune -f --volumes
 
 ---
 
+## Logging strutturato
+
+In produzione (Spring profile `prod`) il backend emette log in formato **JSON strutturato** (logstash-logback-encoder), un log per riga.
+
+Ogni riga contiene:
+
+| Campo | Descrizione |
+|-------|-------------|
+| `@timestamp` | Timestamp UTC ISO-8601 |
+| `level` | `INFO`, `WARN`, `ERROR` |
+| `logger_name` | Classe Java che ha emesso il log |
+| `message` | Testo del log |
+| `traceId` | UUID univoco per richiesta HTTP (da MDC) |
+
+Ogni richiesta HTTP viene loggata automaticamente da `RequestLoggingFilter` con `method`, `path`, `status`, `durationMs`, `outcome`. Le path `/actuator/**` sono escluse.
+
+### Consultare i log
+
+```bash
+# Log in tempo reale (JSON grezzo)
+docker logs -f rideops-backend
+
+# Log leggibili (pretty-print, richiede jq)
+docker logs --tail=100 rideops-backend | jq .
+
+# Filtra solo errori
+docker logs --tail=500 rideops-backend | jq 'select(.level=="ERROR")'
+
+# Traccia una richiesta specifica
+docker logs --tail=1000 rideops-backend | jq 'select(.traceId=="<UUID>")'
+
+# Via CLI locale
+./scripts/rideops.sh logs backend
+./scripts/rideops.sh logs backend 500
+```
+
+### PCI DSS / Privacy
+
+Tutti i dati sensibili sono mascherati da `LogSanitizer` prima di essere scritti:
+- Numeri carta → `****-****-****-1234`
+- IBAN → `****1234`
+- Password/token/secret → `[REDACTED]`
+- Email → `m***@dominio.com`
+- Telefono → `****567`
+
+---
+
+## Policy di rotazione log
+
+### Docker log rotation (tutti i container)
+
+Configura in `docker-compose.prod.yml` tramite il driver `json-file`:
+
+| Container | max-size | max-file | Spazio massimo |
+|-----------|----------|----------|----------------|
+| `backend` | 50 MB | 10 | ~500 MB |
+| `nginx` | 20 MB | 5 | ~100 MB |
+| `frontend` | 20 MB | 5 | ~100 MB |
+| `postgres` | 10 MB | 5 | ~50 MB |
+
+Docker rimuove automaticamente il file più vecchio quando il limite viene raggiunto. Nessuna configurazione manuale necessaria.
+
+### Logrotate host (Ubuntu 22.04)
+
+Installato da `scripts/server/install.sh` in due file:
+
+**`/etc/logrotate.d/rideops-nginx`**
+- Rotazione: **giornaliera**
+- Retention: **14 giorni**
+- Compressione: sì (`compress` + `delaycompress`)
+- Post-rotate: `docker exec rideops-nginx nginx -s reopen`
+
+**`/etc/logrotate.d/rideops-docker`**
+- Rotazione: **giornaliera**
+- Retention: **7 giorni**
+- Compressione: sì
+- Metodo: `copytruncate` (non interrompe il processo Docker)
+
+```bash
+# Verifica configurazione logrotate
+cat /etc/logrotate.d/rideops-nginx
+cat /etc/logrotate.d/rideops-docker
+
+# Test dry-run (non esegue realmente)
+logrotate -d /etc/logrotate.d/rideops-nginx
+
+# Forza rotazione manuale
+logrotate -f /etc/logrotate.d/rideops-nginx
+```
+
+---
+
 ## Checklist infrastruttura
 
 - [x] SSL Let's Encrypt attivo su `rideops.it` (certbot + deploy hook)
@@ -371,6 +463,9 @@ docker system prune -f --volumes
 - [x] Pipeline `deploy-hetzner.yml` operativa (scp-action + ssh-action)
 - [x] Workflow GCP obsoleti rimossi (`backend-cd.yml`, `frontend-cd.yml`)
 - [x] `dr:check` e `dr:rebuild` disponibili nella CLI per disaster recovery automatizzato
+- [x] Logging strutturato JSON attivo in prod (`logstash-logback-encoder`, `logback-spring.xml`)
+- [x] Log rotation Docker configurata (`json-file` driver, limiti per container in `docker-compose.prod.yml`)
+- [x] Logrotate host configurato (`/etc/logrotate.d/rideops-nginx`, `/etc/logrotate.d/rideops-docker`)
 
 ---
 
