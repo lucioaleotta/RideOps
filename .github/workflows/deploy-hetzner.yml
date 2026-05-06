@@ -171,7 +171,7 @@ jobs:
           username: root
           key:      ${{ secrets.HETZNER_SSH_KEY }}
           port:     22
-          source:   "scripts/server/pull-and-restart.sh,scripts/copy_ssl_and_reload_nginx.sh,nginx/conf.d/rideops.conf,nginx/nginx.conf,docker-compose.prod.yml"
+          source:   "scripts/server/**,scripts/copy_ssl_and_reload_nginx.sh,nginx/**,docker-compose.prod.yml"
           target:   "/opt/rideops"
           strip_components: 0
 
