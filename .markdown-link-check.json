@@ -1,0 +1,6 @@
+{
+  "ignorePatterns": [
+    { "pattern": "^http://localhost:5173" },
+    { "pattern": "^http://localhost:8080" }
+  ]
+}

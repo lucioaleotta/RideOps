@@ -6,29 +6,15 @@ on:
     paths:
       - "docs/**"
       - ".github/workflows/docs-ci.yml"
-      - "BRANCHING_STRATEGY.md"
-      - "ARCHITECTURE.md"
-      - "CI_CD_IMPLEMENTATION.md"
       - "CONTRIBUTING.md"
-      - "DOCUMENTATION.md"
-      - "QUICKSTART.md"
       - "README.md"
-      - "TESTING_STRATEGY.md"
-      - "TROUBLESHOOTING.md"
   pull_request:
     branches: ["main"]
     paths:
       - "docs/**"
       - ".github/workflows/docs-ci.yml"
-      - "BRANCHING_STRATEGY.md"
-      - "ARCHITECTURE.md"
-      - "CI_CD_IMPLEMENTATION.md"
       - "CONTRIBUTING.md"
-      - "DOCUMENTATION.md"
-      - "QUICKSTART.md"
       - "README.md"
-      - "TESTING_STRATEGY.md"
-      - "TROUBLESHOOTING.md"
 
 # Nessun motivo di tenere in coda più run di lint/validazione Markdown.
 concurrency:
@@ -54,7 +40,7 @@ jobs:
       - name: Lint Markdown files
         run: |
           echo "📝 Checking Markdown files..."
-          markdownlint docs/**/*.md *.md
+          markdownlint docs/**/*.md *.md --config .markdownlint.json
 
   check-links:
     runs-on: ubuntu-latest
@@ -76,7 +62,7 @@ jobs:
           set -euo pipefail
           while IFS= read -r file; do
             echo "🔗 Checking links in $file"
-            markdown-link-check "$file"
+            markdown-link-check "$file" -c .markdown-link-check.json
           done < <(find docs -name '*.md' -print && find . -maxdepth 1 -name '*.md' -print)
 
   build-summary:
