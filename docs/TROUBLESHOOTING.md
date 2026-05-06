@@ -616,7 +616,7 @@ public class CorsConfig {
       @Override
       public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-          .allowedOrigins("http://localhost:5173", "https://rideops-*.run.app")
+          .allowedOrigins("http://localhost:5173", "https://rideops.it")
           .allowedMethods("GET", "POST", "PUT", "DELETE")
           .allowCredentials(true);
       }

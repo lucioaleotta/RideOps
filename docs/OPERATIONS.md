@@ -461,7 +461,7 @@ logrotate -f /etc/logrotate.d/rideops-nginx
 - [x] GitHub Actions secrets configurati: `HETZNER_HOST`, `HETZNER_SSH_KEY`, `GHCR_TOKEN`
 - [x] Script `restore.sh` disponibile in `/opt/rideops/scripts/server/restore.sh`
 - [x] Pipeline `deploy-hetzner.yml` operativa (scp-action + ssh-action)
-- [x] Workflow GCP obsoleti rimossi (`backend-cd.yml`, `frontend-cd.yml`)
+- [x] Workflow cloud obsoleti rimossi (`backend-cd.yml`, `frontend-cd.yml`)
 - [x] `dr:check` e `dr:rebuild` disponibili nella CLI per disaster recovery automatizzato
 - [x] Logging strutturato JSON attivo in prod (`logstash-logback-encoder`, `logback-spring.xml`)
 - [x] Log rotation Docker configurata (`json-file` driver, limiti per container in `docker-compose.prod.yml`)

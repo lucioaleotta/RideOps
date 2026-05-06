@@ -37,15 +37,15 @@ RideOps è un sistema completamente distribuito per la gestione del ride sharing
     ┌────▼──────┐                    ┌──────▼────┐
     │ Frontend   │                    │  Backend   │
     │ Next.js    │                    │ Spring     │
-    │ Cloud Run  │                    │ Boot       │
-    │ 200ms p99  │                    │ Cloud Run  │
+    │ Docker     │                    │ Boot       │
+    │ Container  │                    │ Container  │
     └───┬────────┘                    └──────┬─────┘
         │                                    │
         │         API (REST/JSON)            │
         │◄─── /api/* (authenticated)  ───►   │
         │                                    │
         │                              ┌─────▼─────┐
-        │                              │  Cloud SQL │
+        │                              │ PostgreSQL │
         │                              │ PostgreSQL │
         │                              │  Managed   │
         │                              └────────────┘
@@ -60,9 +60,9 @@ RideOps è un sistema completamente distribuito per la gestione del ride sharing
 - **Monorepo:** Frontend + Backend in same Git repo
 - **Type-Safe:** TypeScript (frontend), Java (backend)
 - **Container-Native:** Docker multi-stage builds
-- **Cloud-Native:** Google Cloud Run (serverless)
+- **Container-Native:** Docker Compose su Hetzner VPS
 - **Distributed:** Frontend & backend deployable independently
-- **Authenticated:** JWT + OIDC Federation
+- **Authenticated:** JWT + cookie httpOnly
 - **Responsive:** < 200ms p99 latency (measured)
 
 ---
@@ -508,14 +508,14 @@ WHERE driver_id IS NOT NULL;
    ↓
 4. Backend sends response:
    HTTP/1.1 303 See Other
-   Location: https://rideops-frontend-123.run.app/login
+  Location: https://rideops.it/login
    Set-Cookie: access_token=; Max-Age=0; Path=/
    Set-Cookie: user_role=; Max-Age=0; Path=/
    ↓
 5. Browser:
    ├─ Receives 303 redirect
    ├─ Clears cookies (Max-Age=0)
-   └─ Redirects to https://rideops-frontend-123.run.app/login
+  └─ Redirects to https://rideops.it/login
    ↓
 6. Next time user accesses /app:
    ├─ Middleware checks: Is access_token cookie present?
@@ -884,10 +884,10 @@ public class AuthController {
    └─ curl https://rideops.it → HTTP 200/302/308
 ```
 4. Deploy Backend Service
-   ├─ Run database migrations (Flyway)
-   ├─ Update Cloud Run service
-   ├─ Deploy new image revision
-   └─ Verify health check (/actuator/health)
+  ├─ Run database migrations (Flyway)
+  ├─ Pull new image from GHCR
+  ├─ Restart backend container
+  └─ Verify health check (/actuator/health)
    │
    ▼
 5. Monitoring & Alerts
@@ -937,7 +937,7 @@ public class AuthController {
 **Consequences:**
 - Heavy framework (slower cold start than Go/Rust)
 - Requires understanding Spring concepts
-- JVM startup time (Cloud Run's cold starts longer)
+- JVM startup time (cold start container)
 
 **Alternatives Considered:**
 - Go: Faster, lighter, better for microservices
@@ -989,32 +989,30 @@ public class AuthController {
 
 ---
 
-### ADR-005: Serverless (Cloud Run) over Kubernetes
+### ADR-005: Docker Compose su VPS
 
-**Decision:** Deploy to Google Cloud Run (serverless containers).
+**Decision:** Deploy su Hetzner VPS con Docker Compose.
 
 **Rationale:**
-- Zero infrastructure management
-- Auto-scaling (scale to zero when idle, save $$)
-- Pay only for used resources
-- Built-in security, monitoring, logging
-- Simpler deployment pipeline
+- Controllo completo dell'infrastruttura
+- Semplicità operativa per team piccolo
+- Costi prevedibili su singolo VPS
+- Pipeline lineare via GHCR + SSH
 
 **Consequences:**
-- 5 minute cold start on first request
-- Stateless constraint (no in-memory session storage)
-- Request timeout: 30 minutes max
-- Limited to 4GB RAM per instance
+- Scalabilità verticale/manuale (niente autoscaling nativo)
+- Maggior responsabilità operativa (backup, patching)
+- HA non nativa (singolo nodo)
 
 **Alternatives Considered:**
-- Kubernetes (GKE): More complex, better for high traffic
-- VM instances (Compute Engine): More control, manual scaling
+- Kubernetes: eccessivo per lo stato attuale del progetto
+- PaaS serverless: meno controllo su networking e runtime
 
 ---
 
 ### ADR-006: PostgreSQL as Primary Database
 
-**Decision:** Use PostgreSQL (Cloud SQL managed service).
+**Decision:** Use PostgreSQL (containerizzato su VPS).
 
 **Rationale:**
 - Open source, free
@@ -1031,7 +1029,7 @@ public class AuthController {
 **Alternatives Considered:**
 - MongoDB: Easier for rapid development, harder to join
 - DynamoDB: Better for serverless, limited query flexibility
-- Firestore: Google's managed, limited transactions
+- NoSQL documentale: meno adatto ai vincoli relazionali di RideOps
 
 ---
 

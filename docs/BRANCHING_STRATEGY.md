@@ -222,8 +222,8 @@ Con questa strategia, GitHub Actions eseguirà:
 **Su ogni MERGE a main:**
 ```
 ✅ Backend: mvn verify
-✅ Frontend: build + push to Artifact Registry
-✅ Deploy to Cloud Run (revision incrementale)
+✅ Frontend: build + push to GHCR
+✅ Deploy su Hetzner VPS via workflow `deploy-hetzner.yml`
 ```
 
 ---

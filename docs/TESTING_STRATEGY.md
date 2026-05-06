@@ -627,7 +627,7 @@ export default defineConfig({
 
 ### GitHub Actions Update
 ```yaml
-# In .github/workflows/backend-cd.yml
+# In .github/workflows/deploy-hetzner.yml
 - name: Run tests with coverage
   run: mvn clean test jacoco:report
 
@@ -636,7 +636,7 @@ export default defineConfig({
   with:
     files: ./backend/target/site/jacoco/jacoco.xml
 
-# In .github/workflows/frontend-cd.yml
+# In .github/workflows/deploy-hetzner.yml
 - name: Run Jest tests
   run: npm test -- --coverage
 

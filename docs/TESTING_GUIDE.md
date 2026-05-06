@@ -6,7 +6,7 @@ Guida operativa per gestori e driver che testano l'applicazione RideOps.
 
 **URL Produzione:**
 ```
-https://rideops-frontend-9867177203.europe-west1.run.app
+https://rideops.it
 ```
 
 ### 1. Login

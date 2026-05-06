@@ -9,7 +9,6 @@ Guida rapida per setup locale e primo deploy.
 - Git installed
 - Node.js 20+ (for frontend)
 - Java 21 + Maven (for backend)
-- GCP CLI (for Cloud deployments)
 
 ```bash
 # Verify installations
@@ -164,7 +163,7 @@ git pull origin main
 ## 📚 Next Steps
 
 1. **Read full documentation:** [DOCUMENTATION.md](DOCUMENTATION.md)
-2. **Understand workflow:** [CONTRIBUTING.md](CONTRIBUTING.md)
+2. **Understand workflow:** [CONTRIBUTING.md](../CONTRIBUTING.md)
 3. **Learn testing:** [TESTING_STRATEGY.md](TESTING_STRATEGY.md)
 4. **Setup CI/CD:** [CI_CD_IMPLEMENTATION.md](CI_CD_IMPLEMENTATION.md)
 
@@ -239,7 +238,7 @@ You now have:
 - ✅ Know how to make changes & deploy
 - ✅ Access to application in production
 
-**Next:** Read [CONTRIBUTING.md](CONTRIBUTING.md) to understand the team's workflow!
+**Next:** Read [CONTRIBUTING.md](../CONTRIBUTING.md) to understand the team's workflow!
 
 ---
 

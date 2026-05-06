@@ -433,35 +433,29 @@ git push upstream main
 # 2. GitHub Actions auto-runs
 # → Runs tests
 # → Builds Docker images
-# → Deploys to Cloud Run
+# → Syncs config to Hetzner VPS
+# → Deploys via SSH (docker compose)
 # → Runs smoke tests
 
 # 3. Monitor deployment
 # GitHub repo → Actions tab → Click workflow
-# Click "frontend-cd" or "backend-cd"
+# Click "Deploy to Hetzner"
 # Wait 3-5 minutes for completion
 
 # 4. Verify in production
-curl https://rideops-frontend-9867177203.europe-west1.run.app/login
-curl https://rideops-backend-9867177203.europe-west1.run.app/actuator/health
+curl https://rideops.it/login
+curl -sI https://rideops.it/
 ```
 
 ### Manual Deployment (If Needed)
 
 ```bash
-# Backend
-gcloud run deploy rideops-backend \
-  --image europe-west1-docker.pkg.dev/rideops-489909/rideops/backend:main \
-  --platform managed \
-  --region europe-west1 \
-  --set-env-vars="SPRING_DATASOURCE_URL=<URL>,SPRING_DATASOURCE_PASSWORD=<PASSWORD>"
+# Trigger manual deployment from GitHub Actions
+# Actions → Deploy to Hetzner → Run workflow
 
-# Frontend
-gcloud run deploy rideops-frontend \
-  --image europe-west1-docker.pkg.dev/rideops-489909/rideops/frontend:main \
-  --platform managed \
-  --region europe-west1 \
-  --set-env-vars="NEXT_PUBLIC_API_URL=<URL>"
+# Or, from server shell
+cd /opt/rideops
+./scripts/server/pull-and-restart.sh latest
 ```
 
 ---
@@ -471,19 +465,15 @@ gcloud run deploy rideops-frontend \
 ### Rollback Deployment
 
 ```bash
-# 1. Find previous working revision
-gcloud run revisions list --service=rideops-backend --region=europe-west1
+# 1. Redeploy previous known-good image tag
+# (run from server shell)
+cd /opt/rideops
+./scripts/server/pull-and-restart.sh <previous-tag>
 
-# 2. Identify safe revision (check timing)
-# 2. Restore to previous revision
-gcloud run services update-traffic rideops-backend \
-  --to-revisions REVISION_NAME=100 \
-  --region=europe-west1
+# 2. Verify portal
+curl -sI https://rideops.it/
 
-# 3. Verify it works
-curl https://rideops-backend-9867177203.europe-west1.run.app/actuator/health
-
-# 4. Fix code
+# 3. Fix code
 git revert <bad-commit>
 git push upstream main
 # CI/CD redeploys automatically
@@ -639,10 +629,10 @@ git log upstream/main..origin/feature/my-feature --oneline
 
 ### Documentation
 
-- [QUICKSTART.md](QUICKSTART.md) - 5-minute setup
-- [BRANCHING_STRATEGY.md](BRANCHING_STRATEGY.md) - Git workflow details
-- [TESTING_STRATEGY.md](TESTING_STRATEGY.md) - Testing philosophy & patterns
-- [CI_CD_IMPLEMENTATION.md](CI_CD_IMPLEMENTATION.md) - Deployment process
+- [QUICKSTART.md](docs/QUICKSTART.md) - 5-minute setup
+- [BRANCHING_STRATEGY.md](docs/BRANCHING_STRATEGY.md) - Git workflow details
+- [TESTING_STRATEGY.md](docs/TESTING_STRATEGY.md) - Testing philosophy & patterns
+- [CI_CD_IMPLEMENTATION.md](docs/CI_CD_IMPLEMENTATION.md) - Deployment process
 
 ---
 
@@ -703,7 +693,7 @@ git checkout feature/task-1
 
 - **Questions?** Ask in #development Slack channel
 - **Found a bug?** Open issue on GitHub
-- **Need help?** Check [DOCUMENTATION.md](DOCUMENTATION.md)
+- **Need help?** Check [DOCUMENTATION.md](docs/DOCUMENTATION.md)
 - **Stuck?** Reach out to maintainers
 
 ---
