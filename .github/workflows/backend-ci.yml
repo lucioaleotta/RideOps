@@ -19,7 +19,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  archunit:
+    name: Architecture Rules
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run architecture tests
+        working-directory: backend
+        run: >-
+          mvn -B
+          -Dtest=SecurityArchitectureRules,RepositoryTenantScopingArchitectureTest
+          test
+
+      - name: Publish architecture test report
+        if: ${{ !cancelled() }}
+        uses: dorny/test-reporter@v3
+        with:
+          name: Architecture Rules Report
+          path: backend/target/surefire-reports/TEST-*.xml
+          reporter: java-junit
+          use-actions-summary: "true"
+          list-suites: failed
+          list-tests: failed
+          fail-on-error: "true"
+
   build-and-test:
+    name: Build and Test Backend
     runs-on: ubuntu-latest
 
     steps:

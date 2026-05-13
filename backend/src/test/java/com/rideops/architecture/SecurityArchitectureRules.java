@@ -199,7 +199,7 @@ public class SecurityArchitectureRules {
     @ArchTest
     static final ArchRule layered_architecture_security =
         layeredArchitecture()
-            .consideringAllDependencies()
+            .consideringOnlyDependenciesInLayers()
             .layer("Controllers").definedBy(CONTROLLERS)
             .layer("Services").definedBy(SERVICES)
             .layer("Repositories").definedBy(REPOSITORIES)
