@@ -2,6 +2,7 @@ package com.rideops.identity.application.admin;
 
 import com.rideops.identity.adapters.out.UserAdminAuditLogEntity;
 import com.rideops.identity.adapters.out.UserEntity;
+import com.rideops.identity.application.PasswordPolicy;
 import com.rideops.identity.domain.UserRole;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,19 +20,19 @@ public class UpdateUserUseCase {
     private static final Pattern USER_ID_PATTERN =
         Pattern.compile("^[A-Za-z0-9._-]{3,80}$");
 
-    private static final Pattern PASSWORD_PATTERN =
-        Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$");
-
     private final UserAdminRepositoryPort userAdminRepositoryPort;
     private final UserAdminAuditLogPort userAdminAuditLogPort;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicy passwordPolicy;
 
     public UpdateUserUseCase(UserAdminRepositoryPort userAdminRepositoryPort,
                              UserAdminAuditLogPort userAdminAuditLogPort,
-                             PasswordEncoder passwordEncoder) {
+                             PasswordEncoder passwordEncoder,
+                             PasswordPolicy passwordPolicy) {
         this.userAdminRepositoryPort = userAdminRepositoryPort;
         this.userAdminAuditLogPort = userAdminAuditLogPort;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicy = passwordPolicy;
     }
 
     public UserSummaryDto execute(Long id, UpdateUserCommand command, String adminUserId, Long adminUserDbId) {
@@ -141,10 +142,8 @@ public class UpdateUserUseCase {
     }
 
     private void validatePassword(String password) {
-        if (!PASSWORD_PATTERN.matcher(password).matches()) {
-            throw new UserAdminValidationException(
-                "La password deve avere almeno 8 caratteri con maiuscola, minuscola, numero e carattere speciale"
-            );
+        if (!passwordPolicy.isCompliant(password)) {
+            throw new UserAdminValidationException(passwordPolicy.validationMessage());
         }
     }
 }

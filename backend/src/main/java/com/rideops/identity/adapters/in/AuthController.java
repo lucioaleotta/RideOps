@@ -2,6 +2,7 @@ package com.rideops.identity.adapters.in;
 
 import com.rideops.config.JwtSecurityService;
 import com.rideops.identity.application.IdentityUserDetails;
+import com.rideops.identity.application.PasswordPolicy;
 import com.rideops.identity.application.PasswordResetService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
@@ -31,13 +32,16 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtSecurityService jwtSecurityService;
     private final PasswordResetService passwordResetService;
+    private final PasswordPolicy passwordPolicy;
 
     public AuthController(AuthenticationManager authenticationManager,
                           JwtSecurityService jwtSecurityService,
-                          PasswordResetService passwordResetService) {
+                          PasswordResetService passwordResetService,
+                          PasswordPolicy passwordPolicy) {
         this.authenticationManager = authenticationManager;
         this.jwtSecurityService = jwtSecurityService;
         this.passwordResetService = passwordResetService;
+        this.passwordPolicy = passwordPolicy;
     }
 
     @PostMapping("/login")
@@ -86,8 +90,11 @@ public class AuthController {
     }
 
     private void validatePassword(String password) {
-        if (password.length() < 8) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La password deve contenere almeno 8 caratteri");
+        if (!passwordPolicy.isCompliant(password)) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                passwordPolicy.validationMessage()
+            );
         }
     }
 

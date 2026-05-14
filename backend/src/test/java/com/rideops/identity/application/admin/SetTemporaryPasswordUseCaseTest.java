@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.rideops.identity.adapters.out.UserEntity;
+import com.rideops.identity.application.PasswordPolicy;
 import com.rideops.identity.domain.UserRole;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,12 @@ class SetTemporaryPasswordUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new SetTemporaryPasswordUseCase(userAdminRepositoryPort, userAdminAuditLogPort, passwordEncoder);
+        useCase = new SetTemporaryPasswordUseCase(
+            userAdminRepositoryPort,
+            userAdminAuditLogPort,
+            passwordEncoder,
+            new PasswordPolicy()
+        );
     }
 
     @Test

@@ -1,5 +1,7 @@
 package com.rideops.partners.application;
 
+import com.rideops.identity.application.BrevoEmailClient;
+import com.rideops.identity.application.BrevoTemplates;
 import com.rideops.partners.adapters.out.PartnerEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
 import com.rideops.partners.adapters.out.PartnerServiceCommunicationEntity;
@@ -7,6 +9,7 @@ import com.rideops.partners.adapters.out.PartnerServiceCommunicationRepository;
 import com.rideops.partners.domain.PartnerType;
 import com.rideops.identity.adapters.out.EmailOutboxEntity;
 import com.rideops.identity.adapters.out.EmailOutboxRepository;
+import com.rideops.multitenancy.application.TenantManagementRepositoryPort;
 import com.rideops.services.adapters.out.RideServiceEntity;
 import com.rideops.services.adapters.out.RideServiceRepository;
 import com.rideops.services.domain.ServiceAssignmentType;
@@ -14,29 +17,41 @@ import com.rideops.services.domain.ServiceStatus;
 import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PartnerService {
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     private final PartnerRepository partnerRepository;
     private final RideServiceRepository rideServiceRepository;
     private final EmailOutboxRepository emailOutboxRepository;
     private final PartnerServiceCommunicationRepository communicationRepository;
     private final TenantContext tenantContext;
+    private final TenantManagementRepositoryPort tenantManagementRepositoryPort;
+    private final BrevoEmailClient brevoEmailClient;
 
     public PartnerService(PartnerRepository partnerRepository,
                           RideServiceRepository rideServiceRepository,
                           EmailOutboxRepository emailOutboxRepository,
                           PartnerServiceCommunicationRepository communicationRepository,
-                          TenantContext tenantContext) {
+                          TenantContext tenantContext,
+                          TenantManagementRepositoryPort tenantManagementRepositoryPort,
+                          BrevoEmailClient brevoEmailClient) {
         this.partnerRepository = partnerRepository;
         this.rideServiceRepository = rideServiceRepository;
         this.emailOutboxRepository = emailOutboxRepository;
         this.communicationRepository = communicationRepository;
         this.tenantContext = tenantContext;
+        this.tenantManagementRepositoryPort = tenantManagementRepositoryPort;
+        this.brevoEmailClient = brevoEmailClient;
     }
 
     public List<PartnerAssignableServiceDto> listAssignableServices(Long partnerId) {
@@ -94,6 +109,14 @@ public class PartnerService {
         String subject = "RideOps - Dettaglio servizio " + valueOrDash(service.getInternalBookingReference());
         String body = buildPartnerServiceEmailBody(service);
         Long tenantId = tenantContext.requireTenantId();
+
+        brevoEmailClient.sendTemplateEmail(
+            tenantId,
+            partner.getEmail(),
+            partner.getRagioneSociale(),
+            BrevoTemplates.TRASFERIMENTO_NCC,
+            buildBrevoTransferParams(tenantId, partner, service)
+        );
 
         EmailOutboxEntity outbox = new EmailOutboxEntity();
         outbox.setTenantId(tenantId);
@@ -419,5 +442,52 @@ public class PartnerService {
             return "-";
         }
         return value;
+    }
+
+    private Map<String, Object> buildBrevoTransferParams(Long tenantId,
+                                                          PartnerEntity partner,
+                                                          RideServiceEntity service) {
+        String senderCompanyName = tenantManagementRepositoryPort.findById(tenantId)
+            .map(tenant -> valueOrEmpty(tenant.getBusinessName()))
+            .orElse("RideOps");
+
+        String[] customerNames = splitFullName(service.getClientName());
+        LocalDateTime startAt = service.getStartAt();
+        String pickupDate = startAt == null ? "" : DATE_FORMATTER.format(startAt.toLocalDate());
+        String pickupTime = startAt == null ? "" : TIME_FORMATTER.format(startAt.toLocalTime());
+
+        Map<String, Object> params = new LinkedHashMap<>();
+        params.put("partnerName", valueOrEmpty(partner.getRagioneSociale()));
+        params.put("senderCompanyName", senderCompanyName);
+        params.put("pickupDate", pickupDate);
+        params.put("pickupTime", pickupTime);
+        params.put("pickupAddress", valueOrEmpty(service.getPickupLocation()));
+        params.put("dropoffAddress", valueOrEmpty(service.getDestination()));
+        params.put("passengers", service.getPassengersCount() == null ? "" : service.getPassengersCount().toString());
+        params.put("clientFirstName", customerNames[0]);
+        params.put("clientLastName", customerNames[1]);
+        params.put("clientCompany", valueOrEmpty(service.getClientName()));
+        params.put("clientPhone", valueOrEmpty(service.getClientPhone()));
+        params.put("notes", valueOrEmpty(service.getNotes()));
+        return params;
+    }
+
+    private String valueOrEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    private String[] splitFullName(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return new String[] {"", ""};
+        }
+        String normalized = fullName.trim();
+        int separator = normalized.indexOf(' ');
+        if (separator < 0) {
+            return new String[] {normalized, ""};
+        }
+        return new String[] {
+            normalized.substring(0, separator).trim(),
+            normalized.substring(separator + 1).trim()
+        };
     }
 }

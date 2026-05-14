@@ -51,7 +51,7 @@ export function ForgotPasswordForm() {
       {message && <StatusNotice tone="success">{message}</StatusNotice>}
       {error && <StatusNotice tone="error">{error}</StatusNotice>}
       <p>
-        In MVP il link di reset è inviato su outbox/log backend.
+        Se l&apos;indirizzo email è registrato, riceverai entro pochi minuti un link sicuro per reimpostare la password.
       </p>
     </form>
   );

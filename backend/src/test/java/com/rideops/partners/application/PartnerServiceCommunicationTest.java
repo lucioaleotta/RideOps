@@ -9,7 +9,9 @@ import static org.mockito.Mockito.when;
 import com.rideops.identity.adapters.out.EmailOutboxEntity;
 import com.rideops.identity.adapters.out.EmailOutboxRepository;
 import com.rideops.identity.adapters.out.UserEntity;
+import com.rideops.identity.application.BrevoEmailClient;
 import com.rideops.identity.application.IdentityUserDetails;
+import com.rideops.multitenancy.application.TenantManagementRepositoryPort;
 import com.rideops.identity.domain.UserRole;
 import com.rideops.partners.adapters.out.PartnerEntity;
 import com.rideops.partners.adapters.out.PartnerRepository;
@@ -48,6 +50,12 @@ class PartnerServiceCommunicationTest {
     @Mock
     private PartnerServiceCommunicationRepository communicationRepository;
 
+    @Mock
+    private TenantManagementRepositoryPort tenantManagementRepositoryPort;
+
+    @Mock
+    private BrevoEmailClient brevoEmailClient;
+
     private PartnerService service;
 
     @BeforeEach
@@ -58,7 +66,9 @@ class PartnerServiceCommunicationTest {
             rideServiceRepository,
             emailOutboxRepository,
             communicationRepository,
-            new TenantContext()
+            new TenantContext(),
+            tenantManagementRepositoryPort,
+            brevoEmailClient
         );
     }
 

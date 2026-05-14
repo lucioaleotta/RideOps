@@ -35,9 +35,18 @@ security:
     expiration-seconds: ${JWT_EXPIRATION_SECONDS:3600}
 
 rideops:
+  public-url: ${RIDEOPS_PUBLIC_URL:https://rideops.it}
+  login-url: ${RIDEOPS_LOGIN_URL:https://rideops.it/login}
   security:
     admin:
       user-id: ${ADMIN_USER_ID:admin}
       email: ${ADMIN_EMAIL:admin@rideops.local}
       # SECURITY: nessun default. L'app fallisce al boot se ADMIN_PASSWORD non e' impostata.
       password: ${ADMIN_PASSWORD}
+
+brevo:
+  api-key: ${BREVO_API_KEY:}
+  sender-email: ${BREVO_SENDER_EMAIL:noreply@rideops.it}
+  sender-name: ${BREVO_SENDER_NAME:RideOps}
+  base-url: ${BREVO_BASE_URL:https://api.brevo.com/v3}
+  reply-to: ${BREVO_REPLY_TO:support@rideops.it}
