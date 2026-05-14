@@ -15,8 +15,8 @@ Guida completa all'architettura di RideOps: stack tecnologico, decision record, 
 7. [Frontend Architecture](#frontend-architecture)
 8. [Backend Architecture](#backend-architecture)
 9. [Deployment Architecture](#deployment-architecture)
-10. [ADRs (Architecture Decision Records)](#adrs-architecture-decision-records)
-11. [Design Patterns](#design-patterns)
+10. ADRs (Architecture Decision Records)
+11. Design Patterns
 
 ---
 
