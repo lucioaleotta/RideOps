@@ -4,8 +4,10 @@ import { FormEvent, useState } from 'react';
 import { ButtonContent, LoginIcon } from './action-icons';
 import { StatusNotice } from './status-notice';
 
+const FORGOT_PASSWORD_RECIPIENT_EMAIL =
+  process.env.NEXT_PUBLIC_FORGOT_PASSWORD_EMAIL ?? 'admin@rideops.local';
+
 export function ForgotPasswordForm() {
-  const [email, setEmail] = useState('admin@rideops.local');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -19,7 +21,7 @@ export function ForgotPasswordForm() {
     const response = await fetch('/api/auth/forgot-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ email: FORGOT_PASSWORD_RECIPIENT_EMAIL })
     });
 
     const payload = (await response.json().catch(() => ({}))) as { message?: string };
@@ -35,24 +37,15 @@ export function ForgotPasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="form-grid">
-      <label>
-        Email
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="form-input"
-        />
-      </label>
+      <p>
+        Se l&apos;indirizzo email è registrato, riceverai entro pochi minuti un link sicuro per reimpostare la
+        password.
+      </p>
       <button type="submit" disabled={loading} className="primary-button">
         <ButtonContent icon={<LoginIcon />}>{loading ? 'Invio...' : 'Invia link reset'}</ButtonContent>
       </button>
       {message && <StatusNotice tone="success">{message}</StatusNotice>}
       {error && <StatusNotice tone="error">{error}</StatusNotice>}
-      <p>
-        Se l&apos;indirizzo email è registrato, riceverai entro pochi minuti un link sicuro per reimpostare la password.
-      </p>
     </form>
   );
 }
