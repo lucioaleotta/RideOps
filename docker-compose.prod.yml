@@ -48,6 +48,13 @@ services:
       ADMIN_USER_ID: ${ADMIN_USER_ID}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      RIDEOPS_PUBLIC_URL: ${RIDEOPS_PUBLIC_URL:-https://rideops.it}
+      RIDEOPS_LOGIN_URL: ${RIDEOPS_LOGIN_URL:-https://rideops.it/login}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      BREVO_SENDER_EMAIL: ${BREVO_SENDER_EMAIL:-noreply@rideops.it}
+      BREVO_SENDER_NAME: ${BREVO_SENDER_NAME:-RideOps}
+      BREVO_BASE_URL: ${BREVO_BASE_URL:-https://api.brevo.com/v3}
+      BREVO_REPLY_TO: ${BREVO_REPLY_TO:-support@rideops.it}
     networks:
       - backend-net
       - frontend-net

@@ -9,6 +9,7 @@ import com.rideops.identity.adapters.out.UserRepository;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
+import java.util.Map;
 import java.util.UUID;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -28,19 +29,26 @@ public class PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetTokenRepository tokenRepository;
     private final EmailOutboxRepository outboxRepository;
+    private final BrevoEmailClient brevoEmailClient;
     private final PasswordEncoder passwordEncoder;
     private final String tokenHashSecret;
+    private final String publicBaseUrl;
 
     public PasswordResetService(UserRepository userRepository,
                                 PasswordResetTokenRepository tokenRepository,
                                 EmailOutboxRepository outboxRepository,
+                                BrevoEmailClient brevoEmailClient,
                                 PasswordEncoder passwordEncoder,
+                                @Value("${rideops.public-url:https://rideops.it}")
+                                String publicBaseUrl,
                                 @Value("${app.security.password-reset.hash-secret:${security.jwt.secret}}")
                                 String tokenHashSecret) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.outboxRepository = outboxRepository;
+        this.brevoEmailClient = brevoEmailClient;
         this.passwordEncoder = passwordEncoder;
+        this.publicBaseUrl = publicBaseUrl;
         this.tokenHashSecret = tokenHashSecret;
     }
 
@@ -84,8 +92,19 @@ public class PasswordResetService {
         token.setExpiresAt(LocalDateTime.now().plusMinutes(TOKEN_TTL_MINUTES));
         tokenRepository.save(token);
 
-        String resetPath = "/reset-password?token=" + rawToken;
-        String body = "Link reset password (stub email MVP): " + resetPath;
+        String resetUrl = buildResetUrl(rawToken);
+        String body = "Link reset password: " + resetUrl;
+
+        brevoEmailClient.sendTemplateEmail(
+            user.getTenantId(),
+            user.getEmail(),
+            user.getFirstName(),
+            BrevoTemplates.RESET_PASSWORD,
+            Map.of(
+                "firstName", defaultIfBlank(user.getFirstName(), "Utente"),
+                "resetUrl", resetUrl
+            )
+        );
 
         EmailOutboxEntity outbox = new EmailOutboxEntity();
         outbox.setTenantId(user.getTenantId());
@@ -97,6 +116,24 @@ public class PasswordResetService {
         // SECURITY: non loggare mai il token raw né l'email utente per evitare
         // CWE-532 (token nei log) e CWE-117 (log injection via email).
         LOGGER.info("Password reset token generated for userId={}", user.getId());
+    }
+
+    private String buildResetUrl(String rawToken) {
+        String base = publicBaseUrl;
+        if (base == null || base.isBlank()) {
+            base = "https://rideops.it";
+        }
+        if (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base + "/reset-password?token=" + rawToken;
+    }
+
+    private String defaultIfBlank(String value, String fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value;
     }
 
     private String hash(String rawToken) {

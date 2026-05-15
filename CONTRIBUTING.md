@@ -60,6 +60,7 @@ We use **Trunk-Based Development** with `main` as production-ready code.
 Format: `<type>/<description>`
 
 **Types:**
+
 - `feature/` - New functionality
 - `fix/` - Bug fixes
 - `refactor/` - Code restructuring
@@ -68,6 +69,7 @@ Format: `<type>/<description>`
 - `test/` - Test improvements
 
 **Examples:**
+
 ```bash
 # ✅ Good names
 git checkout -b feature/ride-request-notifications
@@ -115,7 +117,7 @@ git push origin -d feature/my-feature
 
 We use **Conventional Commits** for clear, machine-readable history:
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -226,7 +228,7 @@ npm run build
 ### Test Requirements by Change Type
 
 | Change Type | Unit | Integration | E2E | Coverage |
-|:---|:---|:---|:---|:---|
+| --- | --- | --- | --- | --- |
 | Auth logic | ✅ Required | ✅ Required | ➖ N/A | 80%+ |
 | DB queries | ✅ Required | ✅ Required | ➖ N/A | 80%+ |
 | UI component | ✅ Required | ➖ Optional | ✅ Critical | 70%+ |
@@ -289,7 +291,7 @@ git push origin feature/my-feature
 
 Follow conventional commits:
 
-```
+```text
 feat(auth): add two-factor authentication
 fix(login): resolve middleware HTML interception
 test(services): add integration tests
@@ -345,6 +347,7 @@ See [Code Review Checklist](#code-review-checklist) below.
 ```
 
 After merge:
+
 ```bash
 git checkout main
 git pull upstream main
@@ -366,7 +369,7 @@ Use this when reviewing PRs.
 - [ ] Edge cases are handled
 - [ ] Database migrations (if applicable) are safe
 
-### Testing
+### Testing Checks
 
 - [ ] New tests added for new code
 - [ ] All tests pass
@@ -374,7 +377,7 @@ Use this when reviewing PRs.
 - [ ] Mocks/fixtures appropriate
 - [ ] No skipped tests (`skip()`, `x()`)
 
-### Code Quality
+### Code Quality Checks
 
 - [ ] Follows team conventions
 - [ ] No hardcoded values (use env vars, config)
@@ -391,7 +394,7 @@ Use this when reviewing PRs.
 - [ ] Input validation present
 - [ ] HTTPS/TLS where applicable
 
-### Documentation
+### Documentation Checks
 
 - [ ] READMEs updated if needed
 - [ ] API docs updated if endpoints changed
@@ -639,6 +642,7 @@ git log upstream/main..origin/feature/my-feature --oneline
 ## FAQ
 
 **Q: I made a commit to wrong branch. How do I fix it?**
+
 ```bash
 git reset HEAD~1            # Undo last commit
 git stash                   # Save changes
@@ -648,6 +652,7 @@ git commit -m "..."
 ```
 
 **Q: How do I update my PR after requested changes?**
+
 ```bash
 # Make changes to your branch
 git add .
@@ -657,6 +662,7 @@ git push origin feature/my-feature
 ```
 
 **Q: Can I work on multiple features at once?**
+
 ```bash
 # Create separate branches for each
 git checkout -b feature/task-1
@@ -670,6 +676,7 @@ git checkout feature/task-1
 ```
 
 **Q: What if I accidentally pushed to main?**
+
 ```bash
 # Contact maintainer immediately!
 # They can force reset: git reset --hard <safe-commit>
@@ -678,6 +685,7 @@ git checkout feature/task-1
 ```
 
 **Q: How do I test my code with production database?**
+
 ```bash
 # Use your local dev database only
 # Never connect to production DB

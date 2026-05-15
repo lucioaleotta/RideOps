@@ -182,7 +182,7 @@ jobs:
           username: root
           key:      ${{ secrets.HETZNER_SSH_KEY }}
           port:     22
-          envs:     GHCR_TOKEN,GHCR_USER,IMAGE_TAG
+          envs:     GHCR_TOKEN,GHCR_USER,IMAGE_TAG,BREVO_API_KEY,BREVO_SENDER_EMAIL,BREVO_SENDER_NAME,BREVO_BASE_URL,BREVO_REPLY_TO
           script: |
             cd /opt/rideops
             export IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
@@ -190,6 +190,11 @@ jobs:
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USER:  ${{ github.actor }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_SENDER_EMAIL: ${{ secrets.BREVO_SENDER_EMAIL }}
+          BREVO_SENDER_NAME: ${{ secrets.BREVO_SENDER_NAME }}
+          BREVO_BASE_URL: ${{ secrets.BREVO_BASE_URL }}
+          BREVO_REPLY_TO: ${{ secrets.BREVO_REPLY_TO }}
 
       - name: Health check
         run: |

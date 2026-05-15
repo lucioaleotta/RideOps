@@ -159,6 +159,32 @@ a:hover {
   color: #1b8a3f;
 }
 
+.form-help-text {
+  border: 1px solid #d9e6f5;
+  border-radius: 10px;
+  background: #f7fbff;
+  padding: 10px 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.form-help-text p {
+  margin: 0 0 6px;
+}
+
+.password-policy-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.password-policy-rule--valid {
+  color: #1b8a3f;
+}
+
+.password-policy-rule--invalid {
+  color: #d32f2f;
+}
+
 /* === Notice banner (info / errore / successo) === */
 .services-notice {
   display: flex;

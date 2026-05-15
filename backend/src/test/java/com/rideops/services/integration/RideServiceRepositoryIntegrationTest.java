@@ -27,7 +27,7 @@ import java.time.LocalDateTime;
  * This test class demonstrates how to write integration tests that use
  * a real PostgreSQL database running in a Docker container.
  */
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 @DataJpaTest
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)

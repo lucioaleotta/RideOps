@@ -1,12 +1,16 @@
 package com.rideops.multitenancy.application;
 
+import com.rideops.identity.application.BrevoEmailClient;
+import com.rideops.identity.application.BrevoTemplates;
 import com.rideops.multitenancy.SubscriptionPlan;
 import com.rideops.multitenancy.SubscriptionStatus;
 import com.rideops.multitenancy.TenantEntity;
 import com.rideops.multitenancy.TenantOperationalStatus;
 import java.security.SecureRandom;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,11 +23,17 @@ public class CreateTenantUseCase {
 
     private final TenantManagementRepositoryPort tenantManagementRepositoryPort;
     private final TenantAdminProvisioningPort tenantAdminProvisioningPort;
+    private final BrevoEmailClient brevoEmailClient;
+    private final String loginUrl;
 
     public CreateTenantUseCase(TenantManagementRepositoryPort tenantManagementRepositoryPort,
-                               TenantAdminProvisioningPort tenantAdminProvisioningPort) {
+                               TenantAdminProvisioningPort tenantAdminProvisioningPort,
+                               BrevoEmailClient brevoEmailClient,
+                               @Value("${rideops.login-url:https://rideops.it/login}") String loginUrl) {
         this.tenantManagementRepositoryPort = tenantManagementRepositoryPort;
         this.tenantAdminProvisioningPort = tenantAdminProvisioningPort;
+        this.brevoEmailClient = brevoEmailClient;
+        this.loginUrl = loginUrl;
     }
 
     public TenantProvisioningResultDto execute(CreateTenantCommand command) {
@@ -84,6 +94,22 @@ public class CreateTenantUseCase {
             adminPassword,
             names[0],
             names[1]
+        );
+
+        brevoEmailClient.sendTemplateEmail(
+            savedTenant.getId(),
+            adminEmail,
+            names[0] + " " + names[1],
+            BrevoTemplates.BENVENUTO,
+            Map.of(
+                "firstName", defaultIfBlank(names[0], "Tenant"),
+                "lastName", defaultIfBlank(names[1], "Admin"),
+                "username", adminUserId,
+                "companyName", savedTenant.getBusinessName(),
+                "email", adminEmail,
+                "phone", defaultIfBlank(savedTenant.getContactPhone(), ""),
+                "loginUrl", defaultIfBlank(loginUrl, "https://rideops.it/login")
+            )
         );
 
         return new TenantProvisioningResultDto(

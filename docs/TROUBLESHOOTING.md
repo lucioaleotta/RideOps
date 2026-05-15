@@ -16,8 +16,7 @@ Guida per diagnosticare e risolvere problemi comuni durante sviluppo, testing, e
 8. [Production (Hetzner VPS)](#production-hetzner-vps)
 9. [SSL & Nginx](#ssl--nginx)
 10. [Git & CI/CD](#git--cicd)
-11. [Performance Issues](#performance-issues)
-12. [Backup & Restore](#backup--restore)
+11. [Backup & Restore](#backup--restore)
 
 ---
 

@@ -1,7 +1,7 @@
 package com.rideops.identity.application.admin;
 
 import com.rideops.identity.adapters.out.UserAdminAuditLogEntity;
-import java.util.regex.Pattern;
+import com.rideops.identity.application.PasswordPolicy;
 import java.util.Objects;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,19 +9,19 @@ import org.springframework.stereotype.Service;
 @Service
 public class SetTemporaryPasswordUseCase {
 
-    private static final Pattern PASSWORD_PATTERN =
-        Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,}$");
-
     private final UserAdminRepositoryPort userAdminRepositoryPort;
     private final UserAdminAuditLogPort userAdminAuditLogPort;
     private final PasswordEncoder passwordEncoder;
+    private final PasswordPolicy passwordPolicy;
 
     public SetTemporaryPasswordUseCase(UserAdminRepositoryPort userAdminRepositoryPort,
                                        UserAdminAuditLogPort userAdminAuditLogPort,
-                                       PasswordEncoder passwordEncoder) {
+                                       PasswordEncoder passwordEncoder,
+                                       PasswordPolicy passwordPolicy) {
         this.userAdminRepositoryPort = userAdminRepositoryPort;
         this.userAdminAuditLogPort = userAdminAuditLogPort;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicy = passwordPolicy;
     }
 
     public UserSummaryDto execute(Long userId, String rawTemporaryPassword, String adminUserId, Long adminUserDbId) {
@@ -48,10 +48,8 @@ public class SetTemporaryPasswordUseCase {
     }
 
     private void validatePassword(String rawPassword) {
-        if (rawPassword == null || !PASSWORD_PATTERN.matcher(rawPassword).matches()) {
-            throw new UserAdminValidationException(
-                "La password deve avere almeno 8 caratteri con maiuscola, minuscola, numero e carattere speciale"
-            );
+        if (!passwordPolicy.isCompliant(rawPassword)) {
+            throw new UserAdminValidationException(passwordPolicy.validationMessage());
         }
     }
 }
