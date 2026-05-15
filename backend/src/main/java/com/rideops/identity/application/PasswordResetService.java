@@ -53,13 +53,13 @@ public class PasswordResetService {
     }
 
     @Transactional
-    public void requestReset(String email) {
-        String normalizedEmail = normalizeEmail(email);
-        if (normalizedEmail == null) {
+    public void requestReset(String userId) {
+        String normalizedUserId = normalizeUserId(userId);
+        if (normalizedUserId == null) {
             return;
         }
 
-        userRepository.findByEmailIgnoreCase(normalizedEmail)
+        userRepository.findByUserIdIgnoreCase(normalizedUserId)
             .ifPresent(this::createTokenAndOutboxEmail);
     }
 
@@ -124,7 +124,7 @@ public class PasswordResetService {
         outbox.setBody(body);
         outboxRepository.save(outbox);
 
-        // SECURITY: non loggare mai il token raw né l'email utente per evitare
+        // SECURITY: non loggare mai il token raw ne l'email utente per evitare
         // CWE-532 (token nei log) e CWE-117 (log injection via email).
         LOGGER.info("Password reset token generated for userId={}", user.getId());
     }
@@ -153,6 +153,18 @@ public class PasswordResetService {
         }
 
         String normalized = email.trim();
+        if (normalized.isBlank()) {
+            return null;
+        }
+        return normalized;
+    }
+
+    private String normalizeUserId(String userId) {
+        if (userId == null) {
+            return null;
+        }
+
+        String normalized = userId.trim();
         if (normalized.isBlank()) {
             return null;
         }

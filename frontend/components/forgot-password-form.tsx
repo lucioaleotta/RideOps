@@ -4,16 +4,22 @@ import { FormEvent, useState } from 'react';
 import { ButtonContent, LoginIcon } from './action-icons';
 import { StatusNotice } from './status-notice';
 
-const FORGOT_PASSWORD_RECIPIENT_EMAIL =
-  process.env.NEXT_PUBLIC_FORGOT_PASSWORD_EMAIL ?? 'admin@rideops.local';
-
 export function ForgotPasswordForm() {
+  const [userId, setUserId] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const normalizedUserId = userId.trim();
+
+    if (!normalizedUserId) {
+      setError('Inserisci il tuo user ID');
+      setMessage(null);
+      return;
+    }
+
     setError(null);
     setMessage(null);
     setLoading(true);
@@ -21,7 +27,7 @@ export function ForgotPasswordForm() {
     const response = await fetch('/api/auth/forgot-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: FORGOT_PASSWORD_RECIPIENT_EMAIL })
+      body: JSON.stringify({ userId: normalizedUserId })
     });
 
     const payload = (await response.json().catch(() => ({}))) as { message?: string };
@@ -37,8 +43,21 @@ export function ForgotPasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="form-grid">
+      <label>
+        User ID
+        <input
+          type="text"
+          name="userId"
+          value={userId}
+          onChange={(event) => setUserId(event.target.value)}
+          placeholder="Inserisci il tuo user ID"
+          autoComplete="username"
+          className="form-input"
+          required
+        />
+      </label>
       <p>
-        Se l&apos;indirizzo email è registrato, riceverai entro pochi minuti un link sicuro per reimpostare la
+        Se lo user ID e registrato, riceverai entro pochi minuti un link sicuro per reimpostare la
         password.
       </p>
       <button type="submit" disabled={loading} className="primary-button">

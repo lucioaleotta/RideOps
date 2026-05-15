@@ -5,7 +5,6 @@ import com.rideops.identity.application.IdentityUserDetails;
 import com.rideops.identity.application.PasswordPolicy;
 import com.rideops.identity.application.PasswordResetService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
 import org.slf4j.Logger;
@@ -73,8 +72,8 @@ public class AuthController {
     @PostMapping("/forgot-password")
     @ResponseStatus(HttpStatus.OK)
     public GenericMessageResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        passwordResetService.requestReset(request.email());
-        return new GenericMessageResponse("Se l'email esiste, riceverai le istruzioni per il reset.");
+        passwordResetService.requestReset(request.userId());
+        return new GenericMessageResponse("Se lo user ID esiste, riceverai le istruzioni per il reset.");
     }
 
     @PostMapping("/reset-password")
@@ -107,7 +106,7 @@ public class AuthController {
     record MeResponse(Long id, String userId, String email, String role, Long tenantId) {
     }
 
-    record ForgotPasswordRequest(@NotBlank @Email String email) {
+    record ForgotPasswordRequest(@NotBlank String userId) {
     }
 
     record ResetPasswordRequest(@NotBlank String token, @NotNull @NotBlank String newPassword) {

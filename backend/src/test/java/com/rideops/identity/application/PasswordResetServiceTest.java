@@ -62,15 +62,16 @@ class PasswordResetServiceTest {
         UserEntity admin = new UserEntity();
         setField(admin, "id", 99L);
         admin.setTenantId(null);
+        admin.setUserId("ADMIN");
         admin.setEmail("admin@rideops.local");
         admin.setFirstName("Admin");
 
-        when(userRepository.findByEmailIgnoreCase("ADMIN@RIDEOPS.LOCAL")).thenReturn(Optional.of(admin));
+        when(userRepository.findByUserIdIgnoreCase("ADMIN")).thenReturn(Optional.of(admin));
         when(tokenRepository.findByUserAndUsedAtIsNull(admin)).thenReturn(List.of());
         when(tokenRepository.save(any(PasswordResetTokenEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(outboxRepository.save(any(EmailOutboxEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.requestReset("  ADMIN@RIDEOPS.LOCAL  ");
+        service.requestReset("  ADMIN  ");
 
         ArgumentCaptor<PasswordResetTokenEntity> tokenCaptor = ArgumentCaptor.forClass(PasswordResetTokenEntity.class);
         verify(tokenRepository).save(tokenCaptor.capture());
@@ -90,10 +91,10 @@ class PasswordResetServiceTest {
     }
 
     @Test
-    void requestResetDoesNotTriggerAnyActionForUnknownEmail() {
-        when(userRepository.findByEmailIgnoreCase("missing@rideops.local")).thenReturn(Optional.empty());
+    void requestResetDoesNotTriggerAnyActionForUnknownUserId() {
+        when(userRepository.findByUserIdIgnoreCase("missing-user")).thenReturn(Optional.empty());
 
-        service.requestReset("missing@rideops.local");
+        service.requestReset("missing-user");
 
         verify(tokenRepository, never()).save(any());
         verify(outboxRepository, never()).save(any());
