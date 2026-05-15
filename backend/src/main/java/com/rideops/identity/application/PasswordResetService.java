@@ -53,13 +53,13 @@ public class PasswordResetService {
     }
 
     @Transactional
-    public void requestReset(String email) {
-        String normalizedEmail = normalizeEmail(email);
-        if (normalizedEmail == null) {
+    public void requestReset(String userId) {
+        String normalizedUserId = normalizeUserId(userId);
+        if (normalizedUserId == null) {
             return;
         }
 
-        userRepository.findByEmailIgnoreCase(normalizedEmail)
+        userRepository.findByUserIdIgnoreCase(normalizedUserId)
             .ifPresent(this::createTokenAndOutboxEmail);
     }
 
@@ -153,6 +153,18 @@ public class PasswordResetService {
         }
 
         String normalized = email.trim();
+        if (normalized.isBlank()) {
+            return null;
+        }
+        return normalized;
+    }
+
+    private String normalizeUserId(String userId) {
+        if (userId == null) {
+            return null;
+        }
+
+        String normalized = userId.trim();
         if (normalized.isBlank()) {
             return null;
         }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  if (!body || !body.email) {
+  if (!body || typeof body.userId !== 'string' || !body.userId.trim()) {
     return NextResponse.json({ message: 'Payload non valido' }, { status: 400 });
   }
 
@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const backendResponse = await fetch(`${backendUrl}/auth/forgot-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: body.email }),
+    body: JSON.stringify({ userId: body.userId.trim() }),
     cache: 'no-store'
   });
 
@@ -18,5 +18,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Errore nella richiesta reset password' }, { status: 400 });
   }
 
-  return NextResponse.json({ message: 'Se l’email esiste, riceverai istruzioni per il reset.' });
+  return NextResponse.json({ message: 'Se lo user ID esiste, riceverai istruzioni per il reset.' });
 }
