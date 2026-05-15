@@ -57,7 +57,7 @@ export function ForgotPasswordForm() {
         />
       </label>
       <p>
-        Se lo user ID è registrato, riceverai entro pochi minuti un link sicuro per reimpostare la
+        Se lo user ID e registrato, riceverai entro pochi minuti un link sicuro per reimpostare la
         password.
       </p>
       <button type="submit" disabled={loading} className="primary-button">
