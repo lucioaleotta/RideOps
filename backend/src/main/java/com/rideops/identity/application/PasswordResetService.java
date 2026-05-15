@@ -54,7 +54,12 @@ public class PasswordResetService {
 
     @Transactional
     public void requestReset(String email) {
-        userRepository.findByEmailIgnoreCase(email)
+        String normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail == null) {
+            return;
+        }
+
+        userRepository.findByEmailIgnoreCase(normalizedEmail)
             .ifPresent(this::createTokenAndOutboxEmail);
     }
 
@@ -77,6 +82,12 @@ public class PasswordResetService {
     }
 
     private void createTokenAndOutboxEmail(UserEntity user) {
+        String recipientEmail = normalizeEmail(user.getEmail());
+        if (recipientEmail == null) {
+            LOGGER.warn("Password reset skipped for userId={} (missing persisted email)", user.getId());
+            return;
+        }
+
         tokenRepository.findByUserAndUsedAtIsNull(user)
             .forEach(existing -> {
                 existing.setUsedAt(LocalDateTime.now());
@@ -97,7 +108,7 @@ public class PasswordResetService {
 
         brevoEmailClient.sendTemplateEmail(
             user.getTenantId(),
-            user.getEmail(),
+            recipientEmail,
             user.getFirstName(),
             BrevoTemplates.RESET_PASSWORD,
             Map.of(
@@ -108,7 +119,7 @@ public class PasswordResetService {
 
         EmailOutboxEntity outbox = new EmailOutboxEntity();
         outbox.setTenantId(user.getTenantId());
-        outbox.setRecipient(user.getEmail());
+        outbox.setRecipient(recipientEmail);
         outbox.setSubject("RideOps reimpostazione password");
         outbox.setBody(body);
         outboxRepository.save(outbox);
@@ -134,6 +145,18 @@ public class PasswordResetService {
             return fallback;
         }
         return value;
+    }
+
+    private String normalizeEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+
+        String normalized = email.trim();
+        if (normalized.isBlank()) {
+            return null;
+        }
+        return normalized;
     }
 
     private String hash(String rawToken) {
