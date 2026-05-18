@@ -11,11 +11,14 @@ on:
       - "docs/**"
       - ".github/workflows/docs-ci.yml"
       - ".github/workflows/backend-ci.yml"
+      - ".github/workflows/sync-scripts-hetzner.yml"
       - "CONTRIBUTING.md"
       - "BRANCHING_STRATEGY.md"
       - "QUICKSTART.md"
       - "TESTING_STRATEGY.md"
       - "TROUBLESHOOTING.md"
+      - "scripts/server/**"
+      - "scripts/copy_ssl_and_reload_nginx.sh"
   workflow_dispatch:
     inputs:
       tag:
@@ -62,7 +65,6 @@ jobs:
             infra:
               - 'nginx/**'
               - 'docker-compose.prod.yml'
-              - 'scripts/server/**'
 
   # ─────────────────────────────────────────────────────────────────────────────
   # 1. Test backend

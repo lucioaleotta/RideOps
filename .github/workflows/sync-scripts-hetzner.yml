@@ -1,0 +1,58 @@
+name: Sync Server Scripts to Hetzner
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/server/**"
+      - "scripts/copy_ssl_and_reload_nginx.sh"
+  workflow_dispatch:
+
+concurrency:
+  group: scripts-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync-scripts:
+    name: Sync scripts only
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate shell scripts syntax
+        run: |
+          set -euo pipefail
+          for file in scripts/server/*.sh scripts/copy_ssl_and_reload_nginx.sh; do
+            if [[ -f "$file" ]]; then
+              bash -n "$file"
+            fi
+          done
+
+      - name: Upload scripts to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: root
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: 22
+          source: "scripts/server/**,scripts/copy_ssl_and_reload_nginx.sh"
+          target: "/opt/rideops"
+          strip_components: 0
+
+      - name: Fix scripts permissions and verify remotely
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: root
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: 22
+          script: |
+            set -euo pipefail
+            chmod +x /opt/rideops/scripts/server/*.sh /opt/rideops/scripts/copy_ssl_and_reload_nginx.sh
+            for file in /opt/rideops/scripts/server/*.sh /opt/rideops/scripts/copy_ssl_and_reload_nginx.sh; do
+              if [[ -f "$file" ]]; then
+                bash -n "$file"
+              fi
+            done
+            echo "Scripts sync completed"
