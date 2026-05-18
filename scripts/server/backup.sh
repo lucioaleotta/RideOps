@@ -61,6 +61,11 @@ sync_to_storage_box() {
         -p "${STORAGEBOX_PORT}"
         -o "StrictHostKeyChecking=${STORAGEBOX_STRICT_HOST_KEY_CHECKING}"
     )
+    local scp_opts=(
+        -i "${STORAGEBOX_SSH_KEY}"
+        -P "${STORAGEBOX_PORT}"
+        -o "StrictHostKeyChecking=${STORAGEBOX_STRICT_HOST_KEY_CHECKING}"
+    )
 
     if [[ "${remote_dir_abs}" != /* ]]; then
         remote_dir_abs="/home/${remote_dir_abs}"
@@ -78,7 +83,7 @@ sync_to_storage_box() {
         return 0
     fi
 
-    if scp "${ssh_opts[@]}" "${BACKUP_FILE}" "${ssh_target}:${remote_dir_abs}/"; then
+    if scp "${scp_opts[@]}" "${BACKUP_FILE}" "${ssh_target}:${remote_dir_abs}/"; then
         local local_size
         local remote_size
 
