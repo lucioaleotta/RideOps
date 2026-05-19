@@ -84,6 +84,7 @@ sync_to_storage_box() {
     fi
 
     if scp "${scp_opts[@]}" "${BACKUP_FILE}" "${ssh_target}:${remote_dir_abs}/"; then
+
         local local_hash
         local remote_hash_full
         local remote_hash
