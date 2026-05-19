@@ -84,14 +84,24 @@ sync_to_storage_box() {
     fi
 
     if scp "${scp_opts[@]}" "${BACKUP_FILE}" "${ssh_target}:${remote_dir_abs}/"; then
-        local local_size
-        local remote_size
+        local local_hash
+        local remote_hash_full
+        local remote_hash
 
-        local_size="$(wc -c < "${BACKUP_FILE}" | tr -d '[:space:]')"
-        remote_size="$(ssh "${ssh_opts[@]}" "${ssh_target}" "stat -c%s '${remote_file}'" 2>/dev/null || true)"
+        local_hash="$(sha256sum "${BACKUP_FILE}" | awk '{print $1}')"
+        remote_hash_full="$(ssh "${ssh_opts[@]}" "${ssh_target}" "sha256sum '${remote_file}'" 2>/dev/null || true)"
+        remote_hash="$(printf '%s\n' "${remote_hash_full}" | awk '{print $1}')"
 
-        if [[ -z "${remote_size}" || "${remote_size}" != "${local_size}" ]]; then
-            echo "[$(date)] WARN: verifica integrita upload fallita (local=${local_size}, remote=${remote_size:-N/A})"
+        if [[ -z "${remote_hash}" ]]; then
+            echo "[$(date)] WARN: verifica integrita upload fallita (hash remoto non disponibile per ${remote_file})"
+            if [[ "${STORAGEBOX_FAIL_ON_ERROR}" == "true" ]]; then
+                exit 1
+            fi
+            return 0
+        fi
+
+        if [[ "${remote_hash}" != "${local_hash}" ]]; then
+            echo "[$(date)] WARN: verifica integrita upload fallita (sha256 locale=${local_hash}, remoto=${remote_hash})"
             if [[ "${STORAGEBOX_FAIL_ON_ERROR}" == "true" ]]; then
                 exit 1
             fi
