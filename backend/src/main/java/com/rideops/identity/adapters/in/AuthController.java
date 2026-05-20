@@ -4,6 +4,8 @@ import com.rideops.config.JwtSecurityService;
 import com.rideops.identity.application.IdentityUserDetails;
 import com.rideops.identity.application.PasswordPolicy;
 import com.rideops.identity.application.PasswordResetService;
+import com.rideops.identity.application.sessions.LoginSessionRecorder;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
@@ -32,25 +34,30 @@ public class AuthController {
     private final JwtSecurityService jwtSecurityService;
     private final PasswordResetService passwordResetService;
     private final PasswordPolicy passwordPolicy;
+    private final LoginSessionRecorder loginSessionRecorder;
 
     public AuthController(AuthenticationManager authenticationManager,
                           JwtSecurityService jwtSecurityService,
                           PasswordResetService passwordResetService,
-                          PasswordPolicy passwordPolicy) {
+                          PasswordPolicy passwordPolicy,
+                          LoginSessionRecorder loginSessionRecorder) {
         this.authenticationManager = authenticationManager;
         this.jwtSecurityService = jwtSecurityService;
         this.passwordResetService = passwordResetService;
         this.passwordPolicy = passwordPolicy;
+        this.loginSessionRecorder = loginSessionRecorder;
     }
 
     @PostMapping("/login")
-    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+    public LoginResponse login(@Valid @RequestBody LoginRequest request,
+                               HttpServletRequest httpRequest) {
         try {
             var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.userId(), request.password())
             );
             IdentityUserDetails principal = (IdentityUserDetails) authentication.getPrincipal();
             String token = jwtSecurityService.generateToken(principal);
+            loginSessionRecorder.recordSuccessfulLogin(principal, httpRequest);
             log.info("action=user.login userId={} role={} outcome=success",
                 principal.getUserId(), principal.getRole());
             return new LoginResponse(token, "Bearer", jwtSecurityService.getExpirationSeconds());

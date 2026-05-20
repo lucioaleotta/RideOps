@@ -990,6 +990,113 @@ a:hover {
   background: #f9fcff;
 }
 
+.access-log-table-wrap {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid #d8e5f3;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.access-log-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 900px;
+}
+
+.access-log-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 12px 10px;
+  background: #f1f6fc;
+  color: #233f5f;
+  font-size: 14px;
+  font-weight: 700;
+  border-bottom: 1px solid #d8e5f3;
+}
+
+.access-log-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.access-log-table tbody tr[data-even='true'] {
+  background: #fcfdff;
+}
+
+.access-log-table tbody tr.is-anomaly {
+  background: #fff6f4;
+}
+
+.access-log-table tbody tr:hover {
+  background: #edf5ff;
+}
+
+.access-log-table tbody td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #e4edf7;
+  vertical-align: middle;
+}
+
+.access-log-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.access-log-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.access-log-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #dbeafe;
+  color: #1e40af;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.access-log-primary {
+  color: #1f3652;
+  font-weight: 600;
+}
+
+.access-log-secondary {
+  color: #465f7c;
+}
+
+.access-log-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.access-log-badge-ok {
+  color: #175f39;
+  background: #e7f7ee;
+}
+
+.access-log-badge-danger {
+  color: #a72821;
+  background: #fde8e5;
+}
+
+.access-log-anomaly-text {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .tenant-panel {
   display: grid;
   gap: 16px;
