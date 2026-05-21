@@ -242,7 +242,7 @@ export function AccessControlDashboard() {
         </div>
       )}
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12 }}>
+      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
         <KpiCard title="Accessi totali (7g)" value={kpis.total7d} tone="neutral" />
         <KpiCard title="Accessi ultime 24h" value={kpis.total24h} tone="neutral" />
         <KpiCard title="Anomalie rilevate" value={kpis.anomaliesTotal} tone={kpis.anomaliesTotal > 0 ? 'danger' : 'neutral'} />
@@ -272,28 +272,30 @@ export function AccessControlDashboard() {
         <p style={{ margin: 0, color: '#607086', fontSize: 13 }}>
           Totale 24h: <strong>{totalHourly}</strong> login · Picco: <strong>{peakHour.hour.toString().padStart(2, '0')}:00 ({peakHour.count})</strong>
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(24, minmax(16px, 1fr))', alignItems: 'end', gap: 4, minHeight: 180 }}>
-          {hourly.map((count, hour) => {
-            const height = Math.max(4, Math.round((count / maxHourly) * 150));
-            const nightHour = hour >= 0 && hour <= 5;
-            const anomalyCount = hourlyAnomalies[hour] ?? 0;
-            return (
-              <div key={hour} style={{ display: 'grid', justifyItems: 'center', gap: 4 }}>
-                <span style={{ fontSize: 10, color: '#41566d', lineHeight: 1 }}>{count}</span>
-                <div
-                  title={`${hour.toString().padStart(2, '0')}:00 - accessi ${count}, anomalie ${anomalyCount}`}
-                  style={{
-                    width: '100%',
-                    maxWidth: 24,
-                    height,
-                    borderRadius: 6,
-                    background: nightHour ? '#d32f2f' : '#1976d2'
-                  }}
-                />
-                <span style={{ fontSize: 10, color: '#607086' }}>{hour.toString().padStart(2, '0')}</span>
-              </div>
-            );
-          })}
+        <div className="access-chart-scroll">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(24, minmax(16px, 1fr))', alignItems: 'end', gap: 4, minHeight: 180, minWidth: 480 }}>
+            {hourly.map((count, hour) => {
+              const height = Math.max(4, Math.round((count / maxHourly) * 150));
+              const nightHour = hour >= 0 && hour <= 5;
+              const anomalyCount = hourlyAnomalies[hour] ?? 0;
+              return (
+                <div key={hour} style={{ display: 'grid', justifyItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, color: '#41566d', lineHeight: 1 }}>{count}</span>
+                  <div
+                    title={`${hour.toString().padStart(2, '0')}:00 - accessi ${count}, anomalie ${anomalyCount}`}
+                    style={{
+                      width: '100%',
+                      maxWidth: 24,
+                      height,
+                      borderRadius: 6,
+                      background: nightHour ? '#d32f2f' : '#1976d2'
+                    }}
+                  />
+                  <span style={{ fontSize: 10, color: '#607086' }}>{hour.toString().padStart(2, '0')}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -325,41 +327,31 @@ export function AccessControlDashboard() {
       </section>
 
       <section className="dashboard-card" style={{ display: 'grid', gap: 10 }}>
-        <h3 style={{ marginTop: 0 }}>Top 5 IP più frequenti (ultimi 7 giorni)</h3>
+        <h3 style={{ marginTop: 0 }}>Top 5 IP (ultimi 7 giorni)</h3>
         {topIps.length === 0 ? (
           <p>Nessun dato disponibile.</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr>
-                  <th align="left">IP</th>
-                  <th align="left">Accessi</th>
-                  <th align="left">Tenant</th>
-                  <th align="left">Paese</th>
-                  <th align="left">Città</th>
-                  <th align="left">Flag</th>
-                </tr>
-              </thead>
-              <tbody>
-                {topIps.map((item, idx) => (
-                  <tr key={`${item.ip}-${idx}`}>
-                    <td style={{ padding: '10px 8px 10px 0' }}>{item.ip}</td>
-                    <td style={{ padding: '10px 8px 10px 0' }}>{item.count}</td>
-                    <td style={{ padding: '10px 8px 10px 0' }}>{item.tenantName}</td>
-                    <td style={{ padding: '10px 8px 10px 0' }}>{item.countryName}</td>
-                    <td style={{ padding: '10px 8px 10px 0' }}>{item.city}</td>
-                    <td style={{ padding: '10px 8px 10px 0' }}>
-                      {item.suspicious ? (
-                        <span style={{ background: '#ffe4d8', color: '#9b2d00', borderRadius: 999, padding: '2px 10px', fontSize: 12 }}>sospetto</span>
-                      ) : (
-                        <span style={{ color: '#4e6a87' }}>ok</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display: 'grid', gap: 10 }}>
+            {topIps.map((item, idx) => (
+              <div key={`${item.ip}-${idx}`} className="top-ip-card">
+                <div className="top-ip-card-header">
+                  <span className="top-ip-card-ip">{item.ip}</span>
+                  {item.suspicious ? (
+                    <span className="access-log-badge access-log-badge-danger">sospetto</span>
+                  ) : (
+                    <span className="access-log-badge access-log-badge-ok">ok</span>
+                  )}
+                </div>
+                <div className="top-ip-card-meta">
+                  <span>Accessi: <strong>{item.count}</strong></span>
+                  <span>Tenant: <strong>{item.tenantName}</strong></span>
+                </div>
+                <div className="top-ip-card-meta">
+                  <span>Paese: <strong>{item.countryName}</strong></span>
+                  <span>Città: <strong>{item.city}</strong></span>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
@@ -370,12 +362,12 @@ export function AccessControlDashboard() {
           <span style={{ color: '#607086' }}>Totale: {sessionsPayload.total}</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+        <div className="access-filters" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
           <label>
-            Ricerca
+            <span>Ricerca</span>
             <input
               className="form-input"
-              placeholder="utente o tenant"
+              placeholder="Cerca utente o tenant"
               value={search}
               onChange={(event) => {
                 setPage(0);
@@ -385,7 +377,7 @@ export function AccessControlDashboard() {
           </label>
 
           <label>
-            Stato
+            <span>Stato</span>
             <select
               className="form-input"
               value={statusFilter}
@@ -401,7 +393,7 @@ export function AccessControlDashboard() {
           </label>
 
           <label>
-            Tenant
+            <span>Tenant</span>
             <select
               className="form-input"
               value={tenantFilter}
@@ -425,10 +417,10 @@ export function AccessControlDashboard() {
                 <th align="left">Utente</th>
                 <th align="left">Tenant</th>
                 <th align="left">Data / Ora</th>
-                <th align="left">Paese</th>
+                <th align="left" className="col-paese">Paese</th>
                 <th align="left">Dispositivo</th>
                 <th align="left">Stato</th>
-                <th align="left">Descrizione anomalia</th>
+                <th align="left" className="col-anomalia">Descrizione anomalia</th>
               </tr>
             </thead>
             <tbody>
@@ -449,7 +441,7 @@ export function AccessControlDashboard() {
                   </td>
                   <td className="access-log-primary">{session.tenantName}</td>
                   <td className="access-log-secondary">{formatDate(session.createdAt)}</td>
-                  <td className="access-log-secondary">{formatCountry(session.countryCode, session.countryName)}</td>
+                  <td className="access-log-secondary col-paese">{formatCountry(session.countryCode, session.countryName)}</td>
                   <td className="access-log-secondary">{`${session.uaBrowser ?? 'unknown'} · ${session.uaOs ?? 'unknown'}`}</td>
                   <td>
                     {session.anomaly ? (
@@ -458,30 +450,63 @@ export function AccessControlDashboard() {
                       <span className="access-log-badge access-log-badge-ok">OK</span>
                     )}
                   </td>
-                  <td className="access-log-anomaly-text" title={session.anomaly ?? '—'}>{session.anomaly ?? '—'}</td>
+                  <td className="access-log-anomaly-text col-anomalia" title={session.anomaly ?? '—'}>{session.anomaly ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="access-log-cards">
+          {sessionsPayload.sessions.map((session) => (
+            <div key={session.id} className={`access-log-card${session.anomaly ? ' is-anomaly' : ''}`}>
+              <div className="access-log-card-header">
+                <div className="access-log-card-user">
+                  <span className="access-log-avatar">{session.userInitials}</span>
+                  <div className="access-log-card-user-info">
+                    <span className="access-log-card-name">{session.userName}</span>
+                    <span className="access-log-card-tenant">{session.tenantName}</span>
+                  </div>
+                </div>
+                {session.anomaly ? (
+                  <span className="access-log-badge access-log-badge-danger">Anomalia</span>
+                ) : (
+                  <span className="access-log-badge access-log-badge-ok">OK</span>
+                )}
+              </div>
+              <div className="access-log-card-row">
+                <span>Data: <strong>{formatDate(session.createdAt)}</strong></span>
+                <span>Paese: <strong>{formatCountry(session.countryCode, session.countryName)}</strong></span>
+              </div>
+              <div className="access-log-card-row">
+                <span>Dispositivo: <strong>{`${session.uaBrowser ?? 'unknown'} · ${session.uaOs ?? 'unknown'}`}</strong></span>
+              </div>
+              {session.anomaly && (
+                <div className="access-log-card-anomaly">{session.anomaly}</div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="access-pagination">
           <button
             type="button"
             className="logout-button"
             onClick={() => setPage((current) => Math.max(0, current - 1))}
             disabled={page <= 0 || loading}
           >
-            Pagina precedente
+            <span className="btn-prev-long">Pagina precedente</span>
+            <span className="btn-prev-short">Precedente</span>
           </button>
-          <span>Pagina {page + 1} / {totalPages}</span>
+          <span className="access-pagination-label">Pagina {page + 1} / {totalPages}</span>
           <button
             type="button"
             className="logout-button"
             onClick={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
             disabled={page >= totalPages - 1 || loading}
           >
-            Pagina successiva
+            <span className="btn-next-long">Pagina successiva</span>
+            <span className="btn-next-short">Successiva</span>
           </button>
         </div>
       </section>

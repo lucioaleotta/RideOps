@@ -1097,6 +1097,185 @@ a:hover {
   text-overflow: ellipsis;
 }
 
+/* ── Hourly chart ── */
+.access-chart-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Top 5 IP cards ── */
+.top-ip-card {
+  border: 1px solid #d8e5f3;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #ffffff;
+  display: grid;
+  gap: 4px;
+}
+
+.top-ip-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.top-ip-card-ip {
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f3652;
+  word-break: break-all;
+}
+
+.top-ip-card-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: #465f7c;
+  flex-wrap: wrap;
+}
+
+.top-ip-card-meta strong {
+  color: #1f3652;
+}
+
+/* ── Log access mobile cards ── */
+.access-log-cards {
+  display: none;
+}
+
+.access-log-card {
+  border: 1px solid #d8e5f3;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #ffffff;
+  display: grid;
+  gap: 6px;
+}
+
+.access-log-card.is-anomaly {
+  background: #fff6f4;
+  border-color: #f5c2ba;
+}
+
+.access-log-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.access-log-card-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.access-log-card-user-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.access-log-card-name {
+  font-weight: 600;
+  color: #1f3652;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.access-log-card-tenant {
+  font-size: 12px;
+  color: #607086;
+}
+
+.access-log-card-row {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #465f7c;
+  flex-wrap: wrap;
+}
+
+.access-log-card-anomaly {
+  font-size: 12px;
+  color: #a72821;
+  background: #fde8e5;
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-top: 2px;
+}
+
+/* ── Pagination mobile ── */
+.access-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.access-pagination-label {
+  font-size: 13px;
+  color: #607086;
+  white-space: nowrap;
+}
+
+/* ── Responsive: tablet e mobile ── */
+@media (max-width: 900px) {
+  /* Nasconde colonne meno critiche della log table */
+  .access-log-table .col-paese,
+  .access-log-table .col-anomalia {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Log table → nascosta, mostra cards */
+  .access-log-table-wrap {
+    display: none;
+  }
+
+  .access-log-cards {
+    display: grid;
+    gap: 10px;
+    max-height: 480px;
+    overflow-y: auto;
+  }
+
+  /* Log filters: etichette nascoste, solo input */
+  .access-filters label > span {
+    display: none;
+  }
+
+  /* Paginazione: testo breve */
+  .btn-prev-long,
+  .btn-next-long {
+    display: none;
+  }
+
+  .btn-prev-short,
+  .btn-next-short {
+    display: inline;
+  }
+}
+
+@media (min-width: 641px) {
+  .btn-prev-short,
+  .btn-next-short {
+    display: none;
+  }
+
+  .btn-prev-long,
+  .btn-next-long {
+    display: inline;
+  }
+}
+
 .tenant-panel {
   display: grid;
   gap: 16px;
