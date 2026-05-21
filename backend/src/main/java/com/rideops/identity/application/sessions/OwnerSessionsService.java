@@ -106,6 +106,7 @@ public class OwnerSessionsService {
                 row.getIp(),
                 row.getCount() == null ? 0L : row.getCount(),
                 row.getTenantName(),
+                row.getCountryCode(),
                 row.getCountryName(),
                 row.getCity(),
                 isSuspiciousIp(row.getIp())
@@ -130,10 +131,9 @@ public class OwnerSessionsService {
     }
 
     private boolean isUnknownCountry(String countryCode, String countryName) {
-        if (countryCode != null && countryCode.equalsIgnoreCase("UN")) {
-            return true;
-        }
-        return countryName != null && countryName.equalsIgnoreCase("unknown");
+        boolean missingCode = countryCode == null || countryCode.isBlank();
+        boolean missingName = countryName == null || countryName.isBlank();
+        return missingCode && missingName;
     }
 
     private int sanitizeDays(int days) {
@@ -187,6 +187,7 @@ public class OwnerSessionsService {
     public record TopIpItem(String ip,
                             long count,
                             String tenantName,
+                            String countryCode,
                             String countryName,
                             String city,
                             boolean suspicious) {
