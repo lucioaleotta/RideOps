@@ -14,6 +14,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: 'Payload non valido' }, { status: 400 });
   }
 
+  const forwardedFor = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? '';
+  const userAgent = request.headers.get('user-agent') ?? '';
+  const countryCode = request.headers.get('x-vercel-ip-country') ?? request.headers.get('cf-ipcountry') ?? '';
+  const countryName = request.headers.get('x-vercel-ip-country-region') ?? '';
+  const city = request.headers.get('x-vercel-ip-city') ?? '';
+
   const backendUrl = process.env.BACKEND_URL?.trim();
   if (!backendUrl) {
     console.error('BACKEND_URL non configurata in frontend runtime');
@@ -24,7 +30,14 @@ export async function POST(request: Request) {
   try {
     loginResponse = await fetch(`${backendUrl}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Forwarded-For': forwardedFor,
+        'X-Country-Code': countryCode,
+        'X-Country-Name': countryName,
+        'X-City': city,
+        'User-Agent': userAgent
+      },
       body: JSON.stringify(body),
       cache: 'no-store'
     });
