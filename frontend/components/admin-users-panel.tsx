@@ -37,6 +37,7 @@ type JournalItem = {
 };
 
 const roles: UserRole[] = ['ADMIN', 'GESTIONALE', 'DRIVER', 'DRIVER_FREELANCER'];
+const USERS_PER_PAGE = 15;
 
 export function AdminUsersPanel() {
   const [users, setUsers] = useState<UserItem[]>([]);
@@ -183,6 +184,30 @@ export function AdminUsersPanel() {
       });
   }, [users, filterUserId, filterEmail, filterRole, filterStatus, filterTenant]);
 
+  const [usersPage, setUsersPage] = useState(0);
+
+  useEffect(() => {
+    setUsersPage(0);
+  }, [filterUserId, filterEmail, filterRole, filterStatus, filterTenant]);
+
+  const totalUsersPages = useMemo(() => {
+    return Math.max(1, Math.ceil(orderedUsers.length / USERS_PER_PAGE));
+  }, [orderedUsers.length]);
+
+  useEffect(() => {
+    if (usersPage > totalUsersPages - 1) {
+      setUsersPage(Math.max(0, totalUsersPages - 1));
+    }
+  }, [usersPage, totalUsersPages]);
+
+  const pagedUsers = useMemo(() => {
+    const start = usersPage * USERS_PER_PAGE;
+    return orderedUsers.slice(start, start + USERS_PER_PAGE);
+  }, [orderedUsers, usersPage]);
+
+  const pageStart = orderedUsers.length === 0 ? 0 : usersPage * USERS_PER_PAGE + 1;
+  const pageEnd = Math.min(orderedUsers.length, (usersPage + 1) * USERS_PER_PAGE);
+
   return (
     <section style={{ display: 'grid', gap: 16 }}>
       <article className="dashboard-card">
@@ -191,7 +216,7 @@ export function AdminUsersPanel() {
         {success && <StatusNotice tone="success">{success}</StatusNotice>}
 
         {/* Filtri */}
-        <div className="portal-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
+        <div className="portal-filters-grid admin-users-filters" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
           <label>
             User ID
             <input className="form-input" value={filterUserId} onChange={(e) => setFilterUserId(e.target.value)} placeholder="cerca..." />
@@ -220,10 +245,15 @@ export function AdminUsersPanel() {
             <input className="form-input" value={filterTenant} onChange={(e) => setFilterTenant(e.target.value)} placeholder="cerca..." />
           </label>
         </div>
-        <div style={{ marginBottom: 16 }}>
-          <button type="button" className="logout-button" onClick={() => { setFilterUserId(''); setFilterEmail(''); setFilterRole(''); setFilterStatus(''); setFilterTenant(''); }}>
+        <div className="admin-users-filter-actions" style={{ marginBottom: 16 }}>
+          <button type="button" className="logout-button admin-mobile-secondary" onClick={() => { setFilterUserId(''); setFilterEmail(''); setFilterRole(''); setFilterStatus(''); setFilterTenant(''); }}>
             <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
           </button>
+        </div>
+
+        <div className="admin-users-summary">
+          <span>Totale utenti filtrati: <strong>{orderedUsers.length}</strong></span>
+          <span>Mostrati: <strong>{pageStart}-{pageEnd}</strong></span>
         </div>
 
         {loading ? (
@@ -231,8 +261,8 @@ export function AdminUsersPanel() {
         ) : (
           <>
             {/* Desktop table */}
-            <div className="admin-users-desktop-table" style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', minWidth: 860, borderCollapse: 'collapse' }}>
+            <div className="admin-users-desktop-table admin-users-table-wrap">
+              <table className="admin-users-table">
                 <thead>
                   <tr>
                     <th align="left">User ID</th>
@@ -245,145 +275,190 @@ export function AdminUsersPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orderedUsers.map((user) => (
+                  {pagedUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="admin-users-empty-row">Nessun utente trovato con i filtri attuali.</td>
+                    </tr>
+                  ) : (
+                    pagedUsers.map((user) => (
                     <tr key={user.id}>
-                      <td style={{ padding: '10px 8px 10px 0' }}>{user.userId}</td>
-                      <td style={{ padding: '10px 8px 10px 0' }}>{user.email}</td>
-                      <td style={{ padding: '10px 8px 10px 0' }}>
+                      <td>{user.userId}</td>
+                      <td>{user.email}</td>
+                      <td>
                         <span className={`admin-role-chip admin-role-chip-${user.role.toLowerCase()}`}>{user.role}</span>
                       </td>
-                      <td style={{ padding: '10px 8px 10px 0', color: user.tenantName ? 'inherit' : 'var(--color-text-secondary, #888)', fontStyle: user.tenantName ? 'normal' : 'italic' }}>
+                      <td style={{ color: user.tenantName ? 'inherit' : 'var(--color-text-secondary, #888)', fontStyle: user.tenantName ? 'normal' : 'italic' }}>
                         {user.tenantName ?? '—'}
                       </td>
-                      <td style={{ padding: '10px 8px 10px 0' }}>
+                      <td>
                         <span className={`admin-enabled-badge ${user.enabled ? 'is-active' : 'is-disabled'}`}>
                           {user.enabled ? 'ATTIVO' : 'DISABILITATO'}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 8px 10px 0' }}>{new Date(user.createdAt).toLocaleString('it-IT')}</td>
-                      <td style={{ padding: '8px 0' }}>
+                      <td>{new Date(user.createdAt).toLocaleString('it-IT')}</td>
+                      <td>
                         <button type="button" className="logout-button" onClick={() => openEdit(user)}>
                           <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ))) }
                 </tbody>
               </table>
             </div>
 
             {/* Mobile card list */}
             <div className="admin-users-mobile-list">
-              {orderedUsers.map((user) => (
-                <article key={user.id} className="admin-user-card">
-                  <div className="admin-user-card-top">
-                    <span className="admin-user-username">{user.userId}</span>
-                    <span className={`admin-enabled-badge ${user.enabled ? 'is-active' : 'is-disabled'}`}>
-                      {user.enabled ? 'ATTIVO' : 'DISABILITATO'}
-                    </span>
-                  </div>
-                  <div className="admin-user-email">{user.email}</div>
-                  {user.tenantName && (
-                    <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #888)', marginBottom: 4 }}>Tenant: {user.tenantName}</div>
-                  )}
-                  <div className="admin-user-card-footer">
-                    <div className="admin-user-meta">
-                      <span className={`admin-role-chip admin-role-chip-${user.role.toLowerCase()}`}>{user.role}</span>
-                      <span className="admin-user-date">{new Date(user.createdAt).toLocaleString('it-IT')}</span>
+              {pagedUsers.length === 0 ? (
+                <p>Nessun utente trovato con i filtri attuali.</p>
+              ) : (
+                pagedUsers.map((user) => (
+                  <article key={user.id} className="admin-user-card">
+                    <div className="admin-user-card-top">
+                      <span className="admin-user-username">{user.userId}</span>
+                      <span className={`admin-enabled-badge ${user.enabled ? 'is-active' : 'is-disabled'}`}>
+                        {user.enabled ? 'ATTIVO' : 'DISABILITATO'}
+                      </span>
                     </div>
-                    <button type="button" className="logout-button compact-button" onClick={() => openEdit(user)}>
-                      <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
-                    </button>
-                  </div>
-                </article>
-              ))}
+                    <div className="admin-user-email">{user.email}</div>
+                    {user.tenantName && (
+                      <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary, #888)', marginBottom: 4 }}>Tenant: {user.tenantName}</div>
+                    )}
+                    <div className="admin-user-card-footer">
+                      <div className="admin-user-meta">
+                        <span className={`admin-role-chip admin-role-chip-${user.role.toLowerCase()}`}>{user.role}</span>
+                        <span className="admin-user-date">{new Date(user.createdAt).toLocaleString('it-IT')}</span>
+                      </div>
+                      <button type="button" className="logout-button compact-button" onClick={() => openEdit(user)}>
+                        <ButtonContent icon={<EditIcon />}>Modifica</ButtonContent>
+                      </button>
+                    </div>
+                  </article>
+                ))
+              )}
             </div>
+
+            {orderedUsers.length > 0 && (
+              <div className="admin-users-pagination">
+                <button
+                  type="button"
+                  className="logout-button admin-mobile-secondary"
+                  onClick={() => setUsersPage((prev) => Math.max(0, prev - 1))}
+                  disabled={usersPage === 0}
+                >
+                  <span className="admin-pager-label-long">Pagina precedente</span>
+                  <span className="admin-pager-label-short">Precedente</span>
+                </button>
+                <span className="admin-users-pagination-label">Pagina {usersPage + 1} di {totalUsersPages}</span>
+                <button
+                  type="button"
+                  className="primary-button admin-mobile-primary"
+                  onClick={() => setUsersPage((prev) => Math.min(totalUsersPages - 1, prev + 1))}
+                  disabled={usersPage >= totalUsersPages - 1}
+                >
+                  <span className="admin-pager-label-long">Pagina successiva</span>
+                  <span className="admin-pager-label-short">Successiva</span>
+                </button>
+              </div>
+            )}
           </>
         )}
       </article>
 
       {editing && (
-        <article className="dashboard-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-            <h3>Modifica utente: {editing.userId}</h3>
-            <button type="button" className="logout-button" onClick={closeEdit}><ButtonContent icon={<LockIcon />}>Chiudi</ButtonContent></button>
-          </div>
-
-          <form className="form-grid" onSubmit={onSubmitEdit}>
-            <label>
-              User ID
-              <input
-                className="form-input"
-                value={editing.userId}
-                onChange={(event) => setEditing((prev) => prev ? { ...prev, userId: event.target.value } : prev)}
-                required
-              />
-            </label>
-
-            <label>
-              Email
-              <input
-                className="form-input"
-                type="email"
-                value={editing.email}
-                onChange={(event) => setEditing((prev) => prev ? { ...prev, email: event.target.value } : prev)}
-                required
-              />
-            </label>
-
-            <label>
-              Ruolo
-              <select
-                className="form-input"
-                value={editing.role}
-                onChange={(event) => setEditing((prev) => prev ? { ...prev, role: event.target.value as UserRole } : prev)}
-              >
-                {roles.map((role) => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              Stato
-              <select
-                className="form-input"
-                value={editing.enabled ? 'ATTIVO' : 'DISABILITATO'}
-                onChange={(event) => setEditing((prev) => prev ? { ...prev, enabled: event.target.value === 'ATTIVO' } : prev)}
-              >
-                <option value="ATTIVO">ATTIVO</option>
-                <option value="DISABILITATO">DISABILITATO</option>
-              </select>
-            </label>
-
-            <label>
-              Nuova password (opzionale)
-              <PasswordInput
-                className="form-input"
-                value={editing.newPassword}
-                onChange={(event) => setEditing((prev) => prev ? { ...prev, newPassword: event.target.value } : prev)}
-                placeholder="Lascia vuoto per non cambiare"
-                minLength={8}
-                autoComplete="new-password"
-              />
-            </label>
-
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="submit" className="primary-button" disabled={submitting}>
-                <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : 'Salva modifiche'}</ButtonContent>
-              </button>
-              <button type="button" className="logout-button" onClick={closeEdit}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
+        <div
+          className="services-modal-overlay admin-edit-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Modifica utente"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeEdit();
+            }
+          }}
+        >
+          <article className="dashboard-card services-modal-card admin-edit-modal-card">
+            <div className="admin-edit-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ margin: 0 }}>Modifica utente: {editing.userId}</h3>
+              <button type="button" className="logout-button admin-mobile-secondary" onClick={closeEdit}><ButtonContent icon={<LockIcon />}>Chiudi</ButtonContent></button>
             </div>
-          </form>
-        </article>
+
+            <form className="form-grid" onSubmit={onSubmitEdit}>
+              <label>
+                User ID
+                <input
+                  className="form-input"
+                  value={editing.userId}
+                  onChange={(event) => setEditing((prev) => prev ? { ...prev, userId: event.target.value } : prev)}
+                  required
+                />
+              </label>
+
+              <label>
+                Email
+                <input
+                  className="form-input"
+                  type="email"
+                  value={editing.email}
+                  onChange={(event) => setEditing((prev) => prev ? { ...prev, email: event.target.value } : prev)}
+                  required
+                />
+              </label>
+
+              <label>
+                Ruolo
+                <select
+                  className="form-input"
+                  value={editing.role}
+                  onChange={(event) => setEditing((prev) => prev ? { ...prev, role: event.target.value as UserRole } : prev)}
+                >
+                  {roles.map((role) => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                Stato
+                <select
+                  className="form-input"
+                  value={editing.enabled ? 'ATTIVO' : 'DISABILITATO'}
+                  onChange={(event) => setEditing((prev) => prev ? { ...prev, enabled: event.target.value === 'ATTIVO' } : prev)}
+                >
+                  <option value="ATTIVO">ATTIVO</option>
+                  <option value="DISABILITATO">DISABILITATO</option>
+                </select>
+              </label>
+
+              <label>
+                Nuova password (opzionale)
+                <PasswordInput
+                  className="form-input"
+                  value={editing.newPassword}
+                  onChange={(event) => setEditing((prev) => prev ? { ...prev, newPassword: event.target.value } : prev)}
+                  placeholder="Lascia vuoto per non cambiare"
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+              </label>
+
+              <div className="admin-edit-actions" style={{ display: 'flex', gap: 8 }}>
+                <button type="submit" className="primary-button admin-mobile-primary" disabled={submitting}>
+                  <ButtonContent icon={<SaveIcon />}>{submitting ? 'Salvataggio...' : 'Salva modifiche'}</ButtonContent>
+                </button>
+                <button type="button" className="logout-button admin-mobile-secondary" onClick={closeEdit}><ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent></button>
+              </div>
+            </form>
+          </article>
+        </div>
       )}
 
       <article className="dashboard-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <div className="admin-journal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
           <h3>Journal modifiche amministrative</h3>
           <button
             type="button"
-            className="logout-button"
+            className="logout-button admin-mobile-secondary"
             onClick={() => setJournalOpen((prev) => !prev)}
           >
             <ButtonContent icon={<JournalIcon />}>{journalOpen ? 'Nascondi' : 'Mostra'}</ButtonContent>
@@ -392,7 +467,7 @@ export function AdminUsersPanel() {
 
         {journalOpen && (
           <>
-            <div className="portal-filters-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 12 }}>
+            <div className="portal-filters-grid admin-journal-filters" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10, marginBottom: 12 }}>
               <label>
                 Data modifica
                 <input
@@ -414,13 +489,13 @@ export function AdminUsersPanel() {
               </label>
             </div>
 
-            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <button type="button" className="primary-button" onClick={loadJournal} disabled={journalLoading}>
+            <div className="admin-journal-filter-actions" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <button type="button" className="primary-button admin-mobile-primary" onClick={loadJournal} disabled={journalLoading}>
                 <ButtonContent icon={<FilterIcon />}>{journalLoading ? 'Caricamento...' : 'Applica filtri'}</ButtonContent>
               </button>
               <button
                 type="button"
-                className="logout-button"
+                className="logout-button admin-mobile-secondary"
                 onClick={() => {
                   setJournalDateFilter('');
                   setJournalAdminFilter('');

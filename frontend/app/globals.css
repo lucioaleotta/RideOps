@@ -14,7 +14,7 @@
 
 body {
   margin: 0;
-  font-family: Inter, Arial, sans-serif;
+  font-family: 'DM Sans', Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
 }
@@ -5455,6 +5455,116 @@ a:hover {
   color: #ffffff;
 }
 
+.admin-users-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #d6e2f0;
+  border-radius: 10px;
+  background: #f5f9fd;
+  color: #2d4c6d;
+  font-size: 13px;
+}
+
+.admin-users-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #d7e3f1;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.admin-users-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.admin-users-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eef5fc;
+  color: #1f3a57;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px 10px;
+  border-bottom: 1px solid #d8e5f3;
+}
+
+.admin-users-table tbody td {
+  padding: 11px 10px;
+  border-bottom: 1px solid #e6eef8;
+  color: #213a57;
+  vertical-align: middle;
+}
+
+.admin-users-table tbody tr:nth-child(even) {
+  background: #fbfdff;
+}
+
+.admin-users-table tbody tr:hover {
+  background: #edf5ff;
+}
+
+.admin-users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.admin-users-empty-row {
+  text-align: center;
+  color: #5f7693;
+  font-style: italic;
+  padding: 14px 10px;
+}
+
+.admin-users-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.admin-users-pagination-label {
+  font-size: 13px;
+  color: #4f6782;
+  font-weight: 600;
+}
+
+.admin-pager-label-short {
+  display: none;
+}
+
+.admin-pager-label-long {
+  display: inline;
+}
+
+.admin-mobile-primary,
+.admin-mobile-secondary {
+  min-height: 36px;
+}
+
+.admin-edit-modal-overlay {
+  z-index: 45;
+}
+
+.admin-edit-modal-card {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  border: 1px solid #d7e3f1;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 22px 62px rgba(12, 26, 42, 0.24);
+}
+
 @media (max-width: 960px) {
   .services-selected-detail {
     padding: 12px;
@@ -5484,6 +5594,101 @@ a:hover {
   .services-selected-row {
     grid-template-columns: 20px minmax(95px, 120px) 1fr;
     gap: 7px;
+  }
+
+  .admin-users-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    font-size: 12px;
+  }
+
+  .admin-users-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: stretch;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .admin-users-pagination .logout-button,
+  .admin-users-pagination .primary-button {
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  .admin-users-pagination-label {
+    width: 100%;
+    text-align: center;
+    order: -1;
+  }
+
+  .admin-users-filters > label,
+  .admin-journal-filters > label {
+    font-size: 13px;
+  }
+
+  .admin-mobile-primary,
+  .admin-mobile-secondary {
+    width: 100%;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .admin-mobile-primary {
+    box-shadow: 0 6px 16px rgba(30, 136, 229, 0.24);
+  }
+
+  .admin-users-filter-actions .logout-button,
+  .admin-journal-filter-actions .primary-button,
+  .admin-journal-filter-actions .logout-button {
+    width: 100%;
+  }
+
+  .admin-journal-filter-actions,
+  .admin-edit-actions {
+    flex-direction: column;
+  }
+
+  .admin-edit-actions .primary-button,
+  .admin-edit-actions .logout-button {
+    width: 100%;
+  }
+
+  .admin-edit-header,
+  .admin-journal-header {
+    flex-wrap: wrap;
+    align-items: flex-start !important;
+  }
+
+  .admin-edit-modal-overlay {
+    padding: 10px;
+    align-items: end;
+  }
+
+  .admin-edit-modal-card {
+    width: 100%;
+    max-height: min(90vh, 780px);
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .admin-journal-header .logout-button {
+    width: 100%;
+  }
+
+  .admin-user-email {
+    word-break: break-word;
+  }
+
+  .admin-user-date {
+    font-size: 12px;
+  }
+
+  .admin-user-card-footer .compact-button {
+    min-height: 34px;
+    padding: 7px 11px;
   }
 
   .services-selected-icon {
@@ -6361,6 +6566,21 @@ a:hover {
       margin: 16px 0 12px;
       line-height: 1;
     }
+}
+
+@media (max-width: 560px) {
+  .admin-pager-label-short {
+    display: inline;
+  }
+
+  .admin-pager-label-long {
+    display: none;
+  }
+
+  .admin-users-pagination .logout-button,
+  .admin-users-pagination .primary-button {
+    flex: 1 1 100%;
+  }
 }
 
 /* ── Vehicle modal ── */
