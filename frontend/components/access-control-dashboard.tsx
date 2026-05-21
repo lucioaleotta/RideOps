@@ -19,8 +19,9 @@ type TopIpsPayload = {
     ip: string;
     count: number;
     tenantName: string;
-    countryName: string;
-    city: string;
+    countryCode: string | null;
+    countryName: string | null;
+    city: string | null;
     suspicious: boolean;
   }>;
 };
@@ -347,8 +348,8 @@ export function AccessControlDashboard() {
                   <span>Tenant: <strong>{item.tenantName}</strong></span>
                 </div>
                 <div className="top-ip-card-meta">
-                  <span>Paese: <strong>{item.countryName}</strong></span>
-                  <span>Città: <strong>{item.city}</strong></span>
+                  <span>Paese: <strong>{formatCountry(item.countryCode, item.countryName)}</strong></span>
+                  <span>Città: <strong>{item.city ?? 'Unknown'}</strong></span>
                 </div>
               </div>
             ))}
