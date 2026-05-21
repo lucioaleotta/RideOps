@@ -36,17 +36,18 @@ public class LoginSessionRecorder {
     }
 
     public void recordSuccessfulLogin(IdentityUserDetails principal, HttpServletRequest request) {
-        CompletableFuture.runAsync(() -> saveSession(principal, request));
+        LoginRequestContext requestContext = LoginRequestContext.from(request);
+        CompletableFuture.runAsync(() -> saveSession(principal, requestContext));
     }
 
-    private void saveSession(IdentityUserDetails principal, HttpServletRequest request) {
+    private void saveSession(IdentityUserDetails principal, LoginRequestContext requestContext) {
         try {
             OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
-            String ipAddress = extractIp(request);
-            String userAgentRaw = extractUserAgentRaw(request);
+            String ipAddress = extractIp(requestContext);
+            String userAgentRaw = extractUserAgentRaw(requestContext);
             String userAgent = abbreviate(userAgentRaw, 1000);
             DeviceInfo deviceInfo = parseDeviceInfo(userAgentRaw);
-            GeoInfo geoInfo = resolveGeoInfo(request, ipAddress);
+            GeoInfo geoInfo = resolveGeoInfo(requestContext, ipAddress);
             String anomaly = detectAnomaly(
                 principal.getId(),
                 ipAddress,
@@ -154,8 +155,8 @@ public class LoginSessionRecorder {
         return "unknown";
     }
 
-    private String extractUserAgentRaw(HttpServletRequest request) {
-        String ua = request.getHeader("User-Agent");
+    private String extractUserAgentRaw(LoginRequestContext requestContext) {
+        String ua = requestContext.userAgent();
         if (ua == null || ua.isBlank()) {
             return null;
         }
@@ -174,7 +175,7 @@ public class LoginSessionRecorder {
         return new DeviceInfo(browser, os, deviceType);
     }
 
-    private GeoInfo resolveGeoInfo(HttpServletRequest request, String ipAddress) {
+    private GeoInfo resolveGeoInfo(LoginRequestContext requestContext, String ipAddress) {
         if (ipAddress == null || ipAddress.isBlank()) {
             return new GeoInfo(null, null, null);
         }
@@ -189,17 +190,17 @@ public class LoginSessionRecorder {
         }
 
         String countryCode = firstNonBlank(
-            request.getHeader("X-Country-Code"),
-            request.getHeader("CF-IPCountry"),
-            request.getHeader("X-Vercel-IP-Country")
+            requestContext.xCountryCode(),
+            requestContext.cfIpCountry(),
+            requestContext.xVercelIpCountry()
         );
         String countryName = firstNonBlank(
-            request.getHeader("X-Country-Name"),
-            request.getHeader("X-Vercel-IP-Country-Region")
+            requestContext.xCountryName(),
+            requestContext.xVercelIpCountryRegion()
         );
         String city = firstNonBlank(
-            request.getHeader("X-City"),
-            request.getHeader("X-Vercel-IP-City")
+            requestContext.xCity(),
+            requestContext.xVercelIpCity()
         );
 
         if (countryCode == null) {
@@ -225,8 +226,8 @@ public class LoginSessionRecorder {
         }
     }
 
-    private String extractIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
+    private String extractIp(LoginRequestContext requestContext) {
+        String forwarded = requestContext.xForwardedFor();
         String candidate = null;
 
         if (forwarded != null && !forwarded.isBlank()) {
@@ -237,7 +238,7 @@ public class LoginSessionRecorder {
         }
 
         if (candidate == null || candidate.isBlank()) {
-            candidate = request.getRemoteAddr();
+            candidate = requestContext.remoteAddr();
         }
 
         if (candidate == null || candidate.isBlank()) {
@@ -337,5 +338,33 @@ public class LoginSessionRecorder {
     }
 
     private record GeoInfo(String countryCode, String countryName, String city) {
+    }
+
+    private record LoginRequestContext(
+        String remoteAddr,
+        String xForwardedFor,
+        String userAgent,
+        String xCountryCode,
+        String cfIpCountry,
+        String xVercelIpCountry,
+        String xCountryName,
+        String xVercelIpCountryRegion,
+        String xCity,
+        String xVercelIpCity
+    ) {
+        private static LoginRequestContext from(HttpServletRequest request) {
+            return new LoginRequestContext(
+                request.getRemoteAddr(),
+                request.getHeader("X-Forwarded-For"),
+                request.getHeader("User-Agent"),
+                request.getHeader("X-Country-Code"),
+                request.getHeader("CF-IPCountry"),
+                request.getHeader("X-Vercel-IP-Country"),
+                request.getHeader("X-Country-Name"),
+                request.getHeader("X-Vercel-IP-Country-Region"),
+                request.getHeader("X-City"),
+                request.getHeader("X-Vercel-IP-City")
+            );
+        }
     }
 }
