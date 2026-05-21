@@ -408,6 +408,16 @@ export function AdminTenantsPanel() {
     setSuccess(`Cliente ${updated.businessName}: stato aggiornato a ${updated.status}`);
   }
 
+  function formatTenantDate(value: string): string {
+    return new Date(value).toLocaleString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
   return (
     <section className="tenant-panel">
       <header className="tenant-header">
@@ -489,57 +499,102 @@ export function AdminTenantsPanel() {
         ) : orderedTenants.length === 0 ? (
           <div className="tenant-empty">Nessun tenant trovato</div>
         ) : (
-          <div className="table-scroll">
-            <table className="responsive-table tenant-table">
-              <thead>
-                <tr>
-                  <th align="left">Azienda</th>
-                  <th align="left">Email</th>
-                  <th align="left">Citta</th>
-                  <th align="left">Piano</th>
-                  <th align="left">Stato</th>
-                  <th align="left">Azioni</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orderedTenants.map((tenant) => {
-                  const nextStatus: TenantOperationalStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
-                  const actionLabel = tenant.status === 'ACTIVE' ? 'Sospendi' : 'Attiva';
-                  const isSelected = selectedTenant?.id === tenant.id;
+          <>
+            <div className="table-scroll tenant-desktop-table-wrap">
+              <table className="responsive-table tenant-table">
+                <thead>
+                  <tr>
+                    <th align="left">Azienda</th>
+                    <th align="left">Email</th>
+                    <th align="left">Citta</th>
+                    <th align="left">Piano</th>
+                    <th align="left">Stato</th>
+                    <th align="left">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orderedTenants.map((tenant) => {
+                    const nextStatus: TenantOperationalStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+                    const actionLabel = tenant.status === 'ACTIVE' ? 'Sospendi' : 'Attiva';
+                    const isSelected = selectedTenant?.id === tenant.id;
 
-                  return (
-                    <tr key={tenant.id} className={isSelected ? 'is-selected-row' : ''}>
-                      <td>{tenant.businessName}</td>
-                      <td>{tenant.contactEmail}</td>
-                      <td>{tenant.addressCity ?? '-'}</td>
-                      <td>{tenant.subscriptionPlan}</td>
-                      <td>
-                        <span className={`tenant-status-badge ${tenant.status === 'ACTIVE' ? 'is-active' : 'is-suspended'}`}>
-                          {tenant.status === 'ACTIVE' ? 'Attivo' : 'Sospeso'}
-                        </span>
-                      </td>
-                      <td className="tenant-actions-cell">
-                        <button
-                          type="button"
-                          className="primary-button compact-button"
-                          onClick={() => setSelectedTenant(isSelected ? null : tenant)}
-                        >
-                          {isSelected ? 'Deseleziona' : 'Seleziona'}
-                        </button>
-                        <button
-                          type="button"
-                          className="logout-button compact-button"
-                          onClick={() => { void updateTenantStatus(tenant.id, nextStatus); }}
-                        >
-                          {actionLabel}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                    return (
+                      <tr key={tenant.id} className={isSelected ? 'is-selected-row' : ''}>
+                        <td>{tenant.businessName}</td>
+                        <td>{tenant.contactEmail}</td>
+                        <td>{tenant.addressCity ?? '-'}</td>
+                        <td>{tenant.subscriptionPlan}</td>
+                        <td>
+                          <span className={`tenant-status-badge ${tenant.status === 'ACTIVE' ? 'is-active' : 'is-suspended'}`}>
+                            {tenant.status === 'ACTIVE' ? 'Attivo' : 'Sospeso'}
+                          </span>
+                        </td>
+                        <td className="tenant-actions-cell">
+                          <button
+                            type="button"
+                            className="primary-button compact-button"
+                            onClick={() => setSelectedTenant(isSelected ? null : tenant)}
+                          >
+                            {isSelected ? 'Deseleziona' : 'Seleziona'}
+                          </button>
+                          <button
+                            type="button"
+                            className="logout-button compact-button"
+                            onClick={() => { void updateTenantStatus(tenant.id, nextStatus); }}
+                          >
+                            {actionLabel}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="tenant-mobile-list">
+              {orderedTenants.map((tenant) => {
+                const nextStatus: TenantOperationalStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+                const actionLabel = tenant.status === 'ACTIVE' ? 'Sospendi' : 'Attiva';
+                const isSelected = selectedTenant?.id === tenant.id;
+
+                return (
+                  <article key={tenant.id} className={`tenant-mobile-card${isSelected ? ' is-selected' : ''}`}>
+                    <div className="tenant-mobile-card-top">
+                      <h4 className="tenant-mobile-title">{tenant.businessName}</h4>
+                      <span className={`tenant-status-badge ${tenant.status === 'ACTIVE' ? 'is-active' : 'is-suspended'}`}>
+                        {tenant.status === 'ACTIVE' ? 'Attivo' : 'Sospeso'}
+                      </span>
+                    </div>
+
+                    <div className="tenant-mobile-meta">
+                      <span><strong>Email:</strong> {tenant.contactEmail}</span>
+                      <span><strong>Citta:</strong> {tenant.addressCity ?? '-'}</span>
+                      <span><strong>Piano:</strong> {tenant.subscriptionPlan}</span>
+                      <span><strong>Creato:</strong> {formatTenantDate(tenant.createdAt)}</span>
+                    </div>
+
+                    <div className="tenant-mobile-actions">
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={() => setSelectedTenant(isSelected ? null : tenant)}
+                      >
+                        {isSelected ? 'Nascondi dettaglio' : 'Dettaglio'}
+                      </button>
+                      <button
+                        type="button"
+                        className="logout-button"
+                        onClick={() => { void updateTenantStatus(tenant.id, nextStatus); }}
+                      >
+                        {actionLabel}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </>
         )}
       </article>
 
