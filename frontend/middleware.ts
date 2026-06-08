@@ -10,6 +10,10 @@ function roleAllowed(pathname: string, role: string | undefined) {
     return role === 'ADMIN';
   }
 
+  if (pathname.startsWith('/app/admin-home')) {
+    return role === 'ADMIN';
+  }
+
   if (pathname.startsWith('/app/gestionale')) {
     return role === 'ADMIN' || role === 'GESTIONALE';
   }
