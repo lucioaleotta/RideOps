@@ -1210,6 +1210,92 @@ a:hover {
   margin-top: 2px;
 }
 
+/* ── Owner activity dashboard ── */
+.owner-activity-dashboard {
+  display: grid;
+  gap: 16px;
+}
+
+.owner-activity-title-block h2 {
+  font-size: clamp(24px, 3.2vw, 32px);
+}
+
+.owner-activity-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.owner-activity-top5-head {
+  display: grid;
+  grid-template-columns: 22px 36px 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.owner-activity-top5-progress {
+  margin-left: 66px;
+}
+
+.owner-activity-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.owner-activity-chart-scroll {
+  overflow: hidden;
+}
+
+.owner-activity-chart-scroll svg {
+  display: block;
+  width: 100%;
+}
+
+@media (max-width: 960px) {
+  .owner-activity-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .owner-activity-chart-card {
+    order: 1;
+  }
+
+  .owner-activity-top5-card {
+    order: 2;
+  }
+
+  .owner-activity-header-row {
+    align-items: stretch;
+  }
+
+  .owner-activity-periods {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .owner-activity-periods button {
+    width: 100%;
+    min-width: 0 !important;
+  }
+
+  .owner-activity-top5-head {
+    grid-template-columns: 22px 34px 1fr;
+  }
+
+  .owner-activity-top5-head > :last-child {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .owner-activity-top5-progress {
+    margin-left: 56px;
+  }
+}
+
 /* ── Pagination mobile ── */
 .access-pagination {
   display: flex;
@@ -1237,6 +1323,16 @@ a:hover {
 @media (max-width: 640px) {
   /* Log table → nascosta, mostra cards */
   .access-log-table-wrap {
+    display: none;
+  }
+
+  .owner-activity-title-block h2 {
+    font-size: 24px;
+  }
+
+  .access-log-table .col-plan,
+  .access-log-table .col-logins,
+  .access-log-table .col-utilization {
     display: none;
   }
 

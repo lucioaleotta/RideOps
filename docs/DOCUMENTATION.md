@@ -13,6 +13,7 @@ Indice centralizzato della documentazione RideOps.
 - [README.md](../README.md)
 - [ARCHITECTURE.md](ARCHITECTURE.md)
 - [BRANCHING_STRATEGY.md](BRANCHING_STRATEGY.md)
+- [OWNER_ACTIVITY_DASHBOARD.md](OWNER_ACTIVITY_DASHBOARD.md)
 
 ## Testing
 
