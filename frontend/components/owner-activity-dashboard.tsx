@@ -216,44 +216,46 @@ function ActivityLineChart({ data }: { data: ServicesByMonthPayload }) {
 
   return (
     <div style={{ position: "relative" }}>
-      <svg viewBox={`0 0 ${chart.width} ${chart.height}`} style={{ width: "100%", height: 280 }}>
-        {chart.grid.map((tick, index) => (
-          <g key={`grid-${index}`}>
-            <line
-              x1={chart.padding.left}
-              y1={tick.y}
-              x2={chart.width - chart.padding.right}
-              y2={tick.y}
-              stroke="#dbe8f5"
-              strokeDasharray="4 4"
-            />
-            <text x={chart.padding.left - 10} y={tick.y + 4} textAnchor="end" style={{ fontSize: 11, fill: "#607086" }}>
-              {formatInteger(tick.value)}
-            </text>
-          </g>
-        ))}
+      <div className="access-chart-scroll owner-activity-chart-scroll">
+        <svg viewBox={`0 0 ${chart.width} ${chart.height}`} style={{ width: "100%", height: "clamp(220px, 42vw, 280px)" }}>
+          {chart.grid.map((tick, index) => (
+            <g key={`grid-${index}`}>
+              <line
+                x1={chart.padding.left}
+                y1={tick.y}
+                x2={chart.width - chart.padding.right}
+                y2={tick.y}
+                stroke="#dbe8f5"
+                strokeDasharray="4 4"
+              />
+              <text x={chart.padding.left - 10} y={tick.y + 4} textAnchor="end" style={{ fontSize: 11, fill: "#607086" }}>
+                {formatInteger(tick.value)}
+              </text>
+            </g>
+          ))}
 
-        {chart.series.map((series) => (
-          <g key={series.tenant_id}>
-            <path d={series.path} fill="none" stroke={series.color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
-            {series.points.map((point) => (
-              <g key={`${series.tenant_id}-${point.label}`}>
-                <circle cx={point.x} cy={point.y} r={5} fill="#fff" stroke={series.color} strokeWidth={2.5} onMouseEnter={() => setHovered(point)} onMouseLeave={() => setHovered(null)} />
-                <circle cx={point.x} cy={point.y} r={14} fill="transparent" onMouseEnter={() => setHovered(point)} onMouseLeave={() => setHovered(null)} />
-              </g>
-            ))}
-          </g>
-        ))}
+          {chart.series.map((series) => (
+            <g key={series.tenant_id}>
+              <path d={series.path} fill="none" stroke={series.color} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" />
+              {series.points.map((point) => (
+                <g key={`${series.tenant_id}-${point.label}`}>
+                  <circle cx={point.x} cy={point.y} r={5} fill="#fff" stroke={series.color} strokeWidth={2.5} onMouseEnter={() => setHovered(point)} onMouseLeave={() => setHovered(null)} />
+                  <circle cx={point.x} cy={point.y} r={14} fill="transparent" onMouseEnter={() => setHovered(point)} onMouseLeave={() => setHovered(null)} />
+                </g>
+              ))}
+            </g>
+          ))}
 
-        {data.labels.map((label, index) => {
-          const x = chart.padding.left + (data.labels.length === 1 ? chart.chartWidth / 2 : (chart.chartWidth * index) / Math.max(data.labels.length - 1, 1));
-          return (
-            <text key={label} x={x} y={chart.height - 18} textAnchor="middle" style={{ fontSize: 12, fill: "#607086" }}>
-              {label}
-            </text>
-          );
-        })}
-      </svg>
+          {data.labels.map((label, index) => {
+            const x = chart.padding.left + (data.labels.length === 1 ? chart.chartWidth / 2 : (chart.chartWidth * index) / Math.max(data.labels.length - 1, 1));
+            return (
+              <text key={label} x={x} y={chart.height - 18} textAnchor="middle" style={{ fontSize: 12, fill: "#607086" }}>
+                {label}
+              </text>
+            );
+          })}
+        </svg>
+      </div>
 
       {hovered ? (
         <div
@@ -354,15 +356,15 @@ export function OwnerActivityDashboard() {
   }, [clientsState.data?.total, clientsState.data?.per_page]);
 
   return (
-    <main style={{ display: "grid", gap: 16 }}>
+    <main className="owner-activity-dashboard" style={{ display: "grid", gap: 16 }}>
       <section className="dashboard-card" style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-          <div>
+        <div className="owner-activity-header-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <div className="owner-activity-title-block">
             <h2 style={{ margin: 0, fontSize: 32, lineHeight: 1.05 }}>Attività clienti</h2>
             <p style={{ margin: "6px 0 0", color: "var(--muted)" }}>Panoramica servizi e utilizzo clienti</p>
           </div>
 
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", background: "#f2f6fb", border: "1px solid #dce8f5", borderRadius: 12, padding: 6 }}>
+          <div className="owner-activity-periods" style={{ display: "flex", gap: 8, flexWrap: "wrap", background: "#f2f6fb", border: "1px solid #dce8f5", borderRadius: 12, padding: 6 }}>
             {MONTH_OPTIONS.map((option) => (
               <button
                 key={option.value}
@@ -379,7 +381,7 @@ export function OwnerActivityDashboard() {
         </div>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
+      <section className="owner-activity-kpi-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
         {kpisState.loading ? (
           <>
             <div className="dashboard-card"><SectionSkeleton rows={2} /></div>
@@ -399,8 +401,8 @@ export function OwnerActivityDashboard() {
         )}
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 1fr)", gap: 12 }}>
-        <article className="dashboard-card" style={{ display: "grid", gap: 10 }}>
+      <section className="owner-activity-main-grid">
+        <article className="dashboard-card owner-activity-chart-card" style={{ display: "grid", gap: 10 }}>
           <div>
             <h3 style={{ margin: 0 }}>Servizi totali nel periodo</h3>
             <p style={{ margin: "4px 0 0", color: "var(--muted)" }}>andamento mensile per cliente</p>
@@ -414,7 +416,7 @@ export function OwnerActivityDashboard() {
             <p style={{ color: "var(--muted)", margin: 0 }}>Nessun dato disponibile nel periodo.</p>
           ) : (
             <>
-              <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+              <div className="owner-activity-legend" style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
                 {seriesState.data.datasets.map((dataset) => (
                   <span key={`legend-${dataset.tenant_id}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 14 }}>
                     <span style={{ width: 10, height: 10, borderRadius: 3, background: dataset.color, display: "inline-block" }} />
@@ -427,7 +429,7 @@ export function OwnerActivityDashboard() {
           )}
         </article>
 
-        <article className="dashboard-card" style={{ display: "grid", gap: 8 }}>
+        <article className="dashboard-card owner-activity-top5-card" style={{ display: "grid", gap: 8 }}>
           <div>
             <h3 style={{ margin: 0 }}>Top 5 clienti</h3>
             <p style={{ margin: "4px 0 0", color: "var(--muted)" }}>punteggio: servizi + frequenza accessi</p>
@@ -443,8 +445,8 @@ export function OwnerActivityDashboard() {
                 const rank = index + 1;
                 const width = `${Math.max(8, Math.round((item.score / topScore) * 100))}%`;
                 return (
-                  <div key={item.tenant_id} style={{ display: "grid", gap: 6, padding: "8px 0", borderBottom: "1px solid #e2ecf6" }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "22px 36px 1fr auto", alignItems: "center", gap: 8 }}>
+                  <div key={item.tenant_id} className="owner-activity-top5-row" style={{ display: "grid", gap: 6, padding: "8px 0", borderBottom: "1px solid #e2ecf6" }}>
+                    <div className="owner-activity-top5-head" style={{ display: "grid", gridTemplateColumns: "22px 36px 1fr auto", alignItems: "center", gap: 8 }}>
                       <span style={{ textAlign: "center", color: "#8a5a00", fontWeight: 700 }}>{rank}</span>
                       <span style={{ width: 32, height: 32, borderRadius: 999, background: "#edf3fa", color: item.tenant_name ? "#1c4f8c" : "#5f738a", fontWeight: 700, fontSize: 12, display: "grid", placeItems: "center" }}>
                         {initials(item.tenant_name)}
@@ -455,7 +457,7 @@ export function OwnerActivityDashboard() {
                       </div>
                       <div style={{ fontWeight: 700 }}>{formatInteger(item.score)}</div>
                     </div>
-                    <div style={{ height: 7, borderRadius: 99, background: "#e6eef8", overflow: "hidden", marginLeft: 66 }}>
+                    <div className="owner-activity-top5-progress" style={{ height: 7, borderRadius: 99, background: "#e6eef8", overflow: "hidden", marginLeft: 66 }}>
                       <div style={{ height: "100%", width, background: item.score === topScore ? "#d85a30" : "#2a67b1", borderRadius: 99 }} />
                     </div>
                   </div>
@@ -479,14 +481,14 @@ export function OwnerActivityDashboard() {
         ) : (
           <>
             <div className="access-log-table-wrap">
-              <table className="access-log-table" style={{ minWidth: 980 }}>
+              <table className="access-log-table" style={{ minWidth: 760 }}>
                 <thead>
                   <tr>
                     <th align="left">Cliente</th>
-                    <th align="left">Piano</th>
-                    <th align="left">Servizi</th>
-                    <th align="left">Accessi/sett.</th>
-                    <th align="left">Utilizzo</th>
+                    <th align="left" className="col-plan">Piano</th>
+                    <th align="left" className="col-services">Servizi</th>
+                    <th align="left" className="col-logins">Accessi/sett.</th>
+                    <th align="left" className="col-utilization">Utilizzo</th>
                     <th align="left">Trend</th>
                   </tr>
                 </thead>
@@ -501,10 +503,10 @@ export function OwnerActivityDashboard() {
                             <strong>{client.tenant_name}</strong>
                           </div>
                         </td>
-                        <td>{client.plan}</td>
-                        <td><strong>{formatInteger(client.total_services)}</strong></td>
-                        <td>{formatDecimal(client.avg_logins_per_week)}</td>
-                        <td>
+                        <td className="col-plan">{client.plan}</td>
+                        <td className="col-services"><strong>{formatInteger(client.total_services)}</strong></td>
+                        <td className="col-logins">{formatDecimal(client.avg_logins_per_week)}</td>
+                        <td className="col-utilization">
                           <span className="access-log-badge" style={utilizationBadgeStyle(client.limit_pct)}>
                             {client.limit_pct}%
                           </span>
@@ -517,6 +519,36 @@ export function OwnerActivityDashboard() {
                   })}
                 </tbody>
               </table>
+            </div>
+
+            <div className="access-log-cards">
+              {(clientsState.data?.clients ?? []).map((client) => {
+                const trendArrow = client.trend_pct > 0 ? "↑" : client.trend_pct < 0 ? "↓" : "→";
+                return (
+                  <article key={`mobile-${client.tenant_id}`} className="access-log-card">
+                    <header className="access-log-card-header">
+                      <div className="access-log-card-user">
+                        <span className="access-log-avatar">{initials(client.tenant_name)}</span>
+                        <div className="access-log-card-user-info">
+                          <span className="access-log-card-name">{client.tenant_name}</span>
+                          <span className="access-log-card-tenant">{client.plan}</span>
+                        </div>
+                      </div>
+                      <span className="access-log-badge" style={utilizationBadgeStyle(client.limit_pct)}>
+                        {client.limit_pct}%
+                      </span>
+                    </header>
+
+                    <div className="access-log-card-row">
+                      <span>Servizi: <strong>{formatInteger(client.total_services)}</strong></span>
+                      <span>Accessi/sett.: <strong>{formatDecimal(client.avg_logins_per_week)}</strong></span>
+                    </div>
+                    <div className="access-log-card-row" style={{ color: trendColor(client.trend_pct), fontWeight: 700 }}>
+                      <span>Trend: {trendArrow} {formatSignedPercent(client.trend_pct)}</span>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
 
             {(clientsState.data?.paginated ?? false) && clientsTotalPages > 1 ? (
