@@ -76,6 +76,22 @@ Frontend:
 - reset page: `http://localhost:5173/reset-password?token=...`
 - area protetta: `http://localhost:5173/app/**` (middleware + cookie `httpOnly`)
 
+### Owner Activity Dashboard (Admin)
+
+Frontend:
+- tab `Activity Dashboard` nella pagina `http://localhost:5173/app/admin-home`
+- proxy API Next.js:
+	- `GET /api/owner/dashboard/kpis?months=1|3|6|12`
+	- `GET /api/owner/dashboard/services-by-month?months=1|3|6|12`
+	- `GET /api/owner/dashboard/top5?months=1|3|6|12`
+	- `GET /api/owner/dashboard/clients?months=1|3|6|12&page=<n>&per_page=<n>`
+
+Backend:
+- `GET /owner/dashboard/kpis`
+- `GET /owner/dashboard/services-by-month`
+- `GET /owner/dashboard/top5`
+- `GET /owner/dashboard/clients`
+
 ### Services Core (EPIC-04)
 
 Ruoli abilitati: `ADMIN`, `GESTIONALE`.
