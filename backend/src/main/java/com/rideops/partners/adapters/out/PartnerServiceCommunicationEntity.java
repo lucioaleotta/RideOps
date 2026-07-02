@@ -38,6 +38,12 @@ public class PartnerServiceCommunicationEntity {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
 
+    @Column(name = "delivery_status", nullable = false, length = 10)
+    private String deliveryStatus = "OK";
+
+    @Column(name = "delivery_attempts", nullable = false)
+    private Integer deliveryAttempts = 1;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -110,5 +116,21 @@ public class PartnerServiceCommunicationEntity {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public String getDeliveryStatus() {
+        return deliveryStatus;
+    }
+
+    public void setDeliveryStatus(String deliveryStatus) {
+        this.deliveryStatus = deliveryStatus;
+    }
+
+    public Integer getDeliveryAttempts() {
+        return deliveryAttempts;
+    }
+
+    public void setDeliveryAttempts(Integer deliveryAttempts) {
+        this.deliveryAttempts = deliveryAttempts;
     }
 }

@@ -7,6 +7,7 @@ public record ServicePartnerCommunicationDto(
     String channel,
     String recipient,
     String subject,
-    LocalDateTime createdAt
+    LocalDateTime createdAt,
+    String deliveryStatus
 ) {
 }

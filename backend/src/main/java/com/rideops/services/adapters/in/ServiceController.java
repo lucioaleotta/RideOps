@@ -10,6 +10,8 @@ import com.rideops.services.application.GetServiceUseCase;
 import com.rideops.services.application.GetUnassignedServicesCountUseCase;
 import com.rideops.services.application.ListServicesUseCase;
 import com.rideops.services.application.OutsourceServiceUseCase;
+import com.rideops.services.application.ServiceExportGenerationException;
+import com.rideops.services.application.ServiceExportUseCase;
 import com.rideops.services.application.ServiceDto;
 import com.rideops.services.application.ServicePartnerCommunicationResultDto;
 import com.rideops.services.application.ServicePartnerHistoryDto;
@@ -26,9 +28,15 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -62,6 +70,7 @@ public class ServiceController {
     private final GetServiceUseCase getServiceUseCase;
     private final OutsourceServiceUseCase outsourceServiceUseCase;
     private final ServicePartnerOperationsUseCase servicePartnerOperationsUseCase;
+    private final ServiceExportUseCase serviceExportUseCase;
 
     public ServiceController(CreateServiceUseCase createServiceUseCase,
                              UpdateServiceUseCase updateServiceUseCase,
@@ -73,7 +82,8 @@ public class ServiceController {
                              ListServicesUseCase listServicesUseCase,
                              GetServiceUseCase getServiceUseCase,
                              OutsourceServiceUseCase outsourceServiceUseCase,
-                             ServicePartnerOperationsUseCase servicePartnerOperationsUseCase) {
+                             ServicePartnerOperationsUseCase servicePartnerOperationsUseCase,
+                             ServiceExportUseCase serviceExportUseCase) {
         this.createServiceUseCase = createServiceUseCase;
         this.updateServiceUseCase = updateServiceUseCase;
         this.deleteServiceUseCase = deleteServiceUseCase;
@@ -85,6 +95,7 @@ public class ServiceController {
         this.getServiceUseCase = getServiceUseCase;
         this.outsourceServiceUseCase = outsourceServiceUseCase;
         this.servicePartnerOperationsUseCase = servicePartnerOperationsUseCase;
+        this.serviceExportUseCase = serviceExportUseCase;
     }
 
     @GetMapping
@@ -201,6 +212,23 @@ public class ServiceController {
         return servicePartnerOperationsUseCase.getPartnerHistory(serviceId);
     }
 
+    @GetMapping("/export")
+    public ResponseEntity<byte[]> export(@RequestParam @NonNull LocalDate from,
+                                         @RequestParam @NonNull LocalDate to,
+                                         @RequestParam @NonNull String format) {
+        if (from.isAfter(to)) {
+            throw new ServiceValidationException("Intervallo export non valido: la data iniziale deve precedere la data finale");
+        }
+
+        ServiceExportUseCase.ServiceExportFormat exportFormat = parseExportFormat(format);
+        ServiceExportUseCase.ExportedFile exportedFile = serviceExportUseCase.export(from, to, exportFormat);
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + exportedFile.filename() + "\"")
+            .contentType(MediaType.parseMediaType(Objects.requireNonNull(exportedFile.contentType())))
+            .body(exportedFile.content());
+    }
+
     @PostMapping("/{serviceId}/partner-communications/email")
     public ServicePartnerCommunicationResultDto sendPartnerEmail(@PathVariable @NonNull Long serviceId) {
         return servicePartnerOperationsUseCase.sendEmail(serviceId);
@@ -221,6 +249,20 @@ public class ServiceController {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNotFound(ServiceNotFoundException exception) {
         return new ErrorResponse(exception.getMessage());
+    }
+
+    @ExceptionHandler(ServiceExportGenerationException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleExportGeneration(ServiceExportGenerationException exception) {
+        return new ErrorResponse(exception.getMessage());
+    }
+
+    private ServiceExportUseCase.ServiceExportFormat parseExportFormat(String format) {
+        try {
+            return ServiceExportUseCase.ServiceExportFormat.valueOf(format.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Formato export non valido: usa csv o xlsx", exception);
+        }
     }
 
     record CreateServiceRequest(@NotNull LocalDateTime startAt,

@@ -38,19 +38,19 @@ public class BrevoEmailClient {
         this.replyToEmail = defaultIfBlank(replyToEmail, "support@rideops.it");
     }
 
-    public void sendTemplateEmail(Long tenantId,
-                                  String recipientEmail,
-                                  String recipientName,
-                                  int templateId,
-                                  Map<String, ?> params) {
+    public boolean sendTemplateEmail(Long tenantId,
+                                     String recipientEmail,
+                                     String recipientName,
+                                     int templateId,
+                                     Map<String, ?> params) {
         if (apiKey.isBlank() || senderEmail.isBlank()) {
             LOGGER.warn("Brevo disabled for tenantId={} templateId={} (missing api-key or sender-email)", tenantId, templateId);
-            return;
+            return false;
         }
 
         if (recipientEmail == null || recipientEmail.isBlank()) {
             LOGGER.warn("Brevo skipped for tenantId={} templateId={} (missing recipient)", tenantId, templateId);
-            return;
+            return false;
         }
 
         Map<String, Object> payload = new LinkedHashMap<>();
@@ -76,6 +76,7 @@ public class BrevoEmailClient {
                 .toBodilessEntity();
 
             LOGGER.info("Brevo email sent tenantId={} templateId={}", tenantId, templateId);
+            return true;
         } catch (RestClientResponseException exception) {
             LOGGER.error(
                 "Brevo email failed tenantId={} templateId={} status={} response={}",
@@ -84,6 +85,7 @@ public class BrevoEmailClient {
                 exception.getStatusCode().value(),
                 truncate(exception.getResponseBodyAsString(), 1000)
             );
+            return false;
         } catch (RuntimeException exception) {
             LOGGER.error(
                 "Brevo email failed tenantId={} templateId={} reason={}",
@@ -91,6 +93,7 @@ public class BrevoEmailClient {
                 templateId,
                 exception.getMessage()
             );
+            return false;
         }
     }
 

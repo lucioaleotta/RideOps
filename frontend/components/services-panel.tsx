@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CalendarIcon, CancelIcon, CursorIcon, FilterIcon, LockIcon, OpenIcon, PartnerIcon as SharedPartnerIcon, PrintIcon as SharedPrintIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon, UserIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
+import { ExportIcon } from './services-export/ExportIcon';
 
 type ServiceType = 'TRANSFER' | 'TOUR' | 'DISPOSIZIONE';
 type ServiceStatus = 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
@@ -52,6 +53,7 @@ type ServicePartnerCommunicationItem = {
   recipient: string;
   subject: string;
   createdAt: string;
+  deliveryStatus: 'OK' | 'KO';
 };
 
 type ServicePartnerHistoryItem = {
@@ -184,6 +186,14 @@ function formatFilterDate(dateValue: string) {
 
 function isPartnerManagedAssignment(type: ServiceAssignmentType) {
   return type === 'OUTSOURCED' || type === 'INCOMING_OUTSOURCED';
+}
+
+function deliveryStatusLabel(status: 'OK' | 'KO') {
+  return status === 'KO' ? 'KO' : 'OK';
+}
+
+function deliveryStatusClass(status: 'OK' | 'KO') {
+  return status === 'KO' ? 'sph-delivery-chip sph-delivery-chip--ko' : 'sph-delivery-chip sph-delivery-chip--ok';
 }
 
 function MobileClockIcon() {
@@ -1034,7 +1044,7 @@ export function ServicesPanel() {
       return;
     }
 
-    setSuccess('Servizio affidato a partner');
+    setSuccess('Servizio affidato a partner. Invio email in corso: verifica esito nello storico (OK/KO).');
     closeOutsourceModal();
     await loadServices();
     await loadPartnerHistory(selectedService.id);
@@ -1556,6 +1566,14 @@ export function ServicesPanel() {
       <article className="dashboard-card">
         <div className="panel-header services-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <h3 className="services-title">Lista servizi</h3>
+          <div className="services-header-controls">
+            <ExportIcon
+              services={orderedServices}
+              onBeforeExport={clearFeedbackNotice}
+              onExportError={(message) => setError(message)}
+              onExportSuccess={(message) => setSuccess(message)}
+            />
+          </div>
         </div>
         {newButtonPortalTarget ? createPortal(createServiceButton, newButtonPortalTarget) : null}
         {overdueExecutedServices.length > 0 && (
@@ -1856,6 +1874,12 @@ export function ServicesPanel() {
 
                     <div className="sph-divider" />
 
+                    {partnerHistory.communications.some((communication) => communication.deliveryStatus === 'KO') && (
+                      <div className="sph-delivery-warning" role="status" aria-live="polite">
+                        Attenzione: almeno un invio email al partner non e` andato a buon fine.
+                      </div>
+                    )}
+
                     {partnerHistory.communications.length === 0 ? (
                       <p className="sph-empty">Nessuna comunicazione inviata.</p>
                     ) : (
@@ -1866,6 +1890,7 @@ export function ServicesPanel() {
                             <thead>
                               <tr>
                                 <th className="sph-th">Canale</th>
+                                <th className="sph-th">Esito</th>
                                 <th className="sph-th">Destinatario</th>
                                 <th className="sph-th sph-th--subject">Oggetto</th>
                                 <th className="sph-th sph-th--date">Data invio</th>
@@ -1876,6 +1901,11 @@ export function ServicesPanel() {
                                 <tr key={communication.communicationId} className="sph-tr">
                                   <td className="sph-td">
                                     <span className="sph-channel-badge">{communication.channel.toUpperCase()}</span>
+                                  </td>
+                                  <td className="sph-td">
+                                    <span className={deliveryStatusClass(communication.deliveryStatus)}>
+                                      {deliveryStatusLabel(communication.deliveryStatus)}
+                                    </span>
                                   </td>
                                   <td className="sph-td">{communication.recipient}</td>
                                   <td className="sph-td sph-td--subject">{communication.subject}</td>
@@ -1891,6 +1921,9 @@ export function ServicesPanel() {
                             <div key={communication.communicationId} className="sph-mobile-card">
                               <div className="sph-mobile-card-top">
                                 <span className="sph-channel-badge">{communication.channel.toUpperCase()}</span>
+                                <span className={deliveryStatusClass(communication.deliveryStatus)}>
+                                  {deliveryStatusLabel(communication.deliveryStatus)}
+                                </span>
                                 <span className="sph-mobile-card-date">
                                   <svg className="sph-mobile-cal-icon" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
                                     <rect x="3" y="4" width="18" height="18" rx="2" fill="none" stroke="currentColor" strokeWidth="1.9" />

@@ -38,12 +38,20 @@ class OutsourceServiceUseCaseTest {
     @Mock
     private PartnerRepository partnerRepository;
 
+    @Mock
+    private ServicePartnerOperationsUseCase servicePartnerOperationsUseCase;
+
     private OutsourceServiceUseCase useCase;
 
     @BeforeEach
     void setUp() {
         applyTenantAuthentication(1L);
-        useCase = new OutsourceServiceUseCase(serviceRepositoryPort, partnerRepository, new TenantContext());
+        useCase = new OutsourceServiceUseCase(
+            serviceRepositoryPort,
+            partnerRepository,
+            new TenantContext(),
+            servicePartnerOperationsUseCase
+        );
     }
 
     private void applyTenantAuthentication(Long tenantId) {
@@ -86,6 +94,7 @@ class OutsourceServiceUseCaseTest {
         assertEquals(new BigDecimal("50"), result.pricePartner());
         assertNull(result.assignedDriverId());
         verify(serviceRepositoryPort).save(entity);
+        verify(servicePartnerOperationsUseCase).sendEmailAsyncAfterOutsource(10L, 1L);
     }
 
     @Test
@@ -129,6 +138,7 @@ class OutsourceServiceUseCaseTest {
         assertNull(dto.assignedVehicleId());
         assertEquals(ServiceStatus.OPEN, dto.status());
         verify(serviceRepositoryPort).save(entity);
+        verify(servicePartnerOperationsUseCase).sendEmailAsyncAfterOutsource(12L, 1L);
     }
 
     private RideServiceEntity sampleService() {
