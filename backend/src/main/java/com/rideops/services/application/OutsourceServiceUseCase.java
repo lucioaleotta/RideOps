@@ -18,13 +18,16 @@ public class OutsourceServiceUseCase {
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final PartnerRepository partnerRepository;
     private final TenantContext tenantContext;
+    private final ServicePartnerOperationsUseCase servicePartnerOperationsUseCase;
 
     public OutsourceServiceUseCase(ServiceRepositoryPort serviceRepositoryPort,
                                    PartnerRepository partnerRepository,
-                                   TenantContext tenantContext) {
+                                   TenantContext tenantContext,
+                                   ServicePartnerOperationsUseCase servicePartnerOperationsUseCase) {
         this.serviceRepositoryPort = serviceRepositoryPort;
         this.partnerRepository = partnerRepository;
         this.tenantContext = tenantContext;
+        this.servicePartnerOperationsUseCase = servicePartnerOperationsUseCase;
     }
 
     public ServiceDto execute(Long serviceId, Long partnerId, BigDecimal pricePartner) {
@@ -49,7 +52,9 @@ public class OutsourceServiceUseCase {
             throw new ServiceValidationException("Il prezzo partner non puo` essere negativo");
         }
 
-        boolean partnerValid = partnerRepository.findByIdAndTenantId(partnerId, tenantContext.requireTenantId())
+        Long tenantId = tenantContext.requireTenantId();
+
+        boolean partnerValid = partnerRepository.findByIdAndTenantId(partnerId, tenantId)
             .map(partner -> !partner.isDeleted())
             .orElse(false);
         if (!partnerValid) {
@@ -77,6 +82,16 @@ public class OutsourceServiceUseCase {
         }
 
         ServiceDto result = ServiceMapper.toDto(serviceRepositoryPort.save(entity));
+        try {
+            servicePartnerOperationsUseCase.sendEmailAsyncAfterOutsource(serviceId, tenantId);
+        } catch (RuntimeException exception) {
+            log.warn(
+                "action=service.outsource.email-dispatch serviceId={} partnerId={} outcome=not-scheduled reason={}",
+                serviceId,
+                partnerId,
+                exception.getMessage()
+            );
+        }
         log.info("action=service.outsource serviceId={} partnerId={} assignmentType={} outcome=success",
             serviceId, partnerId, entity.getServiceAssignmentType());
         return result;
