@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/safe-next-build.mjs",
     "lint": "next lint",
     "update-geoip": "node -e \"require('geoip-lite').reloadDataSync()\"",
     "start": "next start",
