@@ -7,6 +7,8 @@ import { ButtonContent, LoginIcon } from './action-icons';
 import { PasswordInput } from './password-input';
 import { StatusNotice } from './status-notice';
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function LoginForm() {
   const router = useRouter();
   const [userId, setUserId] = useState('');
@@ -82,7 +84,7 @@ export function LoginForm() {
       <label>
         User ID
         <input
-          type="text"
+          type="email"
           name="rideops-user-id"
           autoComplete="username"
           placeholder="User ID"
