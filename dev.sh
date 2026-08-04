@@ -188,6 +188,70 @@ local_status() {
   compose_cmd --profile dev ps postgres
 }
 
+run_pre_pr_checks() {
+  ensure_state_dirs
+
+  local timestamp run_log_dir backend_log frontend_log
+  timestamp="$(date +%Y%m%d-%H%M%S)"
+  run_log_dir="${LOG_DIR}/pre-pr-${timestamp}"
+  backend_log="${run_log_dir}/backend-verify.log"
+  frontend_log="${run_log_dir}/frontend-build-lint.log"
+
+  mkdir -p "$run_log_dir"
+
+  echo "Pre-PR checks avviati"
+  echo "Log directory: ${run_log_dir}"
+  echo
+
+  local backend_status=0
+  local frontend_status=0
+
+  echo "[1/2] Backend verify (include ArchUnit)"
+  if (
+    cd "$ROOT_DIR/backend"
+    {
+      echo "==> mvn -B verify"
+      mvn -B verify
+    } 2>&1 | tee "$backend_log"
+  ); then
+    echo "Backend verify: OK"
+  else
+    backend_status=$?
+    echo "Backend verify: KO (exit code ${backend_status})"
+  fi
+
+  echo
+  echo "[2/2] Frontend build + lint"
+  if (
+    cd "$ROOT_DIR/frontend"
+    {
+      echo "==> npm run build"
+      npm run build
+      echo
+      echo "==> npm run lint"
+      npm run lint
+    } 2>&1 | tee "$frontend_log"
+  ); then
+    echo "Frontend build+lint: OK"
+  else
+    frontend_status=$?
+    echo "Frontend build+lint: KO (exit code ${frontend_status})"
+  fi
+
+  echo
+  echo "Summary pre-PR"
+  echo "- Backend log:  ${backend_log}"
+  echo "- Frontend log: ${frontend_log}"
+
+  if [[ "$backend_status" -eq 0 && "$frontend_status" -eq 0 ]]; then
+    echo "Esito finale: OK"
+    return 0
+  fi
+
+  echo "Esito finale: KO"
+  return 1
+}
+
 usage() {
   cat <<'EOF'
 RideOps dev helper
@@ -216,6 +280,7 @@ Uso:
   ./dev.sh logs [svc]    # stack full container (legacy)
   ./dev.sh backend-test
   ./dev.sh frontend-build
+  ./dev.sh pre-pr
   ./dev.sh check
   ./dev.sh login [userId] [password]
   ./dev.sh me [token]
@@ -378,12 +443,12 @@ case "$cmd" in
     npm run build
     ;;
 
+  pre-pr)
+    run_pre_pr_checks
+    ;;
+
   check)
-    cd "$ROOT_DIR/backend"
-    mvn -B verify
-    cd "$ROOT_DIR/frontend"
-    npm install
-    npm run build
+    run_pre_pr_checks
     ;;
 
   login)

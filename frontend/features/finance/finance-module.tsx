@@ -18,6 +18,7 @@ import {
   SaveFinancialTransactionPayload
 } from '../../types/finance';
 import { FinanceCategoryDistribution, FinanceMonthlyBars, FinanceYearComparisonChart } from './components/finance-charts';
+import { FinancePartnerPaymentsReport } from './components/finance-partner-payments-report';
 import { FinanceSubnav } from './components/finance-subnav';
 import { FinanceTransactionForm } from './components/finance-transaction-form';
 import { FinanceTransactionsTable } from './components/finance-transactions-table';
@@ -55,7 +56,7 @@ function getTransactionStatus(item: FinancialTransaction): Exclude<FinanceStatus
   return item.autoCreated ? 'AUTO' : 'MANUALE';
 }
 
-export function FinanceModule({ section = 'overview' }: { section?: 'overview' | 'movements' }) {
+export function FinanceModule({ section = 'overview' }: { section?: 'overview' | 'movements' | 'partner-payments' }) {
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -78,6 +79,7 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
 
   const showOverview = section === 'overview';
   const showMovements = section === 'movements';
+  const showPartnerPayments = section === 'partner-payments';
 
   async function loadDashboard() {
     setLoading(true);
@@ -270,7 +272,9 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
           <p style={{ margin: 0, color: '#4f6b8a' }}>
             {showOverview
               ? 'KPI mese/anno e confronto evolutivo.'
-              : 'Ledger unico movimenti con filtri, ordinamento e gestione operativa.'}
+              : showMovements
+                ? 'Ledger unico movimenti con filtri, ordinamento e gestione operativa.'
+                : 'Report informativo per il controllo pagamenti partner nel periodo selezionato.'}
           </p>
         </div>
 
@@ -305,7 +309,7 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
 
       {error && <StatusNotice tone="error">{error}</StatusNotice>}
       {success && <StatusNotice tone="success">{success}</StatusNotice>}
-      {loading && <p>Caricamento dati finanziari...</p>}
+      {loading && (showOverview || showMovements) && <p>Caricamento dati finanziari...</p>}
 
       {!loading && showOverview && dashboard && (
         <>
@@ -546,6 +550,8 @@ export function FinanceModule({ section = 'overview' }: { section?: 'overview' |
           )}
         </>
       )}
+
+      {showPartnerPayments && <FinancePartnerPaymentsReport />}
     </section>
   );
 }

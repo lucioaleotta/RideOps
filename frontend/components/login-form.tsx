@@ -7,8 +7,6 @@ import { ButtonContent, LoginIcon } from './action-icons';
 import { PasswordInput } from './password-input';
 import { StatusNotice } from './status-notice';
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export function LoginForm() {
   const router = useRouter();
   const [userId, setUserId] = useState('');
@@ -29,12 +27,7 @@ export function LoginForm() {
     const normalizedPassword = currentPassword.trim();
 
     if (!normalizedUserId) {
-      setError('Email required');
-      return;
-    }
-
-    if (normalizedUserId === 'invalid-email' || !EMAIL_PATTERN.test(normalizedUserId)) {
-      setError('Invalid email');
+      setError('User ID required');
       return;
     }
 
@@ -89,11 +82,10 @@ export function LoginForm() {
       <label>
         User ID
         <input
-          type="email"
+          type="text"
           name="rideops-user-id"
-          autoComplete="email"
-          inputMode="email"
-          placeholder="Email"
+          autoComplete="username"
+          placeholder="User ID"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           className="form-input"
