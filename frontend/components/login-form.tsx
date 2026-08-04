@@ -9,8 +9,8 @@ import { StatusNotice } from './status-notice';
 
 export function LoginForm() {
   const router = useRouter();
-  const [userId, setUserId] = useState('admin');
-  const [password, setPassword] = useState('ChangeMe123!');
+  const [userId, setUserId] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -38,11 +38,30 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="form-grid">
+    <form onSubmit={onSubmit} className="form-grid" autoComplete="off">
+      <input
+        type="text"
+        name="fake-username"
+        autoComplete="username"
+        tabIndex={-1}
+        aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+      />
+      <input
+        type="password"
+        name="fake-password"
+        autoComplete="new-password"
+        tabIndex={-1}
+        aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
+      />
+
       <label>
         User ID
         <input
           type="text"
+          name="rideops-user-id"
+          autoComplete="off"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           required
@@ -57,7 +76,8 @@ export function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           required
           className="form-input"
-          autoComplete="current-password"
+          name="rideops-password"
+          autoComplete="new-password"
         />
       </label>
 

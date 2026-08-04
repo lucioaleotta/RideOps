@@ -6,7 +6,8 @@ mode: agent
 
 # Checklist pre-PR
 
-Prima di aprire una PR, verifica ogni punto e mostrane l'esito all'utente:
+Verifica ogni punto e mostra solo un riepilogo sintetico (✅/❌ per riga),
+non output verbosi:
 
 - [ ] Branch creato da `main` con nomenclatura corretta
 - [ ] Commit con Conventional Commits

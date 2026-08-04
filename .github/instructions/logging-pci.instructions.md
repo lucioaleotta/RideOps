@@ -1,5 +1,5 @@
 ---
-applyTo: "backend/**/logging/**"
+applyTo: "backend/**/*.java"
 ---
 
 # Standard di logging

@@ -4,14 +4,15 @@ applyTo: "frontend/**/*.{ts,tsx}"
 
 # Convenzioni frontend
 
-## Verifica locale obbligatoria prima del push
+## Verifica locale (a cura dell'utente)
 
 ```bash
 cd frontend && npm run build && npm run lint
 ```
 
-Non proporre commit se questo comando fallisce. Mostra sempre l'output
-completo all'utente prima di procedere.
+**Non eseguire tu questo comando a scopo esplorativo.** È l'utente a
+lanciarlo nel proprio terminale. Interviene solo se ti viene riportato un
+errore specifico: lavora su quello, non chiedere né generare l'intero log.
 
 ## Note
 

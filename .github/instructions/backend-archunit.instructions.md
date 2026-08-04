@@ -50,4 +50,5 @@ Config       →  (tutto)
 
 1. Mostra la regola violata e il motivo (riferimento CWE)
 2. Correggi il codice
-3. Riesegui la verifica prima di riproporre il commit
+3. Chiedi all'utente di rieseguire la verifica nel proprio terminale —
+   non rilanciarla tu
