@@ -6,6 +6,7 @@ import {
   FinancialTransactionCategory,
   FinancialTransactionType,
   MonthlyFinancePoint,
+  PartnerPaymentReportRow,
   SaveFinancialTransactionPayload,
   YearComparison,
   YearlyFinancePoint
@@ -96,4 +97,81 @@ export async function getServiceStats(year: number, month?: number): Promise<Fin
 
 export async function getFinanceComparison(year: number, compareWith: number): Promise<YearComparison> {
   return parseResponse<YearComparison>(await fetch(`/api/finance/comparison?year=${year}&compareWith=${compareWith}`, { cache: 'no-store' }));
+}
+
+function extractFilenameFromDisposition(contentDisposition: string | null) {
+  if (!contentDisposition) {
+    return null;
+  }
+  const match = /filename\*=UTF-8''([^;]+)|filename="?([^\";]+)"?/i.exec(contentDisposition);
+  if (!match) {
+    return null;
+  }
+  const encodedName = match[1] ?? match[2];
+  if (!encodedName) {
+    return null;
+  }
+  return decodeURIComponent(encodedName);
+}
+
+export async function listFinancePartnerPaymentsReport(filters: {
+  from: string;
+  to: string;
+  partnerId?: number;
+}): Promise<PartnerPaymentReportRow[]> {
+  const query = new URLSearchParams({
+    from: filters.from,
+    to: filters.to
+  });
+
+  if (filters.partnerId) {
+    query.set('partnerId', String(filters.partnerId));
+  }
+
+  return parseResponse<PartnerPaymentReportRow[]>(
+    await fetch(`/api/finance/partner-payments/report?${query.toString()}`, { cache: 'no-store' })
+  );
+}
+
+export async function downloadFinancePartnerPaymentsReport(params: {
+  from: string;
+  to: string;
+  partnerId?: number;
+  format: 'csv' | 'xlsx';
+}) {
+  const query = new URLSearchParams({
+    from: params.from,
+    to: params.to,
+    format: params.format
+  });
+
+  if (params.partnerId) {
+    query.set('partnerId', String(params.partnerId));
+  }
+
+  const response = await fetch(`/api/finance/partner-payments/export?${query.toString()}`, {
+    method: 'GET',
+    cache: 'no-store'
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({ message: 'Export non riuscito' }));
+    throw new Error((payload as { message?: string }).message ?? 'Export non riuscito');
+  }
+
+  const blob = await response.blob();
+  const filename = extractFilenameFromDisposition(response.headers.get('content-disposition'))
+    ?? `report_pagamenti_partner.${params.format}`;
+
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = filename;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
 }

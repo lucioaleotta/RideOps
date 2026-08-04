@@ -20,6 +20,9 @@ import com.rideops.accounting.application.UpdateFinancialTransactionUseCase;
 import com.rideops.accounting.application.VoidFinancialTransactionUseCase;
 import com.rideops.accounting.application.YearComparisonDto;
 import com.rideops.accounting.application.YearlyFinancePointDto;
+import com.rideops.services.application.PartnerPaymentReportRowDto;
+import com.rideops.services.application.PartnerPaymentReportUseCase;
+import com.rideops.services.application.ServiceExportGenerationException;
 import com.rideops.accounting.domain.FinancialTransactionCategory;
 import com.rideops.accounting.domain.FinancialTransactionType;
 import jakarta.validation.Valid;
@@ -29,7 +32,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -58,6 +66,7 @@ public class FinanceController {
     private final GenerateCategorySummaryUseCase categorySummaryUseCase;
     private final GenerateServiceStatisticsUseCase serviceStatisticsUseCase;
     private final GenerateComparisonBetweenYearsUseCase comparisonUseCase;
+    private final PartnerPaymentReportUseCase partnerPaymentReportUseCase;
 
     public FinanceController(CreateFinancialTransactionUseCase createUseCase,
                              UpdateFinancialTransactionUseCase updateUseCase,
@@ -68,7 +77,8 @@ public class FinanceController {
                              GenerateYearlySummaryUseCase yearlySummaryUseCase,
                              GenerateCategorySummaryUseCase categorySummaryUseCase,
                              GenerateServiceStatisticsUseCase serviceStatisticsUseCase,
-                             GenerateComparisonBetweenYearsUseCase comparisonUseCase) {
+                             GenerateComparisonBetweenYearsUseCase comparisonUseCase,
+                             PartnerPaymentReportUseCase partnerPaymentReportUseCase) {
         this.createUseCase = createUseCase;
         this.updateUseCase = updateUseCase;
         this.voidUseCase = voidUseCase;
@@ -79,6 +89,7 @@ public class FinanceController {
         this.categorySummaryUseCase = categorySummaryUseCase;
         this.serviceStatisticsUseCase = serviceStatisticsUseCase;
         this.comparisonUseCase = comparisonUseCase;
+        this.partnerPaymentReportUseCase = partnerPaymentReportUseCase;
     }
 
     @GetMapping("/transactions")
@@ -164,6 +175,47 @@ public class FinanceController {
         return comparisonUseCase.execute(year, compareWith);
     }
 
+    @GetMapping("/partner-payments/report")
+    @PreAuthorize("hasRole('GESTIONALE')")
+    public List<PartnerPaymentReportRowDto> partnerPaymentsReport(
+        @RequestParam @NotNull LocalDate from,
+        @RequestParam @NotNull LocalDate to,
+        @RequestParam(required = false) Long partnerId
+    ) {
+        validateReportDateRange(from, to);
+        return partnerPaymentReportUseCase.list(from, to, partnerId);
+    }
+
+    @GetMapping("/partner-payments/export")
+    @PreAuthorize("hasRole('GESTIONALE')")
+    public ResponseEntity<byte[]> exportPartnerPaymentsReport(
+        @RequestParam @NotNull LocalDate from,
+        @RequestParam @NotNull LocalDate to,
+        @RequestParam @NotBlank String format,
+        @RequestParam(required = false) Long partnerId
+    ) {
+        validateReportDateRange(from, to);
+
+        PartnerPaymentReportUseCase.PartnerPaymentReportFormat parsedFormat;
+        try {
+            parsedFormat = PartnerPaymentReportUseCase.PartnerPaymentReportFormat.parse(format);
+        } catch (IllegalArgumentException exception) {
+            throw new FinancialValidationException("Formato export non valido: usa csv o xlsx");
+        }
+
+        PartnerPaymentReportUseCase.ExportedFile exportedFile = partnerPaymentReportUseCase.export(
+            from,
+            to,
+            partnerId,
+            parsedFormat
+        );
+
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + exportedFile.filename() + "\"")
+            .contentType(MediaType.parseMediaType(Objects.requireNonNull(exportedFile.contentType())))
+            .body(exportedFile.content());
+    }
+
     @ExceptionHandler(FinancialValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse handleValidation(FinancialValidationException exception) {
@@ -174,6 +226,23 @@ public class FinanceController {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse handleNotFound(FinancialTransactionNotFoundException exception) {
         return new ErrorResponse(exception.getMessage());
+    }
+
+    @ExceptionHandler(ServiceExportGenerationException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handlePartnerReportExport(ServiceExportGenerationException exception) {
+        return new ErrorResponse(exception.getMessage());
+    }
+
+    private void validateReportDateRange(LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            throw new FinancialValidationException("Intervallo non valido: la data iniziale deve precedere la data finale");
+        }
+
+        long monthsDiff = ChronoUnit.MONTHS.between(from.withDayOfMonth(1), to.withDayOfMonth(1));
+        if (monthsDiff > 24) {
+            throw new FinancialValidationException("Intervallo massimo consentito: 24 mesi");
+        }
     }
 
     private FinancialTransactionCommand toCommand(SaveTransactionRequest request) {

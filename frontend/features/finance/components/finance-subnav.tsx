@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 type FinanceSubnavProps = {
-  active: 'overview' | 'movements';
+  active: 'overview' | 'movements' | 'partner-payments';
 };
 
 const navItems = [
   { href: '/app/finance', label: 'Panoramica', key: 'overview' },
-  { href: '/app/finance/movements', label: 'Movimenti', key: 'movements' }
+  { href: '/app/finance/movements', label: 'Movimenti', key: 'movements' },
+  { href: '/app/finance/partner-payments', label: 'Report Pagamenti Partner', key: 'partner-payments' }
 ] as const;
 
 export function FinanceSubnav({ active }: FinanceSubnavProps) {

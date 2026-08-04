@@ -3,10 +3,10 @@ import userEvent from '@testing-library/user-event';
 import LoginForm from '../login-form';
 
 describe('LoginForm Component', () => {
-  it('renders login form with email and password inputs', () => {
+  it('renders login form with user ID and password inputs', () => {
     render(<LoginForm />);
     
-    expect(screen.getByPlaceholderText(/email/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/user id/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /accedi/i })).toBeInTheDocument();
   });
@@ -18,22 +18,24 @@ describe('LoginForm Component', () => {
     fireEvent.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/email.*required/i)).toBeInTheDocument();
+      expect(screen.getByText(/user id.*required/i)).toBeInTheDocument();
     });
   });
 
-  it('displays validation error for invalid email format', async () => {
+  it('accepts non-email user ID values', async () => {
     render(<LoginForm />);
     const user = userEvent.setup();
     
-    const emailInput = screen.getByPlaceholderText(/email/i);
-    await user.type(emailInput, 'invalid-email');
+    const userIdInput = screen.getByPlaceholderText(/user id/i);
+    const passwordInput = screen.getByPlaceholderText(/password/i);
+    await user.type(userIdInput, 'admin');
+    await user.type(passwordInput, 'password123');
     
     const submitButton = screen.getByRole('button', { name: /accedi/i });
     fireEvent.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText(/invalid.*email/i)).toBeInTheDocument();
+      expect(screen.queryByText(/invalid.*email/i)).not.toBeInTheDocument();
     });
   });
 
@@ -41,11 +43,11 @@ describe('LoginForm Component', () => {
     render(<LoginForm />);
     const user = userEvent.setup();
     
-    const emailInput = screen.getByPlaceholderText(/email/i);
+    const emailInput = screen.getByPlaceholderText(/user id/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
     const submitButton = screen.getByRole('button', { name: /accedi/i });
     
-    await user.type(emailInput, 'test@example.com');
+    await user.type(emailInput, 'admin');
     await user.type(passwordInput, 'password123');
     
     expect(submitButton).not.toBeDisabled();
@@ -55,11 +57,11 @@ describe('LoginForm Component', () => {
     render(<LoginForm />);
     const user = userEvent.setup();
     
-    const emailInput = screen.getByPlaceholderText(/email/i);
+    const emailInput = screen.getByPlaceholderText(/user id/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
     const submitButton = screen.getByRole('button', { name: /accedi/i });
     
-    await user.type(emailInput, 'test@example.com');
+    await user.type(emailInput, 'admin');
     await user.type(passwordInput, 'password123');
     await user.click(submitButton);
     
@@ -82,11 +84,11 @@ describe('LoginForm Component', () => {
     render(<LoginForm />);
     const user = userEvent.setup();
     
-    const emailInput = screen.getByPlaceholderText(/email/i);
+    const emailInput = screen.getByPlaceholderText(/user id/i);
     const passwordInput = screen.getByPlaceholderText(/password/i);
     const submitButton = screen.getByRole('button', { name: /accedi/i });
     
-    await user.type(emailInput, 'test@example.com');
+    await user.type(emailInput, 'admin');
     await user.type(passwordInput, 'wrongpassword');
     await user.click(submitButton);
     

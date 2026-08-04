@@ -99,3 +99,18 @@ export type SaveFinancialTransactionPayload = {
   deadlineOccurrenceId?: number | null;
   notes?: string | null;
 };
+
+export type PartnerPaymentReportRow = {
+  partnerId: number;
+  partnerName: string;
+  serviceId: number;
+  rideCode: string;
+  serviceDate: string;
+  amount: number;
+  driverName: string;
+  vehiclePlate: string;
+  serviceType: string;
+  pickupLocation: string;
+  destination: string;
+  route: string;
+};

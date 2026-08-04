@@ -29,12 +29,7 @@ export function LoginForm() {
     const normalizedPassword = currentPassword.trim();
 
     if (!normalizedUserId) {
-      setError('Email required');
-      return;
-    }
-
-    if (normalizedUserId === 'invalid-email' || !EMAIL_PATTERN.test(normalizedUserId)) {
-      setError('Invalid email');
+      setError('User ID required');
       return;
     }
 
@@ -91,9 +86,8 @@ export function LoginForm() {
         <input
           type="email"
           name="rideops-user-id"
-          autoComplete="email"
-          inputMode="email"
-          placeholder="Email"
+          autoComplete="username"
+          placeholder="User ID"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           className="form-input"

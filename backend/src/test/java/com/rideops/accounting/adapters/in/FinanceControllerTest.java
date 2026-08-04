@@ -23,6 +23,7 @@ import com.rideops.accounting.application.VoidFinancialTransactionUseCase;
 import com.rideops.accounting.application.FinancialTransactionDto;
 import com.rideops.accounting.domain.FinancialTransactionCategory;
 import com.rideops.accounting.domain.FinancialTransactionType;
+import com.rideops.services.application.PartnerPaymentReportUseCase;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,6 +46,7 @@ class FinanceControllerTest {
     private GenerateCategorySummaryUseCase categorySummaryUseCase;
     private GenerateServiceStatisticsUseCase serviceStatisticsUseCase;
     private GenerateComparisonBetweenYearsUseCase comparisonUseCase;
+    private PartnerPaymentReportUseCase partnerPaymentReportUseCase;
 
     private MockMvc mockMvc;
 
@@ -60,6 +62,7 @@ class FinanceControllerTest {
         categorySummaryUseCase = Mockito.mock(GenerateCategorySummaryUseCase.class);
         serviceStatisticsUseCase = Mockito.mock(GenerateServiceStatisticsUseCase.class);
         comparisonUseCase = Mockito.mock(GenerateComparisonBetweenYearsUseCase.class);
+        partnerPaymentReportUseCase = Mockito.mock(PartnerPaymentReportUseCase.class);
 
         FinanceController controller = new FinanceController(
             createUseCase,
@@ -71,7 +74,8 @@ class FinanceControllerTest {
             yearlySummaryUseCase,
             categorySummaryUseCase,
             serviceStatisticsUseCase,
-            comparisonUseCase
+            comparisonUseCase,
+            partnerPaymentReportUseCase
         );
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
