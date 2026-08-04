@@ -239,6 +239,7 @@ public class FinanceController {
             throw new FinancialValidationException("Intervallo non valido: la data iniziale deve precedere la data finale");
         }
 
+        // Guardrail di business per limitare range troppo ampi su report e export.
         long monthsDiff = ChronoUnit.MONTHS.between(from.withDayOfMonth(1), to.withDayOfMonth(1));
         if (monthsDiff > 24) {
             throw new FinancialValidationException("Intervallo massimo consentito: 24 mesi");

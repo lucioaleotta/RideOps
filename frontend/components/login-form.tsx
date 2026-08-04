@@ -63,7 +63,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="form-grid" autoComplete="off">
+    <form onSubmit={onSubmit} className="form-grid" autoComplete="off" noValidate>
       <input
         type="text"
         name="fake-username"
