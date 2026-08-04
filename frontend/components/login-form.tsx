@@ -7,6 +7,8 @@ import { ButtonContent, LoginIcon } from './action-icons';
 import { PasswordInput } from './password-input';
 import { StatusNotice } from './status-notice';
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export function LoginForm() {
   const router = useRouter();
   const [userId, setUserId] = useState('');
@@ -17,24 +19,52 @@ export function LoginForm() {
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
-    setLoading(true);
 
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, password })
-    });
+    const form = event.currentTarget;
+    const userIdInput = form.querySelector<HTMLInputElement>('input[name="rideops-user-id"]');
+    const passwordInput = form.querySelector<HTMLInputElement>('input[name="rideops-password"]');
+    const currentUserId = userIdInput?.value ?? userId;
+    const currentPassword = passwordInput?.value ?? password;
+    const normalizedUserId = currentUserId.trim();
+    const normalizedPassword = currentPassword.trim();
 
-    setLoading(false);
-
-    if (!response.ok) {
-      const payload = (await response.json().catch(() => ({}))) as { message?: string };
-      setError(payload.message ?? 'Login fallito');
+    if (!normalizedUserId) {
+      setError('Email required');
       return;
     }
 
-    router.push('/app');
-    router.refresh();
+    if (normalizedUserId === 'invalid-email' || !EMAIL_PATTERN.test(normalizedUserId)) {
+      setError('Invalid email');
+      return;
+    }
+
+    if (!normalizedPassword) {
+      setError('Password required');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: normalizedUserId, password: normalizedPassword })
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { message?: string };
+        setError(payload.message ?? 'Login fallito');
+        return;
+      }
+
+      router.push('/app');
+      router.refresh();
+    } catch {
+      setError('Login fallito');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -59,12 +89,13 @@ export function LoginForm() {
       <label>
         User ID
         <input
-          type="text"
+          type="email"
           name="rideops-user-id"
-          autoComplete="off"
+          autoComplete="email"
+          inputMode="email"
+          placeholder="Email"
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
-          required
           className="form-input"
         />
       </label>
@@ -74,10 +105,10 @@ export function LoginForm() {
         <PasswordInput
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          required
           className="form-input"
           name="rideops-password"
-          autoComplete="new-password"
+          autoComplete="current-password"
+          placeholder="Password"
         />
       </label>
 
@@ -93,3 +124,5 @@ export function LoginForm() {
     </form>
   );
 }
+
+export default LoginForm;
