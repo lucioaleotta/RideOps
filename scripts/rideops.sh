@@ -262,8 +262,11 @@ cmd_db_pull_prod() {
   # 2. Genera hash BCrypt di "Password123!" usando pgcrypto sul postgres locale
   _header "Generazione hash BCrypt per la password di sviluppo..."
   local DEV_HASH
+  # CREATE EXTENSION separato: evita che il suo output venga catturato nella variabile
+  docker exec rideops-postgres psql -U rideops -d rideops -c \
+    "CREATE EXTENSION IF NOT EXISTS pgcrypto;" > /dev/null 2>&1 || true
   DEV_HASH=$(docker exec rideops-postgres psql -U rideops -d rideops -tAc \
-    "CREATE EXTENSION IF NOT EXISTS pgcrypto; SELECT crypt('Password123!', gen_salt('bf', 10));" 2>/dev/null)
+    "SELECT crypt('Password123!', gen_salt('bf', 10));")
   if [[ -z "${DEV_HASH}" ]]; then
     _err "Impossibile generare l'hash BCrypt. Il container rideops-postgres è in esecuzione?"
     exit 1
