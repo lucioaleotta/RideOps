@@ -222,6 +222,78 @@ REMOTE
 }
 
 # ---------------------------------------------------------------------------
+# Comando: db:pull-prod — ribalta il DB di produzione in locale con anonimizzazione
+# Uso: ./scripts/rideops.sh db:pull-prod
+#
+# - Scarica il dump da prod via SSH pipe (nessun file temporaneo)
+# - Ripristina nel postgres locale (rideops-postgres)
+# - Anonimizza tutti i dati sensibili (vedi backend/script/anonymize_local.sql)
+# - Imposta la password Password123! per tutte le utenze
+# ---------------------------------------------------------------------------
+cmd_db_pull_prod() {
+  _header "Ribaltamento DB produzione → locale (con anonimizzazione)"
+  _warn "Questa operazione SOVRASCRIVE il DB locale con i dati di produzione."
+  _warn "I dati sensibili verranno anonimizzati. Password per tutte le utenze: Password123!"
+  echo ""
+  read -rp "Confermi? (scrivi 'si' per procedere) " confirm
+  [[ "${confirm}" != "si" ]] && { _err "Annullato."; exit 1; }
+
+  local SCRIPT_DIR
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  local ANONYMIZE_SQL="${SCRIPT_DIR}/../backend/script/anonymize_local.sql"
+
+  if [[ ! -f "${ANONYMIZE_SQL}" ]]; then
+    _err "Script non trovato: ${ANONYMIZE_SQL}"
+    exit 1
+  fi
+
+  # 1. Genera hash BCrypt di "Password123!" usando pgcrypto sul postgres locale
+  _header "Generazione hash BCrypt per la password di sviluppo..."
+  local DEV_HASH
+  DEV_HASH=$(docker exec rideops-postgres psql -U rideops -d rideops -tAc \
+    "CREATE EXTENSION IF NOT EXISTS pgcrypto; SELECT crypt('Password123!', gen_salt('bf', 10));" 2>/dev/null)
+  if [[ -z "${DEV_HASH}" ]]; then
+    _err "Impossibile generare l'hash BCrypt. Il container rideops-postgres è in esecuzione?"
+    exit 1
+  fi
+  _ok "Hash generato."
+
+  # 2. Ferma il backend locale per evitare connessioni attive durante il restore
+  _header "Arresto backend locale..."
+  docker stop rideops-backend 2>/dev/null || true
+
+  # Termina eventuali connessioni residue al DB locale
+  docker exec rideops-postgres psql -U rideops -d postgres -c \
+    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
+     WHERE datname = 'rideops' AND pid <> pg_backend_pid();" > /dev/null 2>&1 || true
+
+  # 3. Dump da prod (formato custom) → pipe SSH → pg_restore locale
+  _header "Download dump da produzione e import locale..."
+  _warn "Potrebbe richiedere qualche minuto in base alla dimensione del DB."
+  if ! ${SSH_CMD} "docker exec rideops-postgres pg_dump -U rideops -Fc rideops" | \
+       docker exec -i rideops-postgres pg_restore \
+         -U rideops -d rideops \
+         --clean --if-exists --no-owner --no-privileges 2>/dev/null; then
+    _warn "pg_restore completato con avvisi (normale con --clean su DB esistente)."
+  fi
+  _ok "Import completato."
+
+  # 4. Anonimizzazione: usa heredoc per gestire i '$' nell'hash BCrypt
+  _header "Anonimizzazione dati sensibili..."
+  # shellcheck disable=SC2087  # l'espansione di ${DEV_HASH} è intenzionale qui
+  docker exec -i rideops-postgres psql -U rideops -d rideops \
+    -v "dev_password_hash=${DEV_HASH}" \
+    -f - < "${ANONYMIZE_SQL}"
+  _ok "Anonimizzazione completata."
+
+  # 5. Riavvia il backend locale
+  _header "Riavvio backend locale..."
+  docker start rideops-backend
+
+  _ok "Pronto. Accedi con qualsiasi utenza prod usando la password: Password123!"
+}
+
+# ---------------------------------------------------------------------------
 # Comando: health — check salute di tutti i container
 # ---------------------------------------------------------------------------
 cmd_health() {
@@ -560,6 +632,7 @@ cmd_help() {
   echo -e "  ${BOLD}db:query${RESET} \"<SQL>\"       Esegui una query SQL"
   echo -e "  ${BOLD}db:backup${RESET}              Backup manuale del database"
   echo -e "  ${BOLD}db:backup:list-remote${RESET}  Lista file backup su Storage Box"
+  echo -e "  ${BOLD}db:pull-prod${RESET}           Ribalta DB prod in locale con anonimizzazione (Password123!)"
   echo -e "  ${BOLD}db:restore${RESET} [file]       Ripristino interattivo da backup (default: lista server)"
   echo -e "  ${BOLD}cron:backup${RESET}            Installa cron backup notturno (ore 02:00)"
   echo -e "  ${BOLD}ssl${RESET}                    Ottieni certificato Let's Encrypt + abilita HTTPS"
@@ -592,6 +665,7 @@ case "${1:-help}" in
   db:query)     cmd_db_query "${2:-}" ;;
   db:backup)    cmd_db_backup ;;
   db:backup:list-remote) cmd_db_backup_list_remote ;;
+  db:pull-prod) cmd_db_pull_prod ;;
   db:restore)   cmd_db_restore "${2:-}" ;;
   cron:backup)  cmd_cron_backup ;;
   ssl)          cmd_ssl ;;
