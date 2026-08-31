@@ -20,15 +20,18 @@ public class AdminSeedConfig {
                                 @Value("${rideops.security.admin.email}") String adminEmail,
                                 @Value("${rideops.security.admin.password}") String adminPassword) {
         return args -> {
-            userRepository.findByEmailIgnoreCase(adminEmail).orElseGet(() -> {
+            String normalizedId = adminUserId.trim().toLowerCase(Locale.ROOT);
+            boolean exists = userRepository.findByEmailIgnoreCase(adminEmail).isPresent()
+                    || userRepository.findByUserIdIgnoreCase(normalizedId).isPresent();
+            if (!exists) {
                 UserEntity user = new UserEntity();
-                user.setUserId(adminUserId.trim().toLowerCase(Locale.ROOT));
+                user.setUserId(normalizedId);
                 user.setEmail(adminEmail);
                 user.setPasswordHash(passwordEncoder.encode(adminPassword));
                 user.setRole(UserRole.ADMIN);
                 user.setEnabled(true);
-                return userRepository.save(user);
-            });
+                userRepository.save(user);
+            }
         };
     }
 }
