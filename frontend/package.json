@@ -2,12 +2,9 @@
   "name": "rideops-frontend",
   "version": "0.0.1",
   "private": true,
-  "engines": {
-    "node": "22.x"
-  },
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/safe-next-build.mjs",
+    "build": "next build",
     "lint": "next lint",
     "update-geoip": "node -e \"require('geoip-lite').reloadDataSync()\"",
     "start": "next start",
@@ -34,13 +31,10 @@
     "@types/node": "20.17.57",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
-    "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.15",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
-    "postcss": "^8.4.49",
-    "tailwindcss": "^3.4.17",
     "ts-jest": "^29.1.0",
     "typescript": "5.6.3"
   }
