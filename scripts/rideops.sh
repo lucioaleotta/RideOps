@@ -171,6 +171,57 @@ cmd_db_backup() {
 }
 
 # ---------------------------------------------------------------------------
+# Comando: db:backup:list-remote — lista backup su Hetzner Storage Box
+# Uso: ./scripts/rideops.sh db:backup:list-remote
+# ---------------------------------------------------------------------------
+cmd_db_backup_list_remote() {
+  _header "Lista backup remoti su Storage Box"
+  ${SSH_CMD} bash << 'REMOTE'
+    set -euo pipefail
+
+    ENV_FILE="/opt/rideops/.env"
+    if [[ -f "${ENV_FILE}" ]]; then
+      # shellcheck source=/dev/null
+      source "${ENV_FILE}"
+    fi
+
+    STORAGEBOX_HOST="${STORAGEBOX_HOST:-u594574.your-storagebox.de}"
+    STORAGEBOX_USER="${STORAGEBOX_USER:-u594574}"
+    STORAGEBOX_PATH="${STORAGEBOX_PATH:-backups/postgres}"
+    STORAGEBOX_SSH_KEY="${STORAGEBOX_SSH_KEY:-/root/.ssh/id_ed25519}"
+    STORAGEBOX_PORT="${STORAGEBOX_PORT:-23}"
+    STORAGEBOX_STRICT_HOST_KEY_CHECKING="${STORAGEBOX_STRICT_HOST_KEY_CHECKING:-accept-new}"
+
+    if [[ ! -f "${STORAGEBOX_SSH_KEY}" ]]; then
+      echo "Chiave SSH Storage Box non trovata: ${STORAGEBOX_SSH_KEY}" >&2
+      exit 1
+    fi
+
+    remote_dir_abs="${STORAGEBOX_PATH%/}"
+    if [[ "${remote_dir_abs}" != /* ]]; then
+      remote_dir_abs="/home/${remote_dir_abs}"
+    fi
+
+    if ssh -i "${STORAGEBOX_SSH_KEY}" \
+      -p "${STORAGEBOX_PORT}" \
+      -o "StrictHostKeyChecking=${STORAGEBOX_STRICT_HOST_KEY_CHECKING}" \
+      "${STORAGEBOX_USER}@${STORAGEBOX_HOST}" \
+      "ls -lah '${remote_dir_abs}'"; then
+      exit 0
+    fi
+
+    # Fallback: alcune Storage Box espongono una shell limitata e supportano meglio SFTP batch.
+    sftp -i "${STORAGEBOX_SSH_KEY}" \
+      -P "${STORAGEBOX_PORT}" \
+      -o "StrictHostKeyChecking=${STORAGEBOX_STRICT_HOST_KEY_CHECKING}" \
+      -b - "${STORAGEBOX_USER}@${STORAGEBOX_HOST}" <<SFTP_CMDS
+ls -lah ${remote_dir_abs}
+bye
+SFTP_CMDS
+REMOTE
+}
+
+# ---------------------------------------------------------------------------
 # Comando: health — check salute di tutti i container
 # ---------------------------------------------------------------------------
 cmd_health() {
@@ -508,6 +559,7 @@ cmd_help() {
   echo -e "  ${BOLD}db${RESET}                     Shell psql interattiva"
   echo -e "  ${BOLD}db:query${RESET} \"<SQL>\"       Esegui una query SQL"
   echo -e "  ${BOLD}db:backup${RESET}              Backup manuale del database"
+  echo -e "  ${BOLD}db:backup:list-remote${RESET}  Lista file backup su Storage Box"
   echo -e "  ${BOLD}db:restore${RESET} [file]       Ripristino interattivo da backup (default: lista server)"
   echo -e "  ${BOLD}cron:backup${RESET}            Installa cron backup notturno (ore 02:00)"
   echo -e "  ${BOLD}ssl${RESET}                    Ottieni certificato Let's Encrypt + abilita HTTPS"
@@ -539,6 +591,7 @@ case "${1:-help}" in
   db)           cmd_db ;;
   db:query)     cmd_db_query "${2:-}" ;;
   db:backup)    cmd_db_backup ;;
+  db:backup:list-remote) cmd_db_backup_list_remote ;;
   db:restore)   cmd_db_restore "${2:-}" ;;
   cron:backup)  cmd_cron_backup ;;
   ssl)          cmd_ssl ;;
