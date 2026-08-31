@@ -225,7 +225,7 @@ REMOTE
 # Comando: db:pull-prod — ribalta il DB di produzione in locale con anonimizzazione
 # Uso: ./scripts/rideops.sh db:pull-prod
 #
-# - Scarica il dump da prod via SSH pipe (nessun file temporaneo)
+# - Scarica l'ultimo backup notturno da /opt/rideops/backups/ via SSH pipe
 # - Ripristina nel postgres locale (rideops-postgres)
 # - Anonimizza tutti i dati sensibili (vedi backend/script/anonymize_local.sql)
 # - Imposta la password Password123! per tutte le utenze
@@ -233,6 +233,7 @@ REMOTE
 cmd_db_pull_prod() {
   _header "Ribaltamento DB produzione → locale (con anonimizzazione)"
   _warn "Questa operazione SOVRASCRIVE il DB locale con i dati di produzione."
+  _warn "Viene usato l'ultimo backup notturno — il DB prod non viene toccato."
   _warn "I dati sensibili verranno anonimizzati. Password per tutte le utenze: Password123!"
   echo ""
   read -rp "Confermi? (scrivi 'si' per procedere) " confirm
@@ -247,7 +248,18 @@ cmd_db_pull_prod() {
     exit 1
   fi
 
-  # 1. Genera hash BCrypt di "Password123!" usando pgcrypto sul postgres locale
+  # 1. Trova l'ultimo backup notturno sul server prod
+  _header "Ricerca ultimo backup su prod..."
+  local LATEST_BACKUP
+  LATEST_BACKUP=$(${SSH_CMD} "ls -t /opt/rideops/backups/rideops_*.sql.gz 2>/dev/null | head -1")
+  if [[ -z "${LATEST_BACKUP}" ]]; then
+    _err "Nessun backup trovato in /opt/rideops/backups/ sul server prod."
+    _warn "Esegui prima: ./scripts/rideops.sh db:backup"
+    exit 1
+  fi
+  _ok "Backup selezionato: $(basename "${LATEST_BACKUP}")"
+
+  # 2. Genera hash BCrypt di "Password123!" usando pgcrypto sul postgres locale
   _header "Generazione hash BCrypt per la password di sviluppo..."
   local DEV_HASH
   DEV_HASH=$(docker exec rideops-postgres psql -U rideops -d rideops -tAc \
@@ -258,35 +270,37 @@ cmd_db_pull_prod() {
   fi
   _ok "Hash generato."
 
-  # 2. Ferma il backend locale per evitare connessioni attive durante il restore
+  # 3. Ferma il backend locale per evitare connessioni attive durante il restore
   _header "Arresto backend locale..."
   docker stop rideops-backend 2>/dev/null || true
 
-  # Termina eventuali connessioni residue al DB locale
+  # Termina connessioni residue e ricrea il DB locale pulito
   docker exec rideops-postgres psql -U rideops -d postgres -c \
-    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
-     WHERE datname = 'rideops' AND pid <> pg_backend_pid();" > /dev/null 2>&1 || true
+    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+     WHERE datname = 'rideops' AND pid <> pg_backend_pid();
+     DROP DATABASE IF EXISTS rideops;
+     CREATE DATABASE rideops OWNER rideops;" > /dev/null 2>&1 || true
 
-  # 3. Dump da prod (formato custom) → pipe SSH → pg_restore locale
-  _header "Download dump da produzione e import locale..."
+  # 4. Scarica il backup via SSH pipe e lo ripristina direttamente
+  _header "Download e ripristino backup $(basename "${LATEST_BACKUP}")..."
   _warn "Potrebbe richiedere qualche minuto in base alla dimensione del DB."
-  if ! ${SSH_CMD} "docker exec rideops-postgres pg_dump -U rideops -Fc rideops" | \
-       docker exec -i rideops-postgres pg_restore \
-         -U rideops -d rideops \
-         --clean --if-exists --no-owner --no-privileges 2>/dev/null; then
-    _warn "pg_restore completato con avvisi (normale con --clean su DB esistente)."
+  if ! ${SSH_CMD} "cat '${LATEST_BACKUP}'" | \
+       gunzip | \
+       docker exec -i rideops-postgres psql -U rideops -d rideops -q; then
+    _err "Ripristino fallito."
+    docker start rideops-backend
+    exit 1
   fi
   _ok "Import completato."
 
-  # 4. Anonimizzazione: usa heredoc per gestire i '$' nell'hash BCrypt
+  # 5. Anonimizzazione dati sensibili
   _header "Anonimizzazione dati sensibili..."
-  # shellcheck disable=SC2087  # l'espansione di ${DEV_HASH} è intenzionale qui
   docker exec -i rideops-postgres psql -U rideops -d rideops \
     -v "dev_password_hash=${DEV_HASH}" \
     -f - < "${ANONYMIZE_SQL}"
   _ok "Anonimizzazione completata."
 
-  # 5. Riavvia il backend locale
+  # 6. Riavvia il backend locale
   _header "Riavvio backend locale..."
   docker start rideops-backend
 
