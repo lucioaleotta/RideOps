@@ -169,17 +169,15 @@ public interface UserSessionRepository extends JpaRepository<UserSessionEntity, 
                 COALESCE(HOST(us.ip_address), 'unknown') AS ip,
                 COUNT(*)::bigint AS count,
                 COALESCE(t.business_name, 'Admin') AS tenantName,
-                us.country_code AS countryCode,
-                us.country_name AS countryName,
-                us.city AS city
+                COALESCE(us.country_name, 'Unknown') AS countryName,
+                COALESCE(us.city, 'Unknown') AS city
             FROM user_sessions us
             LEFT JOIN tenant t ON t.id = us.tenant_id
             WHERE us.created_at >= :since
             GROUP BY COALESCE(HOST(us.ip_address), 'unknown'),
                      COALESCE(t.business_name, 'Admin'),
-                     us.country_code,
-                     us.country_name,
-                     us.city
+                     COALESCE(us.country_name, 'Unknown'),
+                     COALESCE(us.city, 'Unknown')
             ORDER BY COUNT(*) DESC
             LIMIT 5
             """,
@@ -190,12 +188,12 @@ public interface UserSessionRepository extends JpaRepository<UserSessionEntity, 
     @Query(
         value = """
             SELECT
-                us.country_code AS countryCode,
-                us.country_name AS countryName,
+                COALESCE(us.country_code, 'UN') AS countryCode,
+                COALESCE(us.country_name, 'Unknown') AS countryName,
                 COUNT(*)::bigint AS count
             FROM user_sessions us
             WHERE us.created_at >= :since
-            GROUP BY us.country_code, us.country_name
+            GROUP BY COALESCE(us.country_code, 'UN'), COALESCE(us.country_name, 'Unknown')
             ORDER BY COUNT(*) DESC
             """,
         nativeQuery = true
@@ -326,7 +324,6 @@ public interface UserSessionRepository extends JpaRepository<UserSessionEntity, 
         String getIp();
         Long getCount();
         String getTenantName();
-        String getCountryCode();
         String getCountryName();
         String getCity();
     }
