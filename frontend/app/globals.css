@@ -4937,6 +4937,334 @@ a:hover {
   display: inline-block;
 }
 
+/* ── Finance: partner payments report ───────────────────────────────────── */
+
+.finance-partner-report {
+  display: grid;
+  gap: 20px;
+}
+
+.finance-partner-report-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.finance-partner-report-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f3652;
+}
+
+.finance-partner-report-subtitle {
+  margin: 4px 0 0;
+  color: #607996;
+  font-size: 14px;
+}
+
+.finance-partner-filters-card {
+  display: grid;
+  gap: 12px;
+}
+
+.finance-partner-filters-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(180px, 1.1fr) minmax(260px, 1.5fr) repeat(2, minmax(140px, 1fr)) auto;
+  align-items: end;
+}
+
+.finance-partner-period-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  flex-wrap: nowrap;
+}
+
+.finance-partner-period-btn {
+  border: 1px solid #c8d7ea;
+  background: #eaf1f9;
+  color: #1b4069;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.finance-partner-period-btn:hover {
+  background: #d4e5f7;
+  border-color: #a3c0dc;
+}
+
+.finance-partner-period-btn.is-active {
+  background: #1b6ec2;
+  color: #fff;
+  border-color: #1b6ec2;
+}
+
+.finance-partner-export-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.finance-partner-kpi-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.finance-partner-kpi-card {
+  display: grid;
+  gap: 6px;
+}
+
+.finance-partner-kpi-card p {
+  margin: 0;
+  font-size: 13px;
+  color: #607996;
+}
+
+.finance-partner-kpi-card strong {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f3652;
+}
+
+.finance-partner-chart-card {
+  display: grid;
+  gap: 14px;
+}
+
+.finance-partner-chart-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f3652;
+}
+
+.finance-partner-bars {
+  display: grid;
+  gap: 12px;
+}
+
+.finance-partner-bar-row {
+  display: grid;
+  gap: 6px;
+}
+
+.finance-partner-bar-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #2b3f56;
+}
+
+.finance-partner-bar-head strong {
+  font-weight: 700;
+  color: #1f3652;
+}
+
+.finance-partner-table-card {
+  display: grid;
+  gap: 14px;
+}
+
+.finance-partner-table-card h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f3652;
+}
+
+.finance-partner-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #dce4ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+/* desktop: show table, hide cards */
+.finance-partner-table-desktop {
+  display: block;
+}
+
+.finance-partner-mobile-list {
+  display: none;
+}
+
+.finance-partner-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+.finance-partner-table thead th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #60748f;
+  border-bottom: 1px solid #dce4ef;
+  background: #f5f9fd;
+}
+
+.finance-partner-th-amount {
+  text-align: right;
+}
+
+.finance-partner-table tbody td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #243142;
+  border-bottom: 1px solid #e9eef5;
+}
+
+.finance-partner-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.finance-partner-td-amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.finance-partner-group-row td {
+  background: #f0f6fb;
+  font-weight: 700;
+  font-size: 13px;
+  color: #1b4069;
+  padding: 10px 16px;
+  border-bottom: 1px solid #dce4ef;
+}
+
+.finance-partner-subtotal-row td {
+  background: #f8fbff;
+  font-weight: 700;
+  font-size: 13px;
+  color: #2b3f56;
+  border-top: 1px solid #dce4ef;
+  border-bottom: 1px solid #dce4ef;
+}
+
+.finance-partner-total-row td {
+  background: #eef4fb;
+  font-weight: 700;
+  font-size: 14px;
+  color: #1f3652;
+  border-top: 2px solid #b8cfe8;
+}
+
+/* mobile cards */
+.finance-partner-mobile-group {
+  border: 1px solid #d8e5f3;
+  border-radius: 12px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.finance-partner-mobile-group h4 {
+  margin: 0;
+  padding: 12px 14px;
+  background: #f0f6fb;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1b4069;
+  border-bottom: 1px solid #dce4ef;
+}
+
+.finance-partner-mobile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e9eef5;
+  font-size: 13px;
+}
+
+.finance-partner-mobile-row p {
+  margin: 2px 0 0;
+  color: #607996;
+  font-size: 12px;
+}
+
+.finance-partner-mobile-amount {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  color: #1f3652;
+}
+
+.finance-partner-mobile-subtotal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f8fbff;
+  font-size: 13px;
+  font-weight: 700;
+  color: #2b3f56;
+}
+
+.finance-partner-mobile-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #eef4fb;
+  border: 2px solid #b8cfe8;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1f3652;
+}
+
+@media (max-width: 768px) {
+  .finance-partner-filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-partner-export-actions {
+    flex-direction: row;
+  }
+
+  .finance-partner-export-actions .services-list-topbar-btn {
+    flex: 1;
+  }
+
+  .finance-partner-kpi-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* mobile: hide table, show cards */
+  .finance-partner-table-desktop {
+    display: none;
+  }
+
+  .finance-partner-mobile-list {
+    display: grid;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .finance-partner-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── End finance partner payments ───────────────────────────────────────── */
+
 .print-page {
   min-height: 100vh;
   background: #eef3f9;
