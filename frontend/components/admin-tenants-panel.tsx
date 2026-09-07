@@ -265,15 +265,29 @@ export function AdminTenantsPanel() {
   const [form, setForm] = useState<FormState>(defaultFormState);
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [lastProvisioning, setLastProvisioning] = useState<ProvisioningPayload | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const orderedTenants = useMemo(
     () => [...tenants].sort((a, b) => b.id - a.id),
     [tenants]
   );
 
+  const paginatedTenants = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return orderedTenants.slice(startIndex, endIndex);
+  }, [orderedTenants, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(orderedTenants.length / itemsPerPage);
+
   useEffect(() => {
     void loadTenants('');
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchText]);
 
   async function loadTenants(query?: string) {
     setLoading(true);
@@ -513,7 +527,7 @@ export function AdminTenantsPanel() {
                   </tr>
                 </thead>
                 <tbody>
-                  {orderedTenants.map((tenant) => {
+                  {paginatedTenants.map((tenant) => {
                     const nextStatus: TenantOperationalStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
                     const actionLabel = tenant.status === 'ACTIVE' ? 'Sospendi' : 'Attiva';
                     const isSelected = selectedTenant?.id === tenant.id;
@@ -553,7 +567,7 @@ export function AdminTenantsPanel() {
             </div>
 
             <div className="tenant-mobile-list">
-              {orderedTenants.map((tenant) => {
+              {paginatedTenants.map((tenant) => {
                 const nextStatus: TenantOperationalStatus = tenant.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
                 const actionLabel = tenant.status === 'ACTIVE' ? 'Sospendi' : 'Attiva';
                 const isSelected = selectedTenant?.id === tenant.id;
@@ -595,6 +609,54 @@ export function AdminTenantsPanel() {
               })}
             </div>
           </>
+        )}
+
+        {orderedTenants.length > 0 && (
+          <footer className="tenant-table-pagination">
+            <div className="tenant-pagination-info">
+              {orderedTenants.length > 0 && (
+                <span>
+                  Mostrando {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, orderedTenants.length)} di {orderedTenants.length} clienti
+                </span>
+              )}
+            </div>
+            <nav className="tenant-pagination-controls" aria-label="Navigazione clienti">
+              <button
+                type="button"
+                className="pagination-button"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                aria-label="Pagina precedente"
+              >
+                ← Precedente
+              </button>
+
+              <div className="tenant-pagination-pages">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    type="button"
+                    className={`pagination-page-button ${currentPage === page ? 'is-active' : ''}`}
+                    onClick={() => setCurrentPage(page)}
+                    aria-label={`Pagina ${page}`}
+                    aria-current={currentPage === page ? 'page' : undefined}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="pagination-button"
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                disabled={currentPage === totalPages}
+                aria-label="Pagina successiva"
+              >
+                Successiva →
+              </button>
+            </nav>
+          </footer>
         )}
       </article>
 

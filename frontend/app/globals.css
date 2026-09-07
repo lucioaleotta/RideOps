@@ -1236,8 +1236,12 @@ a:hover {
 }
 
 .tenant-table th {
-  color: #5c7491;
-  font-size: 18px;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  background: #1a4d7f;
+  border-bottom: 2px solid #0f3d6d;
+  text-align: left;
 }
 
 .tenant-table tbody tr:last-child td {
@@ -1360,6 +1364,93 @@ a:hover {
   background: #e8eef5;
   color: #0f4c81;
   border: 1px solid #c3d4e7;
+}
+
+/* ── Tenant pagination ───────────────────────────────────────── */
+.tenant-table-pagination {
+  border-top: 1px solid #dce8f5;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tenant-pagination-info {
+  font-size: 13px;
+  color: #607996;
+  font-weight: 500;
+  min-width: 220px;
+}
+
+.tenant-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pagination-button {
+  border: 1px solid #d0dce9;
+  background: #f6fafb;
+  color: #2c5aa0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.pagination-button:hover:not(:disabled) {
+  border-color: #2c5aa0;
+  background: #e8f1fa;
+  color: #1a3a61;
+}
+
+.pagination-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  color: #8ca0b8;
+  border-color: #e4edf7;
+  background: #f9fcfe;
+}
+
+.tenant-pagination-pages {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.pagination-page-button {
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid #d0dce9;
+  background: #f6fafb;
+  color: #2c5aa0;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pagination-page-button:hover:not(.is-active) {
+  border-color: #2c5aa0;
+  background: #e8f1fa;
+  color: #1a3a61;
+}
+
+.pagination-page-button.is-active {
+  border-color: #1a4d7f;
+  background: #1a4d7f;
+  color: #ffffff;
+  font-weight: 700;
 }
 
 /* ── Tenant actions cell ─────────────────────────────────────── */
@@ -1513,6 +1604,75 @@ a:hover {
   border: 2px solid #d0dde9;
 }
 
+/* ── Tenant Table Desktop/Mobile Layout ────────────────────── */
+.tenant-desktop-table-wrap {
+  display: block;
+}
+
+.tenant-mobile-list {
+  display: none;
+}
+
+.tenant-mobile-card {
+  border: 1px solid #d8e5f3;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 14px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.tenant-mobile-card.is-selected {
+  background: #e8f1fa;
+  border-color: #b3d4e8;
+}
+
+.tenant-mobile-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tenant-mobile-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f3652;
+}
+
+.tenant-mobile-meta {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: #465f7c;
+}
+
+.tenant-mobile-meta span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tenant-mobile-meta strong {
+  color: #1f3652;
+  font-weight: 600;
+  min-width: 60px;
+}
+
+.tenant-mobile-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eaeff6;
+}
+
+.tenant-mobile-actions button {
+  min-height: 38px;
+  font-size: 13px;
+}
+
 @media (max-width: 768px) {
   .tenant-detail-grid.four-col { grid-template-columns: repeat(2, 1fr); }
   .tenant-detail-grid.three-col { grid-template-columns: repeat(2, 1fr); }
@@ -1520,6 +1680,14 @@ a:hover {
   /* mobile: nascondi tabella, mostra card */
   .access-log-table-wrap { display: none; }
   .access-log-cards { display: grid; gap: 10px; }
+
+  /* mobile: nascondi tabella tenant, mostra card list */
+  .tenant-desktop-table-wrap { display: none; }
+  .tenant-mobile-list { display: grid; gap: 12px; }
+
+  .tenant-modal-card {
+    max-height: min(90vh, 800px);
+  }
 }
 
 .tenant-modal-overlay {
