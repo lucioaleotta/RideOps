@@ -23,11 +23,14 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class PartnerPaymentReportUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(PartnerPaymentReportUseCase.class);
     private static final DateTimeFormatter FILENAME_MONTH = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final DateTimeFormatter DATE_TIME_DISPLAY = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final String CSV_MEDIA_TYPE = "text/csv; charset=utf-8";
@@ -93,6 +96,11 @@ public class PartnerPaymentReportUseCase {
             + toDate.format(FILENAME_MONTH)
             + suffix
             + (format == PartnerPaymentReportFormat.CSV ? ".csv" : ".xlsx");
+
+        log.info("action=partner.payment.report.export format={} rowCount={} partnerFilterApplied={} outcome=success",
+            format,
+            rows.size(),
+            partnerId != null);
 
         return switch (format) {
             case CSV -> new ExportedFile(toCsv(rows), CSV_MEDIA_TYPE, filename);

@@ -329,8 +329,9 @@ export function AccessControlDashboard() {
         {topIps.length === 0 ? (
           <p>Nessun dato disponibile.</p>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <>
+            <div className="admin-top-ips-desktop" style={{ overflowX: 'auto' }}>
+              <table className="admin-top-ips-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>
                   <th align="left">IP</th>
@@ -359,8 +360,25 @@ export function AccessControlDashboard() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+              </table>
+            </div>
+            <div className="admin-top-ips-mobile">
+              {topIps.map((item, idx) => (
+                <article key={`${item.ip}-${idx}`} className="admin-top-ip-card">
+                  <div className="admin-top-ip-card-header">
+                    <strong>{item.ip}</strong>
+                    <span className="admin-top-ip-count">{item.count} accessi</span>
+                  </div>
+                  <div className="admin-top-ip-card-details">
+                    <span><strong>Tenant:</strong> {item.tenantName}</span>
+                    <span><strong>Paese:</strong> {item.countryName}</span>
+                    <span><strong>Città:</strong> {item.city}</span>
+                    <span><strong>Flag:</strong> {item.suspicious ? 'sospetto' : 'ok'}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
         )}
       </section>
 
@@ -463,6 +481,31 @@ export function AccessControlDashboard() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="access-log-cards">
+          {sessionsPayload.sessions.map((session) => (
+            <article key={session.id} className="access-log-card">
+              <div className="access-log-card-header">
+                <div className="access-log-card-user">
+                  <span className="access-log-avatar">{session.userInitials}</span>
+                  <div className="access-log-card-user-info">
+                    <span className="access-log-card-name">{session.userName}</span>
+                    <span className="access-log-card-tenant">{session.tenantName}</span>
+                  </div>
+                </div>
+                {session.anomaly ? (
+                  <span className="access-log-badge access-log-badge-danger">Anomalia</span>
+                ) : (
+                  <span className="access-log-badge access-log-badge-ok">OK</span>
+                )}
+              </div>
+              <div className="access-log-card-row"><strong>Data:</strong> {formatDate(session.createdAt)}</div>
+              <div className="access-log-card-row"><strong>Paese:</strong> {formatCountry(session.countryCode, session.countryName)}</div>
+              <div className="access-log-card-row"><strong>Dispositivo:</strong> {`${session.uaBrowser ?? 'unknown'} · ${session.uaOs ?? 'unknown'}`}</div>
+              {session.anomaly && <div className="access-log-card-row access-log-anomaly-text"><strong>Anomalia:</strong> {session.anomaly}</div>}
+            </article>
+          ))}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
