@@ -9,11 +9,14 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ListServicesUseCase {
 
+    private static final Logger log = LoggerFactory.getLogger(ListServicesUseCase.class);
     private final ServiceRepositoryPort serviceRepositoryPort;
     private final PartnerRepository partnerRepository;
     private final TenantContext tenantContext;
@@ -47,7 +50,9 @@ public class ListServicesUseCase {
     private List<ServiceDto> mapWithPartnerNames(List<RideServiceEntity> entities) {
         Long tenantId = tenantContext.getTenantIdOrNull();
         if (tenantId == null) {
-            return entities.stream().map(ServiceMapper::toDto).toList();
+            List<ServiceDto> result = entities.stream().map(ServiceMapper::toDto).toList();
+            log.info("action=service.list resultCount={} tenantScopeApplied=false outcome=success", result.size());
+            return result;
         }
         Map<Long, String> partnerNames = partnerRepository
             .findAllByTenantIdOrderByRagioneSocialeAsc(tenantId)
@@ -57,12 +62,14 @@ public class ListServicesUseCase {
                 p -> p.getRagioneSociale()
             ));
 
-        return entities.stream()
+        List<ServiceDto> result = entities.stream()
             .map(entity -> ServiceMapper.toDto(
                 entity,
                 entity.getPartnerId() != null ? partnerNames.get(entity.getPartnerId()) : null,
                 entity.getOutgoingPartnerId() != null ? partnerNames.get(entity.getOutgoingPartnerId()) : null
             ))
             .toList();
+        log.info("action=service.list resultCount={} tenantScopeApplied=true outcome=success", result.size());
+        return result;
     }
 }
