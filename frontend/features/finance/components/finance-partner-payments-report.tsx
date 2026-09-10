@@ -361,24 +361,25 @@ export function FinancePartnerPaymentsReport() {
             />
           </label>
 
-          <div className="finance-partner-export-actions">
-            <button
-              type="button"
-              className="services-list-topbar-btn"
-              onClick={() => exportReport('xlsx')}
-              disabled={!dateValidation.isValid || rows.length === 0 || exportingFormat !== null}
-            >
-              <ButtonContent icon={<DownloadIcon />}>{exportingFormat === 'xlsx' ? 'Excel...' : 'Excel'}</ButtonContent>
-            </button>
-            <button
-              type="button"
-              className="services-list-topbar-btn"
-              onClick={() => exportReport('csv')}
-              disabled={!dateValidation.isValid || rows.length === 0 || exportingFormat !== null}
-            >
-              <ButtonContent icon={<DownloadIcon />}>{exportingFormat === 'csv' ? 'CSV...' : 'CSV'}</ButtonContent>
-            </button>
-          </div>
+        </div>
+
+        <div className="finance-partner-export-actions">
+          <button
+            type="button"
+            className="services-list-topbar-btn"
+            onClick={() => exportReport('xlsx')}
+            disabled={!dateValidation.isValid || rows.length === 0 || exportingFormat !== null}
+          >
+            <ButtonContent icon={<DownloadIcon />}>{exportingFormat === 'xlsx' ? 'Excel...' : 'Excel'}</ButtonContent>
+          </button>
+          <button
+            type="button"
+            className="services-list-topbar-btn"
+            onClick={() => exportReport('csv')}
+            disabled={!dateValidation.isValid || rows.length === 0 || exportingFormat !== null}
+          >
+            <ButtonContent icon={<DownloadIcon />}>{exportingFormat === 'csv' ? 'CSV...' : 'CSV'}</ButtonContent>
+          </button>
         </div>
 
         {!dateValidation.isValid && (

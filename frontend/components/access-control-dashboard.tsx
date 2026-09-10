@@ -227,7 +227,7 @@ export function AccessControlDashboard() {
   };
 
   return (
-    <main style={{ display: 'grid', gap: 16 }}>
+    <main className="admin-home-dashboard" style={{ display: 'grid', gap: 16 }}>
       <header>
         <h1 style={{ marginBottom: 8 }}>Access Control Dashboard</h1>
         <p style={{ marginTop: 0, color: 'var(--muted)' }}>Monitoraggio accessi ADMIN con rilevamento anomalie in tempo reale (polling ogni 60 secondi).</p>
@@ -242,7 +242,7 @@ export function AccessControlDashboard() {
         </div>
       )}
 
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12 }}>
+      <section className="admin-home-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: 12 }}>
         <KpiCard title="Accessi totali (7g)" value={kpis.total7d} tone="neutral" />
         <KpiCard title="Accessi ultime 24h" value={kpis.total24h} tone="neutral" />
         <KpiCard title="Anomalie rilevate" value={kpis.anomaliesTotal} tone={kpis.anomaliesTotal > 0 ? 'danger' : 'neutral'} />
@@ -272,13 +272,13 @@ export function AccessControlDashboard() {
         <p style={{ margin: 0, color: '#607086', fontSize: 13 }}>
           Totale 24h: <strong>{totalHourly}</strong> login · Picco: <strong>{peakHour.hour.toString().padStart(2, '0')}:00 ({peakHour.count})</strong>
         </p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(24, minmax(16px, 1fr))', alignItems: 'end', gap: 4, minHeight: 180 }}>
+        <div className="admin-hourly-chart" style={{ display: 'grid', gridTemplateColumns: 'repeat(24, minmax(0, 1fr))', alignItems: 'end', gap: 4, minHeight: 180 }}>
           {hourly.map((count, hour) => {
             const height = Math.max(4, Math.round((count / maxHourly) * 150));
             const nightHour = hour >= 0 && hour <= 5;
             const anomalyCount = hourlyAnomalies[hour] ?? 0;
             return (
-              <div key={hour} style={{ display: 'grid', justifyItems: 'center', gap: 4 }}>
+              <div key={hour} className="admin-hourly-chart-cell" style={{ display: 'grid', justifyItems: 'center', gap: 4 }}>
                 <span style={{ fontSize: 10, color: '#41566d', lineHeight: 1 }}>{count}</span>
                 <div
                   title={`${hour.toString().padStart(2, '0')}:00 - accessi ${count}, anomalie ${anomalyCount}`}

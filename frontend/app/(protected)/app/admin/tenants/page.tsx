@@ -2,7 +2,7 @@ import { AdminTenantsPanel } from '../../../../../components/admin-tenants-panel
 
 export default function AdminTenantsPage() {
   return (
-    <main>
+    <main className="admin-tenants-page">
       <AdminTenantsPanel />
     </main>
   );

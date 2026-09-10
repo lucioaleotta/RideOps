@@ -10,7 +10,7 @@ export default function AdminHomePage() {
   const [activeTab, setActiveTab] = useState<AdminPanelTab>('access-control');
 
   return (
-    <main style={{ display: 'grid', gap: 16 }}>
+    <main className="admin-home-page" style={{ display: 'grid', gap: 16 }}>
       <section
         aria-label="Admin dashboard tabs"
         className="dashboard-card"
