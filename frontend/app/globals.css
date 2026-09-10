@@ -1171,6 +1171,41 @@ a:hover {
   text-overflow: ellipsis;
 }
 
+.admin-top-ips-mobile {
+  display: none;
+}
+
+.admin-top-ip-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d8e5f3;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.admin-top-ip-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #1f3652;
+}
+
+.admin-top-ip-count {
+  color: #607086;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.admin-top-ip-card-details {
+  display: grid;
+  gap: 4px;
+  color: #465f7c;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .tenant-panel {
   display: grid;
   gap: 16px;
@@ -1741,6 +1776,15 @@ a:hover {
   /* mobile: nascondi tabella, mostra card */
   .access-log-table-wrap { display: none; }
   .access-log-cards { display: grid; gap: 10px; }
+
+  .admin-top-ips-desktop {
+    display: none;
+  }
+
+  .admin-top-ips-mobile {
+    display: grid;
+    gap: 8px;
+  }
 
   /* mobile: nascondi tabella tenant, mostra card list */
   .tenant-desktop-table-wrap { display: none; }
