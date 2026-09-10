@@ -107,6 +107,35 @@ class PartnerPaymentReportUseCaseTest {
         assertTrue(csv.contains("REF-44"));
     }
 
+    @Test
+    void exportXlsxBuildsWorkbookAndUsesXlsxMetadata() {
+        LocalDate from = LocalDate.of(2026, 4, 1);
+        LocalDate to = LocalDate.of(2026, 4, 30);
+
+        when(listServicesUseCase.execute(from.atStartOfDay(), to.plusDays(1).atStartOfDay(), null, null, null))
+            .thenReturn(List.of(
+                service(11L, ServiceStatus.CLOSED, 55L, "Partner Excel", LocalDateTime.of(2026, 4, 12, 14, 30), new BigDecimal("99.90"), "REF-XLSX")
+            ));
+
+        when(listDriversUseCase.execute(true)).thenReturn(List.of());
+        when(fleetService.listVehicles()).thenReturn(List.of());
+
+        PartnerPaymentReportUseCase useCase = new PartnerPaymentReportUseCase(listServicesUseCase, listDriversUseCase, fleetService);
+
+        PartnerPaymentReportUseCase.ExportedFile exported = useCase.export(
+            from,
+            to,
+            55L,
+            PartnerPaymentReportUseCase.PartnerPaymentReportFormat.XLSX
+        );
+
+        assertEquals("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", exported.contentType());
+        assertEquals("report_pagamenti_partner_2026-04_2026-04_partner-55.xlsx", exported.filename());
+        assertTrue(exported.content().length > 100);
+        assertEquals('P', exported.content()[0]);
+        assertEquals('K', exported.content()[1]);
+    }
+
     private ServiceDto service(Long id,
                                ServiceStatus status,
                                Long partnerId,
