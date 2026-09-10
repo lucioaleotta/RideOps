@@ -59,6 +59,7 @@ export function AdminUsersPanel() {
   const [filterRole, setFilterRole] = useState<UserRole | ''>('');
   const [filterStatus, setFilterStatus] = useState<'ATTIVO' | 'DISABILITATO' | ''>('');
   const [filterTenant, setFilterTenant] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const loadJournal = useCallback(async () => {
     setJournalLoading(true);
@@ -209,46 +210,57 @@ export function AdminUsersPanel() {
   const pageEnd = Math.min(orderedUsers.length, (usersPage + 1) * USERS_PER_PAGE);
 
   return (
-    <section style={{ display: 'grid', gap: 16 }}>
-      <article className="dashboard-card">
+    <section className="admin-users-panel" style={{ display: 'grid', gap: 16 }}>
+      <article className="dashboard-card admin-users-card">
         <h3>Elenco utenti</h3>
         {error && <StatusNotice tone="error">{error}</StatusNotice>}
         {success && <StatusNotice tone="success">{success}</StatusNotice>}
 
-        {/* Filtri */}
-        <div className="portal-filters-grid admin-users-filters" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 12 }}>
-          <label>
-            User ID
-            <input className="form-input" value={filterUserId} onChange={(e) => setFilterUserId(e.target.value)} placeholder="cerca..." />
-          </label>
-          <label>
-            Email
-            <input className="form-input" type="email" value={filterEmail} onChange={(e) => setFilterEmail(e.target.value)} placeholder="cerca..." />
-          </label>
-          <label>
-            Ruolo
-            <select className="form-input" value={filterRole} onChange={(e) => setFilterRole(e.target.value as UserRole | '')}>
-              <option value="">Tutti</option>
-              {roles.map((r) => <option key={r} value={r}>{r}</option>)}
-            </select>
-          </label>
-          <label>
-            Stato
-            <select className="form-input" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'ATTIVO' | 'DISABILITATO' | '')}>
-              <option value="">Tutti</option>
-              <option value="ATTIVO">ATTIVO</option>
-              <option value="DISABILITATO">DISABILITATO</option>
-            </select>
-          </label>
-          <label>
-            Tenant
-            <input className="form-input" value={filterTenant} onChange={(e) => setFilterTenant(e.target.value)} placeholder="cerca..." />
-          </label>
-        </div>
-        <div className="admin-users-filter-actions" style={{ marginBottom: 16 }}>
-          <button type="button" className="logout-button admin-mobile-secondary" onClick={() => { setFilterUserId(''); setFilterEmail(''); setFilterRole(''); setFilterStatus(''); setFilterTenant(''); }}>
-            <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
-          </button>
+        <button
+          type="button"
+          className="logout-button admin-users-filter-toggle"
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+          aria-controls="admin-users-filters-panel"
+        >
+          <ButtonContent icon={<FilterIcon />}>{filtersOpen ? 'Nascondi filtri' : 'Mostra filtri'}</ButtonContent>
+        </button>
+
+        <div id="admin-users-filters-panel" className={`admin-users-filters-panel${filtersOpen ? ' is-open' : ''}`}>
+          <div className="portal-filters-grid admin-users-filters" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
+            <label>
+              User ID
+              <input className="form-input" value={filterUserId} onChange={(e) => setFilterUserId(e.target.value)} placeholder="cerca..." />
+            </label>
+            <label>
+              Email
+              <input className="form-input" type="email" value={filterEmail} onChange={(e) => setFilterEmail(e.target.value)} placeholder="cerca..." />
+            </label>
+            <label>
+              Ruolo
+              <select className="form-input" value={filterRole} onChange={(e) => setFilterRole(e.target.value as UserRole | '')}>
+                <option value="">Tutti</option>
+                {roles.map((r) => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </label>
+            <label>
+              Stato
+              <select className="form-input" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as 'ATTIVO' | 'DISABILITATO' | '')}>
+                <option value="">Tutti</option>
+                <option value="ATTIVO">ATTIVO</option>
+                <option value="DISABILITATO">DISABILITATO</option>
+              </select>
+            </label>
+            <label>
+              Tenant
+              <input className="form-input" value={filterTenant} onChange={(e) => setFilterTenant(e.target.value)} placeholder="cerca..." />
+            </label>
+          </div>
+          <div className="admin-users-filter-actions">
+            <button type="button" className="logout-button admin-mobile-secondary" onClick={() => { setFilterUserId(''); setFilterEmail(''); setFilterRole(''); setFilterStatus(''); setFilterTenant(''); }}>
+              <ButtonContent icon={<ResetIcon />}>Reset filtri</ButtonContent>
+            </button>
+          </div>
         </div>
 
         <div className="admin-users-summary">
@@ -339,15 +351,14 @@ export function AdminUsersPanel() {
             </div>
 
             {orderedUsers.length > 0 && (
-              <div className="admin-users-pagination">
+              <nav className="admin-users-pagination" aria-label="Paginazione utenti">
                 <button
                   type="button"
                   className="logout-button admin-mobile-secondary"
                   onClick={() => setUsersPage((prev) => Math.max(0, prev - 1))}
                   disabled={usersPage === 0}
                 >
-                  <span className="admin-pager-label-long">Pagina precedente</span>
-                  <span className="admin-pager-label-short">Precedente</span>
+                  Precedente
                 </button>
                 <span className="admin-users-pagination-label">Pagina {usersPage + 1} di {totalUsersPages}</span>
                 <button
@@ -356,10 +367,9 @@ export function AdminUsersPanel() {
                   onClick={() => setUsersPage((prev) => Math.min(totalUsersPages - 1, prev + 1))}
                   disabled={usersPage >= totalUsersPages - 1}
                 >
-                  <span className="admin-pager-label-long">Pagina successiva</span>
-                  <span className="admin-pager-label-short">Successiva</span>
+                  Successiva
                 </button>
-              </div>
+              </nav>
             )}
           </>
         )}

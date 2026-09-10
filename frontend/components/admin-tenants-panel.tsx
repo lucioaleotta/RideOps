@@ -631,21 +631,6 @@ export function AdminTenantsPanel() {
                 ← Precedente
               </button>
 
-              <div className="tenant-pagination-pages">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    type="button"
-                    className={`pagination-page-button ${currentPage === page ? 'is-active' : ''}`}
-                    onClick={() => setCurrentPage(page)}
-                    aria-label={`Pagina ${page}`}
-                    aria-current={currentPage === page ? 'page' : undefined}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-
               <button
                 type="button"
                 className="pagination-button"
