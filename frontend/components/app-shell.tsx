@@ -21,7 +21,9 @@ const menuItems = [
   { href: '/app/fleet', label: 'Parco mezzi', icon: '🚙', roles: ['GESTIONALE'] as Role[] },
   { href: '/app/partners', label: 'Gestione Partner', icon: '🤝', roles: ['GESTIONALE'] as Role[] },
   { href: '/app/gestionale', label: 'Gestione Personale', icon: '📋', roles: ['GESTIONALE'] as Role[] },
-  { href: '/app/driver', label: 'Autista', icon: '🚗', roles: ['DRIVER', 'DRIVER_FREELANCER'] as Role[] }
+  { href: '/app/gestionale/assenze', label: 'Assenze', icon: '🗓️', roles: ['GESTIONALE'] as Role[] },
+  { href: '/app/driver', label: 'Autista', icon: '🚗', roles: ['DRIVER', 'DRIVER_FREELANCER'] as Role[] },
+  { href: '/app/driver/assenze', label: 'Le mie assenze', icon: '🗓️', roles: ['DRIVER'] as Role[] }
 ];
 
 export function AppShell({ userId, userRole, children }: AppShellProps) {
