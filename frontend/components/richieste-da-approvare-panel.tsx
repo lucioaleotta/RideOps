@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FilterDropdown } from './filter-dropdown';
 import { StatusNotice } from './status-notice';
 import type {
   DriverAssenzaOption,
@@ -56,6 +57,11 @@ const statoColors: Record<StatoRichiestaAssenza, { background: string; color: st
   ANNULLATA: { background: '#eceff1', color: '#616161' }
 };
 
+const statoFilterOptions = [
+  { value: '', label: 'Tutte' },
+  ...Object.entries(statoLabels).map(([value, label]) => ({ value, label }))
+];
+
 function StatoBadge({ stato }: { stato: StatoRichiestaAssenza }) {
   const style = statoColors[stato];
   return (
@@ -97,7 +103,7 @@ export function RichiesteDaApprovarePanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [statoFilter, setStatoFilter] = useState<StatoRichiestaAssenza | ''>('IN_ATTESA');
+  const [statoFilter, setStatoFilter] = useState<StatoRichiestaAssenza | ''>('');
 
   const [inserimentoOpen, setInserimentoOpen] = useState(false);
   const [inserimentoForm, setInserimentoForm] = useState<InserimentoFormState>(defaultInserimentoForm);
@@ -308,21 +314,17 @@ export function RichiesteDaApprovarePanel() {
         </div>
       </div>
 
-      <label style={{ display: 'block', marginBottom: 12 }}>
-        Filtra per stato
-        <select
-          value={statoFilter}
-          onChange={(event) => setStatoFilter(event.target.value as StatoRichiestaAssenza | '')}
-          style={{ display: 'block', marginTop: 4 }}
-        >
-          <option value="">Tutte</option>
-          {Object.entries(statoLabels).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="services-filters-row" style={{ marginBottom: 12 }}>
+        <div className="services-search-wrap" style={{ flex: '0 0 auto', minWidth: 240 }}>
+          <span className="services-filter-label">Filtra per stato</span>
+          <FilterDropdown
+            label="Filtra per stato"
+            value={statoFilter}
+            options={statoFilterOptions}
+            onChange={(nextValue) => setStatoFilter(nextValue as StatoRichiestaAssenza | '')}
+          />
+        </div>
+      </div>
 
       {loading ? (
         <p>Caricamento in corso...</p>
@@ -358,24 +360,33 @@ export function RichiesteDaApprovarePanel() {
       )}
 
       {rifiutoTargetId !== null && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-          }}
-        >
-          <div style={{ background: '#fff', borderRadius: 8, padding: 24, width: 380, maxWidth: '90vw' }}>
-            <h2 style={{ marginTop: 0 }}>Rifiuta richiesta</h2>
-            <p style={{ fontSize: '0.85rem', color: '#757575' }}>La motivazione sarà comunicata al dipendente.</p>
-            <textarea
-              value={motivoRifiuto}
-              onChange={(event) => setMotivoRifiuto(event.target.value)}
-              placeholder="Motivo del rifiuto (obbligatorio)"
-              style={{ display: 'block', width: '100%', marginTop: 8 }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+        <div className="tenant-modal-overlay" role="dialog" aria-modal="true" aria-label="Rifiuta richiesta">
+          <article className="tenant-modal-card" style={{ width: 'min(420px, 100%)' }}>
+            <div className="tenant-modal-header">
+              <div>
+                <h3>Rifiuta richiesta</h3>
+                <p>La motivazione sarà comunicata al dipendente.</p>
+              </div>
+              <button
+                type="button"
+                className="tenant-modal-close"
+                aria-label="Chiudi finestra rifiuto"
+                onClick={() => setRifiutoTargetId(null)}
+              >
+                ×
+              </button>
+            </div>
+            <label className="driver-form-field">
+              <span>Motivo del rifiuto</span>
+              <textarea
+                className="form-input"
+                value={motivoRifiuto}
+                onChange={(event) => setMotivoRifiuto(event.target.value)}
+                placeholder="Motivo del rifiuto (obbligatorio)"
+                rows={4}
+              />
+            </label>
+            <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
               <button type="button" className="secondary-button" onClick={() => setRifiutoTargetId(null)}>
                 Annulla
               </button>
@@ -383,180 +394,192 @@ export function RichiesteDaApprovarePanel() {
                 Conferma
               </button>
             </div>
-          </div>
+          </article>
         </div>
       )}
 
       {inserimentoOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-          }}
-        >
-          <form
-            onSubmit={handleInserimentoSubmit}
-            style={{ background: '#fff', borderRadius: 8, padding: 24, width: 420, maxWidth: '90vw' }}
-          >
-            <h2 style={{ marginTop: 0 }}>Inserisci assenza per dipendente</h2>
-            <p style={{ fontSize: '0.85rem', color: '#757575' }}>L&apos;assenza sarà registrata come già approvata.</p>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Driver
-              <select
-                value={inserimentoForm.driverId}
-                onChange={(event) => setInserimentoForm((prev) => ({ ...prev, driverId: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
+        <div className="tenant-modal-overlay" role="dialog" aria-modal="true" aria-label="Inserisci assenza per dipendente">
+          <article className="tenant-modal-card" style={{ width: 'min(520px, 100%)' }}>
+            <div className="tenant-modal-header">
+              <div>
+                <h3>Inserisci assenza per dipendente</h3>
+                <p>L&apos;assenza sarà registrata come già approvata.</p>
+              </div>
+              <button
+                type="button"
+                className="tenant-modal-close"
+                aria-label="Chiudi finestra inserimento assenza"
+                onClick={() => setInserimentoOpen(false)}
               >
-                <option value="">Seleziona...</option>
-                {driverOptions.map((driver) => (
-                  <option key={driver.driverId} value={driver.driverId}>
-                    {driverName(driver)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Tipologia
-              <select
-                value={inserimentoForm.tipoAssenzaId}
-                onChange={(event) => setInserimentoForm((prev) => ({ ...prev, tipoAssenzaId: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              >
-                <option value="">Seleziona...</option>
-                {tipiAssenza
-                  .filter((tipo) => tipo.origineGestionaleConsentita)
-                  .map((tipo) => (
-                    <option key={tipo.id} value={tipo.id}>
-                      {tipo.nome}
-                    </option>
-                  ))}
-              </select>
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Dal
-              <input
-                type="date"
-                value={inserimentoForm.dataInizio}
-                onChange={(event) => setInserimentoForm((prev) => ({ ...prev, dataInizio: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Al
-              <input
-                type="date"
-                value={inserimentoForm.dataFine}
-                onChange={(event) => setInserimentoForm((prev) => ({ ...prev, dataFine: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Motivazione (facoltativa)
-              <textarea
-                value={inserimentoForm.motivazione}
-                onChange={(event) => setInserimentoForm((prev) => ({ ...prev, motivazione: event.target.value }))}
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
-              <button type="button" className="secondary-button" onClick={() => setInserimentoOpen(false)} disabled={submitting}>
-                Annulla
-              </button>
-              <button type="submit" className="primary-button" disabled={submitting}>
-                Conferma
+                ×
               </button>
             </div>
-          </form>
+
+            <form className="driver-form-modal" onSubmit={handleInserimentoSubmit}>
+              <div className="driver-form-grid driver-form-grid--two-col">
+                <label className="driver-form-field driver-form-field--full-width">
+                  <span>Driver</span>
+                  <select
+                    className="form-input"
+                    value={inserimentoForm.driverId}
+                    onChange={(event) => setInserimentoForm((prev) => ({ ...prev, driverId: event.target.value }))}
+                    required
+                  >
+                    <option value="">Seleziona...</option>
+                    {driverOptions.map((driver) => (
+                      <option key={driver.driverId} value={driver.driverId}>
+                        {driverName(driver)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="driver-form-field driver-form-field--full-width">
+                  <span>Tipologia</span>
+                  <select
+                    className="form-input"
+                    value={inserimentoForm.tipoAssenzaId}
+                    onChange={(event) => setInserimentoForm((prev) => ({ ...prev, tipoAssenzaId: event.target.value }))}
+                    required
+                  >
+                    <option value="">Seleziona...</option>
+                    {tipiAssenza
+                      .filter((tipo) => tipo.origineGestionaleConsentita)
+                      .map((tipo) => (
+                        <option key={tipo.id} value={tipo.id}>
+                          {tipo.nome}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+
+                <label className="driver-form-field">
+                  <span>Dal</span>
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={inserimentoForm.dataInizio}
+                    onChange={(event) => setInserimentoForm((prev) => ({ ...prev, dataInizio: event.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label className="driver-form-field">
+                  <span>Al</span>
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={inserimentoForm.dataFine}
+                    onChange={(event) => setInserimentoForm((prev) => ({ ...prev, dataFine: event.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label className="driver-form-field driver-form-field--full-width">
+                  <span>Motivazione (facoltativa)</span>
+                  <textarea
+                    className="form-input"
+                    value={inserimentoForm.motivazione}
+                    onChange={(event) => setInserimentoForm((prev) => ({ ...prev, motivazione: event.target.value }))}
+                    rows={3}
+                  />
+                </label>
+              </div>
+
+              <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+                <button type="button" className="secondary-button" onClick={() => setInserimentoOpen(false)} disabled={submitting}>
+                  Annulla
+                </button>
+                <button type="submit" className="primary-button" disabled={submitting}>
+                  Conferma
+                </button>
+              </div>
+            </form>
+          </article>
         </div>
       )}
 
       {sganciamentoOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
-          }}
-        >
-          <form
-            onSubmit={handleSganciamentoSubmit}
-            style={{ background: '#fff', borderRadius: 8, padding: 24, width: 420, maxWidth: '90vw' }}
-          >
-            <h2 style={{ marginTop: 0 }}>Crea sganciamento</h2>
-            <p style={{ fontSize: '0.85rem', color: '#757575' }}>
-              Programma una sospensione aziendale senza flusso di approvazione.
-            </p>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Driver
-              <select
-                value={sganciamentoForm.driverId}
-                onChange={(event) => setSganciamentoForm((prev) => ({ ...prev, driverId: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
+        <div className="tenant-modal-overlay" role="dialog" aria-modal="true" aria-label="Crea sganciamento">
+          <article className="tenant-modal-card" style={{ width: 'min(520px, 100%)' }}>
+            <div className="tenant-modal-header">
+              <div>
+                <h3>Crea sganciamento</h3>
+                <p>Programma una sospensione aziendale senza flusso di approvazione.</p>
+              </div>
+              <button
+                type="button"
+                className="tenant-modal-close"
+                aria-label="Chiudi finestra sganciamento"
+                onClick={() => setSganciamentoOpen(false)}
               >
-                <option value="">Seleziona...</option>
-                {driverOptions.map((driver) => (
-                  <option key={driver.driverId} value={driver.driverId}>
-                    {driverName(driver)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Dal
-              <input
-                type="date"
-                value={sganciamentoForm.dataInizio}
-                onChange={(event) => setSganciamentoForm((prev) => ({ ...prev, dataInizio: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Al
-              <input
-                type="date"
-                value={sganciamentoForm.dataFine}
-                onChange={(event) => setSganciamentoForm((prev) => ({ ...prev, dataFine: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Motivazione (facoltativa)
-              <textarea
-                value={sganciamentoForm.motivazione}
-                onChange={(event) => setSganciamentoForm((prev) => ({ ...prev, motivazione: event.target.value }))}
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
-              <button type="button" className="secondary-button" onClick={() => setSganciamentoOpen(false)} disabled={submitting}>
-                Annulla
-              </button>
-              <button type="submit" className="primary-button" disabled={submitting}>
-                Conferma
+                ×
               </button>
             </div>
-          </form>
+
+            <form className="driver-form-modal" onSubmit={handleSganciamentoSubmit}>
+              <div className="driver-form-grid driver-form-grid--two-col">
+                <label className="driver-form-field driver-form-field--full-width">
+                  <span>Driver</span>
+                  <select
+                    className="form-input"
+                    value={sganciamentoForm.driverId}
+                    onChange={(event) => setSganciamentoForm((prev) => ({ ...prev, driverId: event.target.value }))}
+                    required
+                  >
+                    <option value="">Seleziona...</option>
+                    {driverOptions.map((driver) => (
+                      <option key={driver.driverId} value={driver.driverId}>
+                        {driverName(driver)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="driver-form-field">
+                  <span>Dal</span>
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={sganciamentoForm.dataInizio}
+                    onChange={(event) => setSganciamentoForm((prev) => ({ ...prev, dataInizio: event.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label className="driver-form-field">
+                  <span>Al</span>
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={sganciamentoForm.dataFine}
+                    onChange={(event) => setSganciamentoForm((prev) => ({ ...prev, dataFine: event.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label className="driver-form-field driver-form-field--full-width">
+                  <span>Motivazione (facoltativa)</span>
+                  <textarea
+                    className="form-input"
+                    value={sganciamentoForm.motivazione}
+                    onChange={(event) => setSganciamentoForm((prev) => ({ ...prev, motivazione: event.target.value }))}
+                    rows={3}
+                  />
+                </label>
+              </div>
+
+              <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+                <button type="button" className="secondary-button" onClick={() => setSganciamentoOpen(false)} disabled={submitting}>
+                  Annulla
+                </button>
+                <button type="submit" className="primary-button" disabled={submitting}>
+                  Conferma
+                </button>
+              </div>
+            </form>
+          </article>
         </div>
       )}
     </div>

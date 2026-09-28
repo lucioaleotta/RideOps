@@ -285,124 +285,124 @@ export function LeMieAssenzePanel() {
       )}
 
       {formOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}
-        >
-          <form
-            onSubmit={handleSubmit}
-            style={{ background: '#fff', borderRadius: 8, padding: 24, width: 420, maxWidth: '90vw' }}
-          >
-            <h2 style={{ marginTop: 0 }}>Nuova richiesta di assenza</h2>
-            <p style={{ fontSize: '0.85rem', color: '#757575' }}>
-              I campi richiesti dipendono dalla tipologia selezionata.
-            </p>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Tipologia
-              <select
-                value={form.tipoAssenzaId}
-                onChange={(event) => setForm((prev) => ({ ...prev, tipoAssenzaId: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
+        <div className="tenant-modal-overlay" role="dialog" aria-modal="true" aria-label="Nuova richiesta di assenza">
+          <article className="tenant-modal-card" style={{ width: 'min(480px, 100%)' }}>
+            <div className="tenant-modal-header">
+              <div>
+                <h3>Nuova richiesta di assenza</h3>
+                <p>I campi richiesti dipendono dalla tipologia selezionata.</p>
+              </div>
+              <button
+                type="button"
+                className="tenant-modal-close"
+                aria-label="Chiudi finestra nuova richiesta"
+                onClick={closeForm}
               >
-                <option value="">Seleziona...</option>
-                {tipiAssenza
-                  .filter((tipo) => tipo.origineDriverConsentita)
-                  .map((tipo) => (
-                    <option key={tipo.id} value={tipo.id}>
-                      {tipo.nome}
-                    </option>
-                  ))}
-              </select>
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Durata
-              <select
-                value={form.giornataIntera ? 'intera' : 'parziale'}
-                onChange={(event) => setForm((prev) => ({ ...prev, giornataIntera: event.target.value === 'intera' }))}
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              >
-                <option value="intera">Giornata intera</option>
-                <option value="parziale">Parziale (con orario)</option>
-              </select>
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Dal
-              <input
-                type="date"
-                value={form.dataInizio}
-                onChange={(event) => setForm((prev) => ({ ...prev, dataInizio: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Al
-              <input
-                type="date"
-                value={form.dataFine}
-                onChange={(event) => setForm((prev) => ({ ...prev, dataFine: event.target.value }))}
-                required
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
-
-            {richiedeOrario && (
-              <>
-                <label style={{ display: 'block', marginTop: 12 }}>
-                  Ora inizio
-                  <input
-                    type="time"
-                    value={form.oraInizio}
-                    onChange={(event) => setForm((prev) => ({ ...prev, oraInizio: event.target.value }))}
-                    required
-                    style={{ display: 'block', width: '100%', marginTop: 4 }}
-                  />
-                </label>
-                <label style={{ display: 'block', marginTop: 12 }}>
-                  Ora fine
-                  <input
-                    type="time"
-                    value={form.oraFine}
-                    onChange={(event) => setForm((prev) => ({ ...prev, oraFine: event.target.value }))}
-                    required
-                    style={{ display: 'block', width: '100%', marginTop: 4 }}
-                  />
-                </label>
-              </>
-            )}
-
-            <label style={{ display: 'block', marginTop: 12 }}>
-              Motivazione (facoltativa)
-              <textarea
-                value={form.motivazione}
-                onChange={(event) => setForm((prev) => ({ ...prev, motivazione: event.target.value }))}
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
-              />
-            </label>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
-              <button type="button" className="secondary-button" onClick={closeForm} disabled={submitting}>
-                Annulla
-              </button>
-              <button type="submit" className="primary-button" disabled={submitting}>
-                Invia richiesta
+                ×
               </button>
             </div>
-          </form>
+
+            <form className="driver-form-modal" onSubmit={handleSubmit}>
+              <div className="driver-form-grid driver-form-grid--two-col">
+                <label className="driver-form-field driver-form-field--full-width">
+                  <span>Tipologia</span>
+                  <select
+                    className="form-input"
+                    value={form.tipoAssenzaId}
+                    onChange={(event) => setForm((prev) => ({ ...prev, tipoAssenzaId: event.target.value }))}
+                    required
+                  >
+                    <option value="">Seleziona...</option>
+                    {tipiAssenza
+                      .filter((tipo) => tipo.origineDriverConsentita)
+                      .map((tipo) => (
+                        <option key={tipo.id} value={tipo.id}>
+                          {tipo.nome}
+                        </option>
+                      ))}
+                  </select>
+                </label>
+
+                <label className="driver-form-field driver-form-field--full-width">
+                  <span>Durata</span>
+                  <select
+                    className="form-input"
+                    value={form.giornataIntera ? 'intera' : 'parziale'}
+                    onChange={(event) => setForm((prev) => ({ ...prev, giornataIntera: event.target.value === 'intera' }))}
+                  >
+                    <option value="intera">Giornata intera</option>
+                    <option value="parziale">Parziale (con orario)</option>
+                  </select>
+                </label>
+
+                <label className="driver-form-field">
+                  <span>Dal</span>
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={form.dataInizio}
+                    onChange={(event) => setForm((prev) => ({ ...prev, dataInizio: event.target.value }))}
+                    required
+                  />
+                </label>
+
+                <label className="driver-form-field">
+                  <span>Al</span>
+                  <input
+                    className="form-input"
+                    type="date"
+                    value={form.dataFine}
+                    onChange={(event) => setForm((prev) => ({ ...prev, dataFine: event.target.value }))}
+                    required
+                  />
+                </label>
+
+                {richiedeOrario && (
+                  <>
+                    <label className="driver-form-field">
+                      <span>Ora inizio</span>
+                      <input
+                        className="form-input"
+                        type="time"
+                        value={form.oraInizio}
+                        onChange={(event) => setForm((prev) => ({ ...prev, oraInizio: event.target.value }))}
+                        required
+                      />
+                    </label>
+                    <label className="driver-form-field">
+                      <span>Ora fine</span>
+                      <input
+                        className="form-input"
+                        type="time"
+                        value={form.oraFine}
+                        onChange={(event) => setForm((prev) => ({ ...prev, oraFine: event.target.value }))}
+                        required
+                      />
+                    </label>
+                  </>
+                )}
+
+                <label className="driver-form-field driver-form-field--full-width">
+                  <span>Motivazione (facoltativa)</span>
+                  <textarea
+                    className="form-input"
+                    value={form.motivazione}
+                    onChange={(event) => setForm((prev) => ({ ...prev, motivazione: event.target.value }))}
+                    rows={3}
+                  />
+                </label>
+              </div>
+
+              <div className="form-actions" style={{ justifyContent: 'flex-end' }}>
+                <button type="button" className="secondary-button" onClick={closeForm} disabled={submitting}>
+                  Annulla
+                </button>
+                <button type="submit" className="primary-button" disabled={submitting}>
+                  Invia richiesta
+                </button>
+              </div>
+            </form>
+          </article>
         </div>
       )}
     </div>

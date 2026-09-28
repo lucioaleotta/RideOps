@@ -11,6 +11,8 @@ type AppShellProps = {
 
 type Role = 'ADMIN' | 'GESTIONALE' | 'DRIVER' | 'DRIVER_FREELANCER';
 
+type MenuChild = { href: string; label: string; icon: string; roles: Role[] };
+
 const menuItems = [
   { href: '/app', label: 'Home', icon: '🏠', roles: ['GESTIONALE', 'DRIVER', 'DRIVER_FREELANCER'] as Role[] },
   { href: '/app/admin-home', label: 'Dashboard', icon: '📊', roles: ['ADMIN'] as Role[] },
@@ -20,8 +22,15 @@ const menuItems = [
   { href: '/app/finance', label: 'Finanza', icon: '💶', roles: ['GESTIONALE'] as Role[] },
   { href: '/app/fleet', label: 'Parco mezzi', icon: '🚙', roles: ['GESTIONALE'] as Role[] },
   { href: '/app/partners', label: 'Gestione Partner', icon: '🤝', roles: ['GESTIONALE'] as Role[] },
-  { href: '/app/gestionale', label: 'Gestione Personale', icon: '📋', roles: ['GESTIONALE'] as Role[] },
-  { href: '/app/gestionale/assenze', label: 'Assenze', icon: '🗓️', roles: ['GESTIONALE'] as Role[] },
+  {
+    href: '/app/gestionale',
+    label: 'Gestione Personale',
+    icon: '📋',
+    roles: ['GESTIONALE'] as Role[],
+    children: [
+      { href: '/app/gestionale/assenze', label: 'Assenze', icon: '🗓️', roles: ['GESTIONALE'] as Role[] }
+    ] as MenuChild[]
+  },
   { href: '/app/driver', label: 'Autista', icon: '🚗', roles: ['DRIVER', 'DRIVER_FREELANCER'] as Role[] },
   { href: '/app/driver/assenze', label: 'Le mie assenze', icon: '🗓️', roles: ['DRIVER'] as Role[] }
 ];
@@ -29,6 +38,7 @@ const menuItems = [
 export function AppShell({ userId, userRole, children }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>({ '/app/gestionale': true });
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [fleetAlertCounts, setFleetAlertCounts] = useState({ total: 0, upcoming: 0, overdue: 0 });
   const [serviceAlertCounts, setServiceAlertCounts] = useState({ total: 0, upcoming: 0, overdue: 0 });
@@ -280,12 +290,54 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
         <nav className="menu">
           {menuItems
             .filter((item) => item.roles.includes(normalizedRole))
-            .map((item) => (
-            <Link key={item.href} href={item.href} className="menu-link" onClick={() => setMobileMenuOpen(false)}>
-              <span className="menu-icon" aria-hidden="true">{item.icon}</span>
-              {!sidebarCollapsed && <span>{item.label}</span>}
-            </Link>
-            ))}
+            .map((item) => {
+              const visibleChildren = item.children?.filter((child) => child.roles.includes(normalizedRole)) ?? [];
+              const hasChildren = visibleChildren.length > 0;
+              const isGroupOpen = openMenuGroups[item.href] ?? true;
+
+              return (
+                <div key={item.href} className="menu-group">
+                  <div className="menu-link-row">
+                    <Link href={item.href} className="menu-link" onClick={() => setMobileMenuOpen(false)}>
+                      <span className="menu-icon" aria-hidden="true">{item.icon}</span>
+                      {!sidebarCollapsed && <span>{item.label}</span>}
+                    </Link>
+                    {!sidebarCollapsed && hasChildren && (
+                      <button
+                        type="button"
+                        className={`menu-toggle ${isGroupOpen ? 'is-open' : ''}`}
+                        aria-expanded={isGroupOpen}
+                        aria-label={`${isGroupOpen ? 'Nascondi' : 'Mostra'} sottomenu ${item.label}`}
+                        onClick={() => setOpenMenuGroups((prev) => ({ ...prev, [item.href]: !isGroupOpen }))}
+                      >
+                        <span className="menu-toggle-chevron" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                  {!sidebarCollapsed && hasChildren && (
+                    <div className={`menu-submenu ${isGroupOpen ? 'is-open' : ''}`}>
+                      <div className="menu-submenu-inner">
+                        {visibleChildren.map((child) => (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className="menu-link menu-sublink"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            <span className="menu-icon" aria-hidden="true">{child.icon}</span>
+                            <span>{child.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
         </nav>
       </aside>
 
