@@ -49,32 +49,15 @@ const statoLabels: Record<StatoRichiestaAssenza, string> = {
   ANNULLATA: 'Annullata'
 };
 
-const statoColors: Record<StatoRichiestaAssenza, { background: string; color: string }> = {
-  BOZZA: { background: '#eceff1', color: '#455a64' },
-  IN_ATTESA: { background: '#fff3e0', color: '#e65100' },
-  APPROVATA: { background: '#e8f5e9', color: '#2e7d32' },
-  RIFIUTATA: { background: '#ffebee', color: '#c62828' },
-  ANNULLATA: { background: '#eceff1', color: '#616161' }
-};
-
 const statoFilterOptions = [
   { value: '', label: 'Tutte' },
   ...Object.entries(statoLabels).map(([value, label]) => ({ value, label }))
 ];
 
 function StatoBadge({ stato }: { stato: StatoRichiestaAssenza }) {
-  const style = statoColors[stato];
   return (
     <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 10px',
-        borderRadius: 12,
-        fontSize: '0.75rem',
-        fontWeight: 600,
-        background: style.background,
-        color: style.color
-      }}
+      className={`assenza-status-badge assenza-status-badge--${stato.toLowerCase().replace('_', '-')}`}
     >
       {statoLabels[stato]}
     </span>
@@ -286,7 +269,7 @@ export function RichiesteDaApprovarePanel() {
           <h1>Richieste da approvare</h1>
           <p className="services-page-subtitle">Valuta le richieste del team e gestisci le assenze aziendali</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="assenza-header-actions">
           <button type="button" className="secondary-button" onClick={() => setSganciamentoOpen(true)}>
             Sganciamento
           </button>
@@ -299,24 +282,30 @@ export function RichiesteDaApprovarePanel() {
       {error && <StatusNotice tone="error">{error}</StatusNotice>}
       {success && <StatusNotice tone="success">{success}</StatusNotice>}
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', margin: '16px 0' }}>
-        <div style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: 12, minWidth: 160 }}>
-          <div style={{ fontSize: '0.8rem', color: '#616161' }}>Da approvare</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{daApprovareCount}</div>
-        </div>
-        <div style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: 12, minWidth: 160 }}>
-          <div style={{ fontSize: '0.8rem', color: '#616161' }}>Assenti oggi</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{assentiOggiCount}</div>
-        </div>
-        <div style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: 12, minWidth: 160 }}>
-          <div style={{ fontSize: '0.8rem', color: '#616161' }}>Sganciamenti</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{sganciamentiCount}</div>
-        </div>
+      <div className="assenza-stats-grid assenza-stats-grid--manager">
+        <article className="assenza-stat-card">
+          <span className="assenza-stat-icon" aria-hidden="true">◷</span>
+          <div className="assenza-stat-label">Da approvare</div>
+          <div className="assenza-stat-value">{daApprovareCount}</div>
+          <div className="assenza-stat-caption">richieste in attesa</div>
+        </article>
+        <article className="assenza-stat-card">
+          <span className="assenza-stat-icon" aria-hidden="true">●</span>
+          <div className="assenza-stat-label">Assenti oggi</div>
+          <div className="assenza-stat-value">{assentiOggiCount}</div>
+          <div className="assenza-stat-caption">assenze approvate</div>
+        </article>
+        <article className="assenza-stat-card">
+          <span className="assenza-stat-icon" aria-hidden="true">↔</span>
+          <div className="assenza-stat-label">Sganciamenti</div>
+          <div className="assenza-stat-value">{sganciamentiCount}</div>
+          <div className="assenza-stat-caption">approvati</div>
+        </article>
       </div>
 
-      <div className="services-filters-row" style={{ marginBottom: 12 }}>
-        <div className="services-search-wrap" style={{ flex: '0 0 auto', minWidth: 240 }}>
-          <span className="services-filter-label">Filtra per stato</span>
+      <div className="assenza-filter-bar">
+        <div className="assenza-filter-field">
+          <span className="services-filter-label">Stato richiesta</span>
           <FilterDropdown
             label="Filtra per stato"
             value={statoFilter}
@@ -327,29 +316,48 @@ export function RichiesteDaApprovarePanel() {
       </div>
 
       {loading ? (
-        <p>Caricamento in corso...</p>
+        <div className="assenza-empty-state" role="status">Caricamento in corso...</div>
       ) : filteredRichieste.length === 0 ? (
-        <p>Nessuna richiesta trovata.</p>
+        <div className="assenza-empty-state">
+          <span className="assenza-empty-icon" aria-hidden="true">▣</span>
+          <strong>Nessuna richiesta trovata.</strong>
+          <span>Le richieste del team compariranno qui.</span>
+        </div>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <ul className="assenza-request-list assenza-request-list--manager">
           {filteredRichieste.map((richiesta) => (
-            <li key={richiesta.id} style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong>{driverName(driverById.get(richiesta.driverId))}</strong>
+            <li key={richiesta.id} className="assenza-request-card">
+              <div className="assenza-request-card-header">
+                <div className="assenza-request-title-wrap">
+                  <span className="assenza-request-avatar" aria-hidden="true">
+                    {driverName(driverById.get(richiesta.driverId)).split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase()}
+                  </span>
+                  <div>
+                    <strong className="assenza-request-title">{driverName(driverById.get(richiesta.driverId))}</strong>
+                    <span className="assenza-request-reference">ASS-{String(richiesta.id).padStart(3, '0')}</span>
+                  </div>
+                </div>
                 <StatoBadge stato={richiesta.stato} />
               </div>
-              <div style={{ fontSize: '0.85rem', color: '#616161', marginTop: 4 }}>
-                {richiesta.tipoAssenzaNome ?? richiesta.tipoAssenzaCodice} · {formatDate(richiesta.dataInizio)} — {formatDate(richiesta.dataFine)}
+              <div className="assenza-request-details">
+                <div>
+                  <span className="assenza-detail-label">Tipologia</span>
+                  <strong>{richiesta.tipoAssenzaNome ?? richiesta.tipoAssenzaCodice}</strong>
+                </div>
+                <div>
+                  <span className="assenza-detail-label">Periodo</span>
+                  <strong>{formatDate(richiesta.dataInizio)}{richiesta.dataInizio !== richiesta.dataFine ? ` — ${formatDate(richiesta.dataFine)}` : ''}</strong>
+                </div>
               </div>
               {richiesta.motivazione && (
-                <div style={{ fontSize: '0.85rem', color: '#757575', marginTop: 4 }}>{richiesta.motivazione}</div>
+                <p className="assenza-request-note">{richiesta.motivazione}</p>
               )}
               {richiesta.stato === 'IN_ATTESA' && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <button type="button" className="primary-button" onClick={() => handleApprova(richiesta.id)}>
+                <div className="assenza-request-actions">
+                  <button type="button" className="primary-button compact-button" onClick={() => handleApprova(richiesta.id)}>
                     Approva
                   </button>
-                  <button type="button" className="secondary-button" onClick={() => openRifiuto(richiesta.id)}>
+                  <button type="button" className="secondary-button compact-button" onClick={() => openRifiuto(richiesta.id)}>
                     Rifiuta
                   </button>
                 </div>

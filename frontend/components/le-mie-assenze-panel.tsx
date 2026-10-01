@@ -37,27 +37,10 @@ const statoLabels: Record<StatoRichiestaAssenza, string> = {
   ANNULLATA: 'Annullata'
 };
 
-const statoColors: Record<StatoRichiestaAssenza, { background: string; color: string }> = {
-  BOZZA: { background: '#eceff1', color: '#455a64' },
-  IN_ATTESA: { background: '#fff3e0', color: '#e65100' },
-  APPROVATA: { background: '#e8f5e9', color: '#2e7d32' },
-  RIFIUTATA: { background: '#ffebee', color: '#c62828' },
-  ANNULLATA: { background: '#eceff1', color: '#616161' }
-};
-
 function StatoBadge({ stato }: { stato: StatoRichiestaAssenza }) {
-  const style = statoColors[stato];
   return (
     <span
-      style={{
-        display: 'inline-block',
-        padding: '2px 10px',
-        borderRadius: 12,
-        fontSize: '0.75rem',
-        fontWeight: 600,
-        background: style.background,
-        color: style.color
-      }}
+      className={`assenza-status-badge assenza-status-badge--${stato.toLowerCase().replace('_', '-')}`}
     >
       {statoLabels[stato]}
     </span>
@@ -226,54 +209,93 @@ export function LeMieAssenzePanel() {
         <StatusNotice tone="success">{success}</StatusNotice>
       )}
 
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', margin: '16px 0' }}>
-        <div style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: 12, minWidth: 160 }}>
-          <div style={{ fontSize: '0.8rem', color: '#616161' }}>In attesa</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{inAttesaCount}</div>
-          <div style={{ fontSize: '0.75rem', color: '#9e9e9e' }}>richieste da valutare</div>
-        </div>
-        <div style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: 12, minWidth: 160 }}>
-          <div style={{ fontSize: '0.8rem', color: '#616161' }}>Prossima assenza</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
-            {prossimaAssenza ? formatDate(prossimaAssenza.dataInizio) : '-'}
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#9e9e9e' }}>
+      <div className="assenza-stats-grid assenza-stats-grid--driver">
+        <article className="assenza-stat-card">
+          <span className="assenza-stat-icon assenza-stat-icon--calendar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <rect x="5.2" y="6.2" width="13.6" height="12.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.9" />
+              <path d="M8.4 4.8v2.8M15.6 4.8v2.8M5.2 9.4h13.6M12 13h.01" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+            </svg>
+          </span>
+          <div className="assenza-stat-label">Richieste totali</div>
+          <div className="assenza-stat-value">{richieste.length}</div>
+          <div className="assenza-stat-caption">registrate nel sistema</div>
+        </article>
+        <article className="assenza-stat-card">
+          <span className="assenza-stat-icon" aria-hidden="true">◷</span>
+          <div className="assenza-stat-label">In attesa</div>
+          <div className="assenza-stat-value">{inAttesaCount}</div>
+          <div className="assenza-stat-caption">richieste da valutare</div>
+        </article>
+        <article className="assenza-stat-card">
+          <span className="assenza-stat-icon assenza-stat-icon--calendar" aria-hidden="true">
+            <svg viewBox="0 0 24 24" focusable="false">
+              <rect x="5.2" y="6.2" width="13.6" height="12.6" rx="1.6" fill="none" stroke="currentColor" strokeWidth="1.9" />
+              <path d="M8.4 4.8v2.8M15.6 4.8v2.8M5.2 9.4h13.6M12 13h.01" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" />
+            </svg>
+          </span>
+          <div className="assenza-stat-label">Prossima assenza</div>
+          <div className="assenza-stat-value">{prossimaAssenza ? formatDate(prossimaAssenza.dataInizio) : '—'}</div>
+          <div className="assenza-stat-caption">
             {prossimaAssenza ? prossimaAssenza.tipoAssenzaNome : 'nessuna in programma'}
           </div>
-        </div>
+        </article>
       </div>
 
+      <section className="assenza-section" aria-labelledby="driver-assenze-list-title">
+        <div className="assenza-section-heading">
+          <div>
+            <h2 id="driver-assenze-list-title">Le tue richieste</h2>
+            <p>Consulta lo stato e il periodo delle tue assenze.</p>
+          </div>
+          <span className="assenza-section-count">{richieste.length}</span>
+        </div>
+
       {loading ? (
-        <p>Caricamento in corso...</p>
+        <div className="assenza-empty-state" role="status">Caricamento in corso...</div>
       ) : richieste.length === 0 ? (
-        <p>Nessuna richiesta di assenza presente.</p>
+        <div className="assenza-empty-state">
+          <span className="assenza-empty-icon" aria-hidden="true">▣</span>
+          <strong>Nessuna richiesta di assenza presente.</strong>
+          <span>Quando invierai una richiesta, la troverai qui.</span>
+        </div>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <ul className="assenza-request-list assenza-request-list--driver">
           {richieste.map((richiesta) => (
-            <li key={richiesta.id} style={{ border: '1px solid #e0e0e0', borderRadius: 8, padding: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong>{richiesta.tipoAssenzaNome ?? richiesta.tipoAssenzaCodice}</strong>
+            <li key={richiesta.id} className="assenza-request-card">
+              <div className="assenza-request-card-header">
+                <div className="assenza-request-title-wrap">
+                  <span className="assenza-request-avatar" aria-hidden="true">{richiesta.tipoAssenzaCodice?.slice(0, 2) ?? 'AS'}</span>
+                  <div>
+                    <strong className="assenza-request-title">{richiesta.tipoAssenzaNome ?? richiesta.tipoAssenzaCodice}</strong>
+                    <span className="assenza-request-reference">ASS-{String(richiesta.id).padStart(3, '0')}</span>
+                  </div>
+                </div>
                 <StatoBadge stato={richiesta.stato} />
               </div>
-              <div style={{ fontSize: '0.85rem', color: '#616161', marginTop: 4 }}>
-                {formatDate(richiesta.dataInizio)} — {formatDate(richiesta.dataFine)}
+              <div className="assenza-request-details">
+                <div>
+                  <span className="assenza-detail-label">Tipologia</span>
+                  <strong>{richiesta.tipoAssenzaNome ?? richiesta.tipoAssenzaCodice}</strong>
+                </div>
+                <div>
+                  <span className="assenza-detail-label">Periodo</span>
+                  <strong>{formatDate(richiesta.dataInizio)} — {formatDate(richiesta.dataFine)}</strong>
+                </div>
               </div>
               {richiesta.motivazione && (
-                <div style={{ fontSize: '0.85rem', color: '#757575', marginTop: 4 }}>{richiesta.motivazione}</div>
+                <p className="assenza-request-note">{richiesta.motivazione}</p>
               )}
               {richiesta.stato === 'RIFIUTATA' && richiesta.motivoRifiuto && (
-                <div style={{ fontSize: '0.85rem', color: '#c62828', marginTop: 4 }}>
-                  Motivo rifiuto: {richiesta.motivoRifiuto}
-                </div>
+                <p className="assenza-request-rejection">Motivo rifiuto: {richiesta.motivoRifiuto}</p>
               )}
               {richiesta.origine === 'GESTIONALE' && (
-                <div style={{ fontSize: '0.75rem', color: '#1565c0', marginTop: 4 }}>Inserita dal Gestionale</div>
+                <span className="assenza-origin-label">Inserita dal Gestionale</span>
               )}
               {canDriverCancel(richiesta) && (
                 <button
                   type="button"
-                  className="secondary-button"
-                  style={{ marginTop: 8 }}
+                  className="secondary-button compact-button assenza-cancel-button"
                   onClick={() => handleAnnulla(richiesta.id)}
                 >
                   Annulla richiesta
@@ -283,6 +305,7 @@ export function LeMieAssenzePanel() {
           ))}
         </ul>
       )}
+      </section>
 
       {formOpen && (
         <div className="tenant-modal-overlay" role="dialog" aria-modal="true" aria-label="Nuova richiesta di assenza">
