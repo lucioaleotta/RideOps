@@ -18,6 +18,15 @@ const menuItems = [
   { href: '/app/admin-home', label: 'Dashboard', icon: '📊', roles: ['ADMIN'] as Role[] },
   { href: '/app/admin', label: 'User Admin', icon: '🛡️', roles: ['ADMIN'] as Role[] },
   { href: '/app/admin/tenants', label: 'Clienti', icon: '🏢', roles: ['ADMIN'] as Role[] },
+  {
+    href: '/app/admin/configurazioni/tipi-assenza',
+    label: 'Configurazioni',
+    icon: '⚙️',
+    roles: ['ADMIN'] as Role[],
+    children: [
+      { href: '/app/admin/configurazioni/tipi-assenza', label: 'Tipi di assenza', icon: '🗓️', roles: ['ADMIN'] as Role[] }
+    ] as MenuChild[]
+  },
   { href: '/app/services', label: 'Servizi', icon: '🧾', roles: ['GESTIONALE'] as Role[] },
   { href: '/app/finance', label: 'Finanza', icon: '💶', roles: ['GESTIONALE'] as Role[] },
   { href: '/app/fleet', label: 'Parco mezzi', icon: '🚙', roles: ['GESTIONALE'] as Role[] },
@@ -28,7 +37,9 @@ const menuItems = [
     icon: '📋',
     roles: ['GESTIONALE'] as Role[],
     children: [
-      { href: '/app/gestionale/assenze', label: 'Assenze', icon: '🗓️', roles: ['GESTIONALE'] as Role[] }
+      { href: '/app/gestionale/assenze', label: 'Assenze', icon: '🗓️', roles: ['GESTIONALE'] as Role[] },
+      { href: '/app/gestionale/assenze/calendario', label: 'Calendario team', icon: '📅', roles: ['GESTIONALE'] as Role[] },
+      { href: '/app/gestionale/assenze/configurazione', label: 'Configurazione assenze', icon: '⚙️', roles: ['GESTIONALE'] as Role[] }
     ] as MenuChild[]
   },
   { href: '/app/driver', label: 'Autista', icon: '🚗', roles: ['DRIVER', 'DRIVER_FREELANCER'] as Role[] },
@@ -42,6 +53,7 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [fleetAlertCounts, setFleetAlertCounts] = useState({ total: 0, upcoming: 0, overdue: 0 });
   const [serviceAlertCounts, setServiceAlertCounts] = useState({ total: 0, upcoming: 0, overdue: 0 });
+  const [absencePendingCount, setAbsencePendingCount] = useState(0);
   const normalizedRole = userRole.toUpperCase() as Role;
 
   const userName = useMemo(() => userId || 'utente', [userId]);
@@ -160,6 +172,29 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
   const sidebarCollapsed = collapsed && !isMobileViewport;
   const fleetHasAlerts = fleetAlertCounts.total > 0;
   const serviceHasAlerts = serviceAlertCounts.total > 0;
+  const absenceHasAlerts = absencePendingCount > 0;
+
+  useEffect(() => {
+    if (normalizedRole !== 'GESTIONALE') return;
+    let isMounted = true;
+
+    async function loadPendingAbsences() {
+      try {
+        const response = await fetch('/api/richieste-assenza/pending-count', { cache: 'no-store' });
+        const payload = await response.json().catch(() => ({})) as { count?: number };
+        if (response.ok && isMounted) setAbsencePendingCount(payload.count ?? 0);
+      } catch {
+        // Il chip non deve interferire con il caricamento delle altre aree della shell.
+      }
+    }
+
+    loadPendingAbsences();
+    const pollId = window.setInterval(loadPendingAbsences, 30_000);
+    return () => {
+      isMounted = false;
+      window.clearInterval(pollId);
+    };
+  }, [normalizedRole]);
 
   useEffect(() => {
     const canSeeServiceAlerts = normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER';
@@ -385,6 +420,17 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
                 <span className="alert-chip-icon" aria-hidden="true">{serviceHasAlerts ? '⚠️' : '✅'}</span>
                 <span className="alert-chip-label">Servizi:</span>
                 <span className="alert-chip-count">{serviceAlertCounts.total}</span>
+              </Link>
+            )}
+
+            {normalizedRole === 'GESTIONALE' && (
+              <Link
+                href="/app/gestionale/assenze"
+                className={`logout-button mobile-alert-chip mobile-alert-chip-absence ${absenceHasAlerts ? 'is-alert' : 'is-clear'}`}
+              >
+                <span className="alert-chip-icon" aria-hidden="true">{absenceHasAlerts ? '⚠️' : '✅'}</span>
+                <span className="alert-chip-label">Assenze:</span>
+                <span className="alert-chip-count">{absencePendingCount}</span>
               </Link>
             )}
           </div>
