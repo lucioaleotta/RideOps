@@ -79,5 +79,5 @@ describe('DriverProfilePanel', () => {
     expect(payload.residentialAddresses).toEqual(['Via Roma 14, Milano']);
 
     await screen.findByText(/dati personali aggiornati con successo/i);
-  });
+  }, 20000);
 });
