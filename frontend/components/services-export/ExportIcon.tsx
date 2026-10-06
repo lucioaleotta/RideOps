@@ -7,7 +7,6 @@ import { ExportBottomSheet } from './ExportBottomSheet';
 type ExportIconProps = {
   services: ExportServiceLike[];
   onBeforeExport: () => void;
-  onExportError: (message: string) => void;
   onExportSuccess: (message: string) => void;
 };
 
@@ -21,9 +20,10 @@ function DownloadIcon() {
   );
 }
 
-export function ExportIcon({ services, onBeforeExport, onExportError, onExportSuccess }: ExportIconProps) {
+export function ExportIcon({ services, onBeforeExport, onExportSuccess }: ExportIconProps) {
   const [open, setOpen] = useState(false);
   const [loadingFormat, setLoadingFormat] = useState<ExportFileFormat | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   async function onExport(params: { from: string; to: string; format: ExportFileFormat }) {
@@ -32,6 +32,7 @@ export function ExportIcon({ services, onBeforeExport, onExportError, onExportSu
     }
 
     onBeforeExport();
+    setExportError(null);
     setLoadingFormat(params.format);
 
     try {
@@ -50,7 +51,7 @@ export function ExportIcon({ services, onBeforeExport, onExportError, onExportSu
       setOpen(false);
     } catch (error) {
       setLoadingFormat(null);
-      onExportError(error instanceof Error ? error.message : 'Download export fallito');
+      setExportError(error instanceof Error ? error.message : 'Download export fallito');
     }
   }
 
@@ -64,7 +65,10 @@ export function ExportIcon({ services, onBeforeExport, onExportError, onExportSu
         title="Esporta in Excel o CSV"
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          setExportError(null);
+          setOpen((prev) => !prev);
+        }}
       >
         <span className="services-export-icon" aria-hidden="true"><DownloadIcon /></span>
       </button>
@@ -74,6 +78,7 @@ export function ExportIcon({ services, onBeforeExport, onExportError, onExportSu
         anchorRef={buttonRef}
         services={services}
         loadingFormat={loadingFormat}
+        exportError={exportError}
         onClose={() => setOpen(false)}
         onExport={onExport}
       />
@@ -82,6 +87,7 @@ export function ExportIcon({ services, onBeforeExport, onExportError, onExportSu
         open={open}
         services={services}
         loadingFormat={loadingFormat}
+        exportError={exportError}
         onClose={() => setOpen(false)}
         onExport={onExport}
       />

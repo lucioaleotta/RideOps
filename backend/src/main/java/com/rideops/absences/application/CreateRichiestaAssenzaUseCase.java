@@ -7,6 +7,7 @@ import com.rideops.absences.domain.StatoRichiestaAssenza;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.EnumSet;
+import java.time.temporal.ChronoUnit;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,15 +19,21 @@ public class CreateRichiestaAssenzaUseCase {
 
     private final RichiestaAssenzaRepositoryPort richiestaAssenzaRepositoryPort;
     private final TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort;
+    private final ConfigurazioneAssenzeService configurazioneAssenzeService;
+    private final SaldiDriverService saldiDriverService;
 
     public CreateRichiestaAssenzaUseCase(RichiestaAssenzaRepositoryPort richiestaAssenzaRepositoryPort,
-                                         TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort) {
+                                         TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort,
+                                         ConfigurazioneAssenzeService configurazioneAssenzeService,
+                                         SaldiDriverService saldiDriverService) {
         this.richiestaAssenzaRepositoryPort = richiestaAssenzaRepositoryPort;
         this.tipoAssenzaRepositoryPort = tipoAssenzaRepositoryPort;
+        this.configurazioneAssenzeService = configurazioneAssenzeService;
+        this.saldiDriverService = saldiDriverService;
     }
 
-    public RichiestaAssenzaDto execute(Long driverId,
-                                       Long tipoAssenzaId,
+    public RichiestaAssenzaDto execute(long driverId,
+                                       long tipoAssenzaId,
                                        LocalDate dataInizio,
                                        LocalDate dataFine,
                                        boolean giornataIntera,
@@ -35,6 +42,17 @@ public class CreateRichiestaAssenzaUseCase {
                                        String motivazione) {
         TipoAssenzaEntity tipoAssenza = tipoAssenzaRepositoryPort.findById(tipoAssenzaId)
             .orElseThrow(() -> new AssenzaNotFoundException("Tipo di assenza non trovato"));
+
+        ConfigurazioneAssenzaDto configurazione = configurazioneAssenzeService
+            .resolveEffectiveConfiguration(driverId, tipoAssenzaId);
+        if (!configurazione.abilitato()) {
+            throw new AssenzaValidationException("Il tipo di assenza non è abilitato per questo driver");
+        }
+        long daysUntilStart = ChronoUnit.DAYS.between(LocalDate.now(), dataInizio);
+        if (daysUntilStart < configurazione.preavvisoMinimoGiorni()) {
+            throw new AssenzaValidationException("Questa richiesta richiede almeno "
+                + configurazione.preavvisoMinimoGiorni() + " giorni di preavviso");
+        }
 
         RichiestaAssenzaValidationSupport.validate(
             tipoAssenza,
@@ -48,6 +66,8 @@ public class CreateRichiestaAssenzaUseCase {
                 driverId, EnumSet.of(StatoRichiestaAssenza.IN_ATTESA, StatoRichiestaAssenza.APPROVATA), dataInizio, dataFine)
         );
 
+        boolean exceptional = saldiDriverService.richiedeApprovazioneEccezionale(
+            driverId, tipoAssenzaId, dataInizio, dataFine, giornataIntera, oraInizio, oraFine);
         RichiestaAssenzaEntity entity = new RichiestaAssenzaEntity();
         entity.setDriverId(driverId);
         entity.setTipoAssenzaId(tipoAssenzaId);
@@ -58,6 +78,7 @@ public class CreateRichiestaAssenzaUseCase {
         entity.setOraInizio(oraInizio);
         entity.setOraFine(oraFine);
         entity.setStato(StatoRichiestaAssenza.IN_ATTESA);
+        entity.setRichiedeApprovazioneEccezionale(exceptional);
         entity.setMotivazione(motivazione);
 
         RichiestaAssenzaEntity saved = richiestaAssenzaRepositoryPort.save(entity);

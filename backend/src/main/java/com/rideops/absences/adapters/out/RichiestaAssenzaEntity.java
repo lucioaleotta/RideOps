@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import org.springframework.lang.NonNull;
 
 @Entity
 @Table(name = "richieste_assenza")
@@ -106,6 +107,7 @@ public class RichiestaAssenzaEntity {
         this.tenantId = tenantId;
     }
 
+    @NonNull
     public Long getDriverId() {
         return driverId;
     }
@@ -114,6 +116,7 @@ public class RichiestaAssenzaEntity {
         this.driverId = driverId;
     }
 
+    @NonNull
     public Long getTipoAssenzaId() {
         return tipoAssenzaId;
     }
@@ -130,6 +133,7 @@ public class RichiestaAssenzaEntity {
         this.origine = origine;
     }
 
+    @NonNull
     public LocalDate getDataInizio() {
         return dataInizio;
     }
@@ -138,6 +142,7 @@ public class RichiestaAssenzaEntity {
         this.dataInizio = dataInizio;
     }
 
+    @NonNull
     public LocalDate getDataFine() {
         return dataFine;
     }

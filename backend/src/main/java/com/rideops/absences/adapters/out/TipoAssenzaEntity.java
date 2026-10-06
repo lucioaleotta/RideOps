@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "tipi_assenza")
@@ -45,6 +46,15 @@ public class TipoAssenzaEntity {
 
     @Column(name = "preavviso_minimo_giorni_default", nullable = false)
     private int preavvisoMinimoGiorniDefault;
+
+    @Column(name = "numero_giorni_annui_default", precision = 8, scale = 2)
+    private BigDecimal numeroGiorniAnnuiDefault;
+
+    @Column(name = "numero_giorni_malattia_annui_default", precision = 8, scale = 2)
+    private BigDecimal numeroGiorniMalattiaAnnuiDefault;
+
+    @Column(name = "scadenza_ferie_mesi_default")
+    private Integer scadenzaFerieMesiDefault;
 
     @Column(nullable = false)
     private boolean attivo = true;
@@ -123,6 +133,30 @@ public class TipoAssenzaEntity {
 
     public void setPreavvisoMinimoGiorniDefault(int preavvisoMinimoGiorniDefault) {
         this.preavvisoMinimoGiorniDefault = preavvisoMinimoGiorniDefault;
+    }
+
+    public BigDecimal getNumeroGiorniAnnuiDefault() {
+        return numeroGiorniAnnuiDefault;
+    }
+
+    public void setNumeroGiorniAnnuiDefault(BigDecimal numeroGiorniAnnuiDefault) {
+        this.numeroGiorniAnnuiDefault = numeroGiorniAnnuiDefault;
+    }
+
+    public BigDecimal getNumeroGiorniMalattiaAnnuiDefault() {
+        return numeroGiorniMalattiaAnnuiDefault;
+    }
+
+    public void setNumeroGiorniMalattiaAnnuiDefault(BigDecimal numeroGiorniMalattiaAnnuiDefault) {
+        this.numeroGiorniMalattiaAnnuiDefault = numeroGiorniMalattiaAnnuiDefault;
+    }
+
+    public Integer getScadenzaFerieMesiDefault() {
+        return scadenzaFerieMesiDefault;
+    }
+
+    public void setScadenzaFerieMesiDefault(Integer scadenzaFerieMesiDefault) {
+        this.scadenzaFerieMesiDefault = scadenzaFerieMesiDefault;
     }
 
     public boolean isAttivo() {

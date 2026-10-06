@@ -15,6 +15,8 @@ public interface RichiestaAssenzaRepository extends JpaRepository<RichiestaAssen
 
     List<RichiestaAssenzaEntity> findAllByTenantIdAndDriverIdOrderByDataInizioDesc(Long tenantId, Long driverId);
 
+    long countByTenantIdAndStato(Long tenantId, StatoRichiestaAssenza stato);
+
     List<RichiestaAssenzaEntity> findAllByDriverIdAndStatoInAndDataInizioLessThanEqualAndDataFineGreaterThanEqual(
         Long driverId,
         Collection<StatoRichiestaAssenza> stati,

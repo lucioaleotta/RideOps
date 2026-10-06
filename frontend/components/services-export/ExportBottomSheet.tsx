@@ -6,11 +6,12 @@ type ExportBottomSheetProps = {
   open: boolean;
   services: ExportServiceLike[];
   loadingFormat: ExportFileFormat | null;
+  exportError: string | null;
   onClose: () => void;
   onExport: (params: { from: string; to: string; format: ExportFileFormat }) => Promise<void>;
 };
 
-export function ExportBottomSheet({ open, services, loadingFormat, onClose, onExport }: ExportBottomSheetProps) {
+export function ExportBottomSheet({ open, services, loadingFormat, exportError, onClose, onExport }: ExportBottomSheetProps) {
   const [isMobile, setIsMobile] = useState(typeof window === 'undefined' ? false : window.innerWidth < 768);
   const [isRendered, setIsRendered] = useState(open);
   const [isVisible, setIsVisible] = useState(open);
@@ -184,6 +185,8 @@ export function ExportBottomSheet({ open, services, loadingFormat, onClose, onEx
               </button>
             ))}
           </div>
+
+          {exportError && <p className="services-export-error" role="alert" aria-live="assertive">{exportError}</p>}
 
           <div className="services-export-divider">oppure scegli un intervallo</div>
 

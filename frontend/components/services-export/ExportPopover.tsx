@@ -7,6 +7,7 @@ type ExportPopoverProps = {
   anchorRef: RefObject<HTMLElement>;
   services: ExportServiceLike[];
   loadingFormat: ExportFileFormat | null;
+  exportError: string | null;
   onClose: () => void;
   onExport: (params: { from: string; to: string; format: ExportFileFormat }) => Promise<void>;
 };
@@ -18,6 +19,7 @@ export function ExportPopover({
   anchorRef,
   services,
   loadingFormat,
+  exportError,
   onClose,
   onExport
 }: ExportPopoverProps) {
@@ -69,7 +71,7 @@ export function ExportPopover({
       left: Math.min(maxLeft, Math.max(12, Math.round(rect.right - popoverWidth))),
       placement: shouldOpenAbove ? 'above' : 'below'
     });
-  }, [open, isDesktop, anchorRef]);
+  }, [open, isDesktop, anchorRef, exportError]);
 
   useEffect(() => {
     if (!open || !isDesktop) {
@@ -128,6 +130,7 @@ export function ExportPopover({
       aria-label="Esporta lista servizi"
     >
       <h4 className="services-export-title">Esporta lista servizi</h4>
+      {exportError && <p className="services-export-error" role="alert" aria-live="assertive">{exportError}</p>}
 
       <div className="services-export-quick-grid">
         {quickButtons.map((quick) => (

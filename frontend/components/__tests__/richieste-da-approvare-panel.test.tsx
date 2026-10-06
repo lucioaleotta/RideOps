@@ -92,6 +92,14 @@ describe('RichiesteDaApprovarePanel', () => {
     expect(screen.getByText('Da approvare')).toBeInTheDocument();
   });
 
+  it('mostra l\'orario richiesto nel dettaglio', async () => {
+    global.fetch = setupFetchMock([makeRichiesta({ oraInizio: '12:00:00', oraFine: '23:59:00' })]) as unknown as typeof fetch;
+
+    render(<RichiesteDaApprovarePanel />);
+
+    expect(await screen.findByText('12:00–23:59')).toBeInTheDocument();
+  });
+
   it('approva una richiesta in attesa', async () => {
     const fetchMock = setupFetchMock([makeRichiesta()]);
     global.fetch = fetchMock as unknown as typeof fetch;
@@ -108,6 +116,26 @@ describe('RichiesteDaApprovarePanel', () => {
     });
 
     await screen.findByText(/richiesta approvata/i);
+  });
+
+  it('evidenzia richieste eccezionali e conflitti con servizi assegnati', async () => {
+    const richiesta = makeRichiesta({
+      richiedeApprovazioneEccezionale: true,
+      conflittiTurno: [{
+        servizioId: 87,
+        inizio: '2026-10-05T09:00:00',
+        durataOre: 2,
+        partenza: 'Sede',
+        destinazione: 'Aeroporto'
+      }]
+    });
+    global.fetch = setupFetchMock([richiesta]) as unknown as typeof fetch;
+
+    render(<RichiesteDaApprovarePanel />);
+
+    await screen.findByText('Richiesta eccezionale: utilizza quota ferie scaduta e richiede conferma esplicita.');
+    expect(screen.getByText('Conflitto con 1 servizio/i assegnato/i')).toBeInTheDocument();
+    expect(screen.getByText(/Sede → Aeroporto/)).toBeInTheDocument();
   });
 
   it('rifiuta una richiesta richiedendo il motivo', async () => {
@@ -152,5 +180,28 @@ describe('RichiesteDaApprovarePanel', () => {
       expect(payload.tipoAssenzaId).toBe(6);
       expect(payload.driverId).toBe(12);
     });
+  });
+
+  it('mostra un messaggio di attesa esplicita per inserimento ferie scadute', async () => {
+    global.fetch = jest.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === '/api/tipi-assenza') return Promise.resolve({ ok: true, json: async () => TIPI_ASSENZA });
+      if (url === '/api/richieste-assenza/driver-options') return Promise.resolve({ ok: true, json: async () => DRIVER_OPTIONS });
+      if (url === '/api/richieste-assenza/inserimento-gestionale') {
+        return Promise.resolve({ ok: true, status: 201, json: async () => makeRichiesta({ origine: 'GESTIONALE', stato: 'IN_ATTESA', richiedeApprovazioneEccezionale: true }) });
+      }
+      if (url === '/api/richieste-assenza' && init?.method === undefined) return Promise.resolve({ ok: true, json: async () => [] });
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    }) as unknown as typeof fetch;
+
+    render(<RichiesteDaApprovarePanel />);
+    await screen.findByText(/nessuna richiesta trovata/i);
+    await userEvent.click(screen.getByRole('button', { name: /inserisci assenza/i }));
+    await userEvent.selectOptions(screen.getByLabelText(/^Driver$/i), '12');
+    await userEvent.selectOptions(screen.getByLabelText(/^Tipologia$/i), '1');
+    await userEvent.type(screen.getByLabelText(/^Dal$/i), '2026-10-10');
+    await userEvent.type(screen.getByLabelText(/^Al$/i), '2026-10-10');
+    await userEvent.click(screen.getByRole('button', { name: /^conferma$/i }));
+
+    await screen.findByText('Richiesta inserita in attesa di conferma: utilizza quota ferie scaduta');
   });
 });

@@ -31,3 +31,26 @@ export async function GET() {
 
   return NextResponse.json(payload);
 }
+
+export async function POST(request: Request) {
+  const token = cookies().get('access_token')?.value;
+  if (!token) {
+    return unauthorized();
+  }
+
+  const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
+  const response = await fetch(`${backendUrl}/api/tipi-assenza`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: await request.text(),
+    cache: 'no-store'
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    return parseBackendError(response.status, payload);
+  }
+  return NextResponse.json(payload, { status: response.status });
+}

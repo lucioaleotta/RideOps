@@ -7,7 +7,6 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -23,7 +22,7 @@ public class RichiestaAssenzaJpaAdapter implements RichiestaAssenzaRepositoryPor
     }
 
     @Override
-    public RichiestaAssenzaEntity save(@NonNull RichiestaAssenzaEntity entity) {
+    public RichiestaAssenzaEntity save(RichiestaAssenzaEntity entity) {
         if (entity.getTenantId() == null) {
             entity.setTenantId(tenantContext.requireTenantId());
         }
@@ -31,7 +30,7 @@ public class RichiestaAssenzaJpaAdapter implements RichiestaAssenzaRepositoryPor
     }
 
     @Override
-    public Optional<RichiestaAssenzaEntity> findById(@NonNull Long id) {
+    public Optional<RichiestaAssenzaEntity> findById(Long id) {
         return richiestaAssenzaRepository.findByIdAndTenantId(id, tenantContext.requireTenantId());
     }
 
@@ -41,16 +40,22 @@ public class RichiestaAssenzaJpaAdapter implements RichiestaAssenzaRepositoryPor
     }
 
     @Override
-    public List<RichiestaAssenzaEntity> findAllForDriver(@NonNull Long driverId) {
+    public List<RichiestaAssenzaEntity> findAllForDriver(Long driverId) {
         return richiestaAssenzaRepository.findAllByTenantIdAndDriverIdOrderByDataInizioDesc(
             tenantContext.requireTenantId(), driverId);
     }
 
     @Override
-    public List<RichiestaAssenzaEntity> findOverlapping(@NonNull Long driverId,
-                                                        @NonNull Collection<StatoRichiestaAssenza> statiOccupanti,
-                                                        @NonNull LocalDate dataInizio,
-                                                        @NonNull LocalDate dataFine) {
+    public long countPendingForTenant() {
+        return richiestaAssenzaRepository.countByTenantIdAndStato(
+            tenantContext.requireTenantId(), StatoRichiestaAssenza.IN_ATTESA);
+    }
+
+    @Override
+    public List<RichiestaAssenzaEntity> findOverlapping(Long driverId,
+                                                        Collection<StatoRichiestaAssenza> statiOccupanti,
+                                                        LocalDate dataInizio,
+                                                        LocalDate dataFine) {
         return richiestaAssenzaRepository
             .findAllByDriverIdAndStatoInAndDataInizioLessThanEqualAndDataFineGreaterThanEqual(
                 driverId, statiOccupanti, dataFine, dataInizio);

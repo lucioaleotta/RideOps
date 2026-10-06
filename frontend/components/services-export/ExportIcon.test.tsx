@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { downloadServicesExport } from '../../services/exportService';
 import { ExportIcon } from './ExportIcon';
 
 jest.mock('../../services/exportService', () => ({
@@ -20,7 +21,6 @@ describe('ExportIcon', () => {
       <ExportIcon
         services={services}
         onBeforeExport={jest.fn()}
-        onExportError={jest.fn()}
         onExportSuccess={jest.fn()}
       />
     );
@@ -35,7 +35,6 @@ describe('ExportIcon', () => {
       <ExportIcon
         services={services}
         onBeforeExport={jest.fn()}
-        onExportError={jest.fn()}
         onExportSuccess={jest.fn()}
       />
     );
@@ -53,7 +52,6 @@ describe('ExportIcon', () => {
       <ExportIcon
         services={services}
         onBeforeExport={jest.fn()}
-        onExportError={jest.fn()}
         onExportSuccess={jest.fn()}
       />
     );
@@ -70,7 +68,6 @@ describe('ExportIcon', () => {
       <ExportIcon
         services={services}
         onBeforeExport={jest.fn()}
-        onExportError={jest.fn()}
         onExportSuccess={jest.fn()}
       />
     );
@@ -84,7 +81,6 @@ describe('ExportIcon', () => {
       <ExportIcon
         services={services}
         onBeforeExport={jest.fn()}
-        onExportError={jest.fn()}
         onExportSuccess={jest.fn()}
       />
     );
@@ -92,5 +88,23 @@ describe('ExportIcon', () => {
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /esporta lista servizi/i })).not.toHaveAttribute('title');
     });
+  });
+
+  it('mostra l’errore di export dentro il popover aperto', async () => {
+    (downloadServicesExport as jest.Mock).mockRejectedValueOnce(new Error('Errore export test'));
+    render(
+      <ExportIcon
+        services={services}
+        onBeforeExport={jest.fn()}
+        onExportSuccess={jest.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /esporta lista servizi/i }));
+    const dialog = await screen.findByRole('dialog', { name: /esporta lista servizi/i });
+    fireEvent.click(screen.getByRole('button', { name: /scarica csv/i }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Errore export test');
+    expect(dialog).toBeInTheDocument();
   });
 });

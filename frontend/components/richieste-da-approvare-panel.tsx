@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { FilterDropdown } from './filter-dropdown';
 import { StatusNotice } from './status-notice';
+import { absenceTimeRange } from '../lib/absence-time';
 import type {
   DriverAssenzaOption,
   InserimentoGestionalePayload,
@@ -16,6 +17,9 @@ type InserimentoFormState = {
   tipoAssenzaId: string;
   dataInizio: string;
   dataFine: string;
+  giornataIntera: boolean;
+  oraInizio: string;
+  oraFine: string;
   motivazione: string;
 };
 
@@ -31,6 +35,9 @@ const defaultInserimentoForm: InserimentoFormState = {
   tipoAssenzaId: '',
   dataInizio: '',
   dataFine: '',
+  giornataIntera: true,
+  oraInizio: '',
+  oraFine: '',
   motivazione: ''
 };
 
@@ -141,6 +148,9 @@ export function RichiesteDaApprovarePanel() {
     return map;
   }, [driverOptions]);
 
+  const inserimentoTipo = tipiAssenza.find((tipo) => String(tipo.id) === inserimentoForm.tipoAssenzaId);
+  const inserimentoRichiedeOrario = Boolean(inserimentoTipo?.richiedeOrario) || !inserimentoForm.giornataIntera;
+
   const filteredRichieste = useMemo(
     () => (statoFilter ? richieste.filter((r) => r.stato === statoFilter) : richieste),
     [richieste, statoFilter]
@@ -207,12 +217,18 @@ export function RichiesteDaApprovarePanel() {
       setError('Compila tutti i campi obbligatori');
       return;
     }
+    if (inserimentoRichiedeOrario && (!inserimentoForm.oraInizio || !inserimentoForm.oraFine)) {
+      setError('Ora di inizio e ora di fine sono obbligatorie per questa tipologia');
+      return;
+    }
     const payload: InserimentoGestionalePayload = {
       driverId: Number(inserimentoForm.driverId),
       tipoAssenzaId: Number(inserimentoForm.tipoAssenzaId),
       dataInizio: inserimentoForm.dataInizio,
       dataFine: inserimentoForm.dataFine,
-      giornataIntera: true,
+      giornataIntera: inserimentoForm.giornataIntera,
+      oraInizio: inserimentoRichiedeOrario ? inserimentoForm.oraInizio : null,
+      oraFine: inserimentoRichiedeOrario ? inserimentoForm.oraFine : null,
       motivazione: inserimentoForm.motivazione || null
     };
     await submitInserimento(payload, 'Assenza inserita per il driver');
@@ -249,7 +265,9 @@ export function RichiesteDaApprovarePanel() {
       if (!response.ok) {
         throw new Error(responsePayload?.message ?? 'Impossibile completare l\'operazione');
       }
-      setSuccess(successMessage);
+      setSuccess(responsePayload?.richiedeApprovazioneEccezionale
+        ? 'Richiesta inserita in attesa di conferma: utilizza quota ferie scaduta'
+        : successMessage);
       setInserimentoOpen(false);
       setSganciamentoOpen(false);
       setInserimentoForm(defaultInserimentoForm);
@@ -348,7 +366,30 @@ export function RichiesteDaApprovarePanel() {
                   <span className="assenza-detail-label">Periodo</span>
                   <strong>{formatDate(richiesta.dataInizio)}{richiesta.dataInizio !== richiesta.dataFine ? ` — ${formatDate(richiesta.dataFine)}` : ''}</strong>
                 </div>
+                {absenceTimeRange(richiesta) && (
+                  <div>
+                    <span className="assenza-detail-label">Orario</span>
+                    <strong>{absenceTimeRange(richiesta)}</strong>
+                  </div>
+                )}
               </div>
+              {richiesta.richiedeApprovazioneEccezionale && (
+                <StatusNotice tone="warning">
+                  Richiesta eccezionale: utilizza quota ferie scaduta e richiede conferma esplicita.
+                </StatusNotice>
+              )}
+              {(richiesta.conflittiTurno?.length ?? 0) > 0 && (
+                <div className="assenza-conflict-notice" role="status">
+                  <strong>Conflitto con {richiesta.conflittiTurno?.length} servizio/i assegnato/i</strong>
+                  <ul>
+                    {richiesta.conflittiTurno?.map((conflitto) => (
+                      <li key={conflitto.servizioId}>
+                        {formatDate(conflitto.inizio.slice(0, 10))} · {conflitto.inizio.slice(11, 16)} · {conflitto.partenza} → {conflitto.destinazione}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {richiesta.motivazione && (
                 <p className="assenza-request-note">{richiesta.motivazione}</p>
               )}
@@ -483,6 +524,43 @@ export function RichiesteDaApprovarePanel() {
                     required
                   />
                 </label>
+
+                <label className="driver-form-field driver-form-field--full-width">
+                  <span>Durata</span>
+                  <select
+                    className="form-input"
+                    value={inserimentoForm.giornataIntera ? 'intera' : 'parziale'}
+                    onChange={(event) => setInserimentoForm((prev) => ({ ...prev, giornataIntera: event.target.value === 'intera' }))}
+                  >
+                    <option value="intera">Giornata intera</option>
+                    <option value="parziale">Orario specifico</option>
+                  </select>
+                </label>
+
+                {inserimentoRichiedeOrario && (
+                  <>
+                    <label className="driver-form-field">
+                      <span>Ora inizio</span>
+                      <input
+                        className="form-input"
+                        type="time"
+                        value={inserimentoForm.oraInizio}
+                        onChange={(event) => setInserimentoForm((prev) => ({ ...prev, oraInizio: event.target.value }))}
+                        required
+                      />
+                    </label>
+                    <label className="driver-form-field">
+                      <span>Ora fine</span>
+                      <input
+                        className="form-input"
+                        type="time"
+                        value={inserimentoForm.oraFine}
+                        onChange={(event) => setInserimentoForm((prev) => ({ ...prev, oraFine: event.target.value }))}
+                        required
+                      />
+                    </label>
+                  </>
+                )}
 
                 <label className="driver-form-field driver-form-field--full-width">
                   <span>Motivazione (facoltativa)</span>

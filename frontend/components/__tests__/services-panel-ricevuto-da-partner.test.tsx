@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ServicesPanel } from '../services-panel';
 
@@ -42,8 +42,14 @@ function makeService(overrides: Partial<{
 
 const PARTNER = { id: 7, ragioneSociale: 'Acme Partner Srl', deleted: false };
 
-function setupFetchMock(service: ReturnType<typeof makeService>) {
-  return jest.fn().mockImplementation((url: string) => {
+function setupFetchMock(
+  service: ReturnType<typeof makeService>,
+  failingRequest?: { method: string; urlPattern: RegExp; message: string }
+) {
+  return jest.fn().mockImplementation((url: string, init?: RequestInit) => {
+    if (failingRequest && init?.method === failingRequest.method && failingRequest.urlPattern.test(url)) {
+      return Promise.resolve({ ok: false, json: async () => ({ message: failingRequest.message }) });
+    }
     if (url.includes('/api/gestionale/drivers')) {
       return Promise.resolve({ ok: true, json: async () => [] });
     }
@@ -85,7 +91,7 @@ async function openEditForm(user: ReturnType<typeof userEvent.setup>) {
 
 // ─── Test suite ──────────────────────────────────────────────────────────────
 
-describe('ServicesPanel – checkbox "Ricevuto da partner"', () => {
+describe('ServicesPanel', () => {
   beforeEach(() => {
     // Il pulsante "Nuovo servizio" viene renderizzato in un portal su questo elemento
     const portalTarget = document.createElement('div');
@@ -125,6 +131,68 @@ describe('ServicesPanel – checkbox "Ricevuto da partner"', () => {
     await user.click(checkbox);
 
     expect(screen.getByRole('combobox', { name: /partner/i })).toBeInTheDocument();
+  });
+
+  it('mostra l’errore di creazione dentro il popup, non dietro al backdrop', async () => {
+    global.fetch = setupFetchMock(makeService(), {
+      method: 'POST',
+      urlPattern: /^\/api\/services$/,
+      message: 'Errore di creazione test'
+    }) as typeof fetch;
+    const user = userEvent.setup();
+
+    render(<ServicesPanel />);
+    await user.click(await screen.findByRole('button', { name: /nuovo servizio/i }));
+    fireEvent.change(screen.getByLabelText(/data\/ora inizio/i), { target: { value: '2026-10-03T10:00' } });
+    await user.type(screen.getByLabelText('Pickup'), 'Via Roma 1');
+    await user.type(screen.getByLabelText('Destinazione'), 'Aeroporto');
+    await user.click(screen.getByRole('button', { name: /crea servizio/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /nuovo servizio/i });
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Errore di creazione test');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('mostra l’errore di affidamento dentro il popup del partner', async () => {
+    global.fetch = setupFetchMock(makeService(), {
+      method: 'PATCH',
+      urlPattern: /\/api\/services\/1\/outsource$/,
+      message: 'Errore di affidamento test'
+    }) as typeof fetch;
+    const user = userEvent.setup();
+
+    render(<ServicesPanel />);
+    await user.click(await screen.findByRole('button', { name: /azioni servizio 1/i }));
+    await user.click(await screen.findByRole('button', { name: /apri dettaglio/i }));
+    await user.click(await screen.findByRole('button', { name: /affida servizio al partner/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /affida servizio a partner/i });
+    await user.selectOptions(within(dialog).getByRole('combobox', { name: /^partner$/i }), '7');
+    await user.type(within(dialog).getByLabelText(/prezzo al partner esecutore/i), '75');
+    await user.click(within(dialog).getByRole('button', { name: /conferma affidamento/i }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Errore di affidamento test');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('mantiene aperta la conferma eliminazione e mostra lì l’errore', async () => {
+    global.fetch = setupFetchMock(makeService(), {
+      method: 'DELETE',
+      urlPattern: /\/api\/services\/1$/,
+      message: 'Errore di eliminazione test'
+    }) as typeof fetch;
+    const user = userEvent.setup();
+
+    render(<ServicesPanel />);
+    await user.click(await screen.findByRole('button', { name: /azioni servizio 1/i }));
+    await user.click(await screen.findByRole('button', { name: /apri dettaglio/i }));
+    await user.click(await screen.findByRole('button', { name: /elimina/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /conferma eliminazione servizio/i });
+    await user.click(within(dialog).getByRole('button', { name: /^elimina$/i }));
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent('Errore di eliminazione test');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
   });
 
   // ─── Modifica – INTERNAL ──────────────────────────────────────────────────
@@ -246,7 +314,7 @@ describe('ServicesPanel – checkbox "Ricevuto da partner"', () => {
     expect(screen.queryByLabelText(/ricevuto da partner/i)).not.toBeInTheDocument();
   });
 
-  it('mostra il campo readonly "Modalita gestione servizio" per OUTSOURCED in modifica', async () => {
+  it('mostra la nota di assegnazione interna bloccata per OUTSOURCED in modifica', async () => {
     const service = makeService({ serviceAssignmentType: 'OUTSOURCED', partnerId: PARTNER.id });
     global.fetch = setupFetchMock(service) as typeof fetch;
     const user = userEvent.setup();
@@ -256,7 +324,6 @@ describe('ServicesPanel – checkbox "Ricevuto da partner"', () => {
 
     await screen.findByRole('heading', { name: /modifica servizio/i });
 
-    const readonlyInput = screen.getByDisplayValue(/affidato/i);
-    expect(readonlyInput).toBeDisabled();
+    expect(screen.getByText(/assegnazione interna bloccata/i)).toBeInTheDocument();
   });
 });

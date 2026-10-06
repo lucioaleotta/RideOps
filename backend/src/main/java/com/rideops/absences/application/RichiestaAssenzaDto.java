@@ -25,6 +25,7 @@ public record RichiestaAssenzaDto(
     Long approvataDa,
     LocalDateTime dataDecisione,
     LocalDateTime creatoIl,
-    LocalDateTime aggiornatoIl
+    LocalDateTime aggiornatoIl,
+    java.util.List<ConflittoTurnoAssenzaDto> conflittiTurno
 ) {
 }

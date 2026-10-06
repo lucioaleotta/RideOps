@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 import com.rideops.absences.adapters.out.TipoAssenzaEntity;
 import com.rideops.absences.domain.OrigineRichiestaAssenza;
@@ -28,11 +29,18 @@ class InserimentoGestionaleAssenzaUseCaseTest {
     @Mock
     private TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort;
 
+    @Mock
+    private SaldiDriverService saldiDriverService;
+
+    @Mock
+    private VerificaConflittiAssenzaService verificaConflittiAssenzaService;
+
     private InserimentoGestionaleAssenzaUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new InserimentoGestionaleAssenzaUseCase(richiestaAssenzaRepositoryPort, tipoAssenzaRepositoryPort);
+        useCase = new InserimentoGestionaleAssenzaUseCase(
+            richiestaAssenzaRepositoryPort, tipoAssenzaRepositoryPort, saldiDriverService, verificaConflittiAssenzaService);
     }
 
     @Test
@@ -56,5 +64,30 @@ class InserimentoGestionaleAssenzaUseCaseTest {
         assertEquals(StatoRichiestaAssenza.APPROVATA, dto.stato());
         assertEquals(OrigineRichiestaAssenza.GESTIONALE, dto.origine());
         assertEquals(99L, dto.approvataDa());
+    }
+
+    @Test
+    void expiredHolidayInsertedByGestionaleRemainsPendingForExplicitApproval() {
+        TipoAssenzaEntity ferie = new TipoAssenzaEntity();
+        ferie.setCodice("FER");
+        ferie.setNome("Ferie");
+        ferie.setUnitaMisura(UnitaMisuraAssenza.GIORNI);
+        ferie.setOrigineDriverConsentita(true);
+        ferie.setOrigineGestionaleConsentita(true);
+        ferie.setAttivo(true);
+
+        when(tipoAssenzaRepositoryPort.findById(1L)).thenReturn(Optional.of(ferie));
+        when(richiestaAssenzaRepositoryPort.findOverlapping(eq(5L), anyCollection(), any(), any())).thenReturn(List.of());
+        when(saldiDriverService.richiedeApprovazioneEccezionale(
+            5L, 1L, LocalDate.of(2026, 10, 10), LocalDate.of(2026, 10, 10), true, null, null)).thenReturn(true);
+        when(richiestaAssenzaRepositoryPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RichiestaAssenzaDto dto = useCase.execute(
+            5L, 1L, LocalDate.of(2026, 10, 10), LocalDate.of(2026, 10, 10), true, null, null, "Ferie residue", 99L);
+
+        assertEquals(StatoRichiestaAssenza.IN_ATTESA, dto.stato());
+        assertEquals(true, dto.richiedeApprovazioneEccezionale());
+        verify(saldiDriverService).richiedeApprovazioneEccezionale(
+            5L, 1L, LocalDate.of(2026, 10, 10), LocalDate.of(2026, 10, 10), true, null, null);
     }
 }

@@ -2,12 +2,17 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { StatusNotice } from './status-notice';
+import { absenceTimeRange } from '../lib/absence-time';
 import type {
+  AssenzaSessionUser,
   NuovaRichiestaAssenzaPayload,
   RichiestaAssenza,
+  SaldoAssenza,
   StatoRichiestaAssenza,
   TipoAssenza
 } from '../types/absences';
+
+type AssenzeViewMode = 'calendario' | 'elenco';
 
 type FormState = {
   tipoAssenzaId: string;
@@ -37,6 +42,54 @@ const statoLabels: Record<StatoRichiestaAssenza, string> = {
   ANNULLATA: 'Annullata'
 };
 
+const driverDuplicateRequestMessage = 'Hai già inserito una richiesta di assenza nello stesso periodo.';
+const calendarWeekdays = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+
+function localDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function calendarMonthDays(month: Date) {
+  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+  const weekdayOffset = (firstDay.getDay() + 6) % 7;
+  const dayCount = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const cellCount = Math.ceil((weekdayOffset + dayCount) / 7) * 7;
+  const gridStart = new Date(firstDay);
+  gridStart.setDate(firstDay.getDate() - weekdayOffset);
+  return Array.from({ length: cellCount }, (_, index) => {
+    const day = new Date(gridStart);
+    day.setDate(gridStart.getDate() + index);
+    return day;
+  });
+}
+
+function formatCalendarMonth(date: Date) {
+  const label = date.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toLocaleUpperCase('it-IT') + label.slice(1);
+}
+
+function calendarCategoryClass(code: string | null) {
+  switch (code) {
+    case 'FER': return 'assenza-calendar-event--fer';
+    case 'MAL': return 'assenza-calendar-event--mal';
+    case 'PER': return 'assenza-calendar-event--per';
+    case 'RIP': return 'assenza-calendar-event--rip';
+    case 'CON': return 'assenza-calendar-event--con';
+    case 'SGA': return 'assenza-calendar-event--sga';
+    default: return 'assenza-calendar-event--default';
+  }
+}
+
+function calendarTimeLabel(richiesta: RichiestaAssenza) {
+  const range = absenceTimeRange(richiesta);
+  if (range) return ` ${range}`;
+  if (richiesta.giornataIntera) return '';
+  return ' · parziale';
+}
+
 function StatoBadge({ stato }: { stato: StatoRichiestaAssenza }) {
   return (
     <span
@@ -56,6 +109,9 @@ function formatDate(value: string) {
 }
 
 function canDriverCancel(richiesta: RichiestaAssenza) {
+  if (richiesta.origine === 'GESTIONALE') {
+    return false;
+  }
   if (richiesta.stato !== 'IN_ATTESA' && richiesta.stato !== 'APPROVATA') {
     return false;
   }
@@ -68,31 +124,48 @@ function canDriverCancel(richiesta: RichiestaAssenza) {
 export function LeMieAssenzePanel() {
   const [tipiAssenza, setTipiAssenza] = useState<TipoAssenza[]>([]);
   const [richieste, setRichieste] = useState<RichiestaAssenza[]>([]);
+  const [saldi, setSaldi] = useState<SaldoAssenza[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<FormState>(defaultForm);
   const [submitting, setSubmitting] = useState(false);
+  const [viewMode, setViewMode] = useState<AssenzeViewMode>('calendario');
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
 
   async function loadData() {
     setLoading(true);
     setError(null);
     try {
-      const [tipiResponse, richiesteResponse] = await Promise.all([
+      const meResponse = await fetch('/api/auth/me', { cache: 'no-store' });
+      const mePayload = await meResponse.json().catch(() => ({})) as AssenzaSessionUser;
+      if (!meResponse.ok || !mePayload.id) {
+        throw new Error('Impossibile identificare il driver per caricare i saldi');
+      }
+      const [tipiResponse, richiesteResponse, saldiResponse] = await Promise.all([
         fetch('/api/tipi-assenza', { cache: 'no-store' }),
-        fetch('/api/richieste-assenza', { cache: 'no-store' })
+        fetch('/api/richieste-assenza', { cache: 'no-store' }),
+        fetch(`/api/driver/${mePayload.id}/saldi`, { cache: 'no-store' })
       ]);
       const tipiPayload = await tipiResponse.json().catch(() => []);
       const richiestePayload = await richiesteResponse.json().catch(() => []);
+      const saldiPayload = await saldiResponse.json().catch(() => ({}));
       if (!tipiResponse.ok) {
         throw new Error(tipiPayload?.message ?? 'Impossibile caricare i tipi di assenza');
       }
       if (!richiesteResponse.ok) {
         throw new Error(richiestePayload?.message ?? 'Impossibile caricare le richieste');
       }
+      if (!saldiResponse.ok) {
+        throw new Error(saldiPayload?.message ?? 'Impossibile caricare i saldi');
+      }
       setTipiAssenza(tipiPayload);
       setRichieste(richiestePayload);
+      setSaldi(saldiPayload);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore imprevisto');
     } finally {
@@ -121,6 +194,53 @@ export function LeMieAssenzePanel() {
       .filter((r) => r.stato === 'APPROVATA' && new Date(`${r.dataInizio}T00:00:00`).getTime() >= today.getTime())
       .sort((a, b) => a.dataInizio.localeCompare(b.dataInizio))[0] ?? null;
   }, [richieste]);
+
+  const calendarDays = useMemo(() => calendarMonthDays(calendarMonth), [calendarMonth]);
+  const calendarEntries = useMemo(() => richieste.filter((richiesta) =>
+    richiesta.stato === 'APPROVATA' || richiesta.stato === 'IN_ATTESA'
+  ), [richieste]);
+  const calendarEntriesByDay = useMemo(() => {
+    const entriesByDay = new Map<string, RichiestaAssenza[]>();
+    const monthStart = localDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1));
+    const monthEnd = localDateKey(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0));
+    calendarEntries.forEach((richiesta) => {
+      if (richiesta.dataFine < monthStart || richiesta.dataInizio > monthEnd) return;
+      const start = richiesta.dataInizio < monthStart ? monthStart : richiesta.dataInizio;
+      const end = richiesta.dataFine > monthEnd ? monthEnd : richiesta.dataFine;
+      const day = new Date(`${start}T00:00:00`);
+      while (localDateKey(day) <= end) {
+        const key = localDateKey(day);
+        const dayEntries = entriesByDay.get(key) ?? [];
+        dayEntries.push(richiesta);
+        entriesByDay.set(key, dayEntries);
+        day.setDate(day.getDate() + 1);
+      }
+    });
+    entriesByDay.forEach((dayEntries) => dayEntries.sort((left, right) =>
+      left.dataInizio.localeCompare(right.dataInizio) || left.id - right.id
+    ));
+    return entriesByDay;
+  }, [calendarEntries, calendarMonth]);
+
+  const calendarMonthEntries = useMemo(() => Array.from(
+    new Map([...calendarEntriesByDay.values()].flat().map((richiesta) => [richiesta.id, richiesta])).values()
+  ), [calendarEntriesByDay]);
+
+  const calendarLegend = useMemo(() => {
+    const visibleTypes = new Map<number, { codice: string | null; nome: string | null }>();
+    calendarMonthEntries.forEach((richiesta) => {
+      if (visibleTypes.has(richiesta.tipoAssenzaId)) return;
+      visibleTypes.set(richiesta.tipoAssenzaId, {
+        codice: richiesta.tipoAssenzaCodice,
+        nome: richiesta.tipoAssenzaNome
+      });
+    });
+    return [...visibleTypes.entries()].map(([id, type]) => ({ id, ...type }));
+  }, [calendarMonthEntries]);
+
+  function moveCalendarMonth(offset: number) {
+    setCalendarMonth((current) => new Date(current.getFullYear(), current.getMonth() + offset, 1));
+  }
 
   function openForm() {
     setForm(defaultForm);
@@ -163,9 +283,14 @@ export function LeMieAssenzePanel() {
       });
       const responsePayload = await response.json().catch(() => ({}));
       if (!response.ok) {
+        if (responsePayload?.message === 'Esiste già una richiesta di assenza nello stesso periodo per questo driver') {
+          throw new Error(driverDuplicateRequestMessage);
+        }
         throw new Error(responsePayload?.message ?? 'Impossibile creare la richiesta');
       }
-      setSuccess('Richiesta inviata con successo');
+      setSuccess(responsePayload?.richiedeApprovazioneEccezionale
+        ? 'Richiesta inviata: la quota ferie scaduta richiede conferma del Gestionale'
+        : 'Richiesta inviata con successo');
       setFormOpen(false);
       await loadData();
     } catch (err) {
@@ -242,13 +367,62 @@ export function LeMieAssenzePanel() {
         </article>
       </div>
 
+      <section className="assenza-section assenza-saldi-section" aria-labelledby="driver-saldi-title">
+        <div className="assenza-section-heading">
+          <div>
+            <h2 id="driver-saldi-title">I tuoi saldi</h2>
+            <p>Residuo disponibile per tipologia; le ferie scadute sono indicate separatamente.</p>
+          </div>
+        </div>
+        {saldi.length === 0 ? (
+          <div className="assenza-empty-state assenza-saldi-empty">
+            <strong>Saldi non disponibili</strong>
+            <span>Contatta il Gestionale per verificare i tipi di assenza configurati.</span>
+          </div>
+        ) : (
+          <div className="assenza-saldi-grid">
+            {saldi.map((saldo) => (
+              <article className="assenza-saldo-card" key={saldo.tipoAssenzaId}>
+                <div className="assenza-saldo-heading">
+                  <span className="assenza-saldo-type-mark" aria-hidden="true">{saldo.codice.slice(0, 2)}</span>
+                  <div><strong>{saldo.nome}</strong><small>{saldo.unitaMisura === 'ORE' ? 'Saldo in ore' : 'Saldo in giorni'}</small></div>
+                </div>
+                <div className="assenza-saldo-value">
+                  <strong>{saldo.saldoAnnuale ? saldo.residuoValido.toLocaleString('it-IT') : '—'}</strong>
+                  <span>{saldo.saldoAnnuale ? (saldo.unitaMisura === 'ORE' ? 'ore disponibili' : 'giorni disponibili') : 'nessun monte annuale'}</span>
+                </div>
+                {saldo.codice === 'FER' && saldo.saldoAnnuale && (
+                  <div className={saldo.residuoScaduto > 0 ? 'assenza-saldo-expired is-expired' : 'assenza-saldo-expired'}>
+                    <span>Quota scaduta</span>
+                    <strong>{saldo.residuoScaduto.toLocaleString('it-IT')} giorni</strong>
+                  </div>
+                )}
+                <div className="assenza-saldo-progress" aria-hidden="true">
+                  <span style={{ width: `${saldo.saldoCaricato && saldo.quantitaMaturata > 0 ? Math.min(100, (saldo.residuoValido / saldo.quantitaMaturata) * 100) : 0}%` }} />
+                </div>
+                <small className="assenza-saldo-footnote">
+                  {!saldo.saldoAnnuale
+                    ? 'Questa tipologia non prevede una quota annuale automatica.'
+                    : saldo.saldoCaricato
+                    ? `Maturato ${saldo.quantitaMaturata.toLocaleString('it-IT')} · utilizzato ${saldo.quantitaUtilizzata.toLocaleString('it-IT')}`
+                    : `Saldo annuale ${new Date().getFullYear()}: residuo ${saldo.residuoValido.toLocaleString('it-IT')}.`}
+                </small>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section className="assenza-section" aria-labelledby="driver-assenze-list-title">
         <div className="assenza-section-heading">
           <div>
-            <h2 id="driver-assenze-list-title">Le tue richieste</h2>
-            <p>Consulta lo stato e il periodo delle tue assenze.</p>
+            <h2 id="driver-assenze-list-title">Le tue assenze</h2>
+            <p>Consulta a calendario le assenze approvate e le richieste in attesa, oppure visualizza l’elenco completo.</p>
           </div>
-          <span className="assenza-section-count">{richieste.length}</span>
+          <div className="assenza-view-switch" role="group" aria-label="Vista delle assenze">
+            <button type="button" className={viewMode === 'calendario' ? 'is-active' : ''} aria-pressed={viewMode === 'calendario'} onClick={() => setViewMode('calendario')}>Calendario</button>
+            <button type="button" className={viewMode === 'elenco' ? 'is-active' : ''} aria-pressed={viewMode === 'elenco'} onClick={() => setViewMode('elenco')}>Elenco</button>
+          </div>
         </div>
 
       {loading ? (
@@ -258,6 +432,53 @@ export function LeMieAssenzePanel() {
           <span className="assenza-empty-icon" aria-hidden="true">▣</span>
           <strong>Nessuna richiesta di assenza presente.</strong>
           <span>Quando invierai una richiesta, la troverai qui.</span>
+        </div>
+      ) : viewMode === 'calendario' ? (
+        <div className="assenza-calendar" aria-label="Calendario delle tue assenze">
+          <div className="assenza-calendar-toolbar">
+            <button type="button" className="assenza-calendar-nav" aria-label="Mese precedente" onClick={() => moveCalendarMonth(-1)}>‹</button>
+            <h3>{formatCalendarMonth(calendarMonth)}</h3>
+            <button type="button" className="assenza-calendar-nav" aria-label="Mese successivo" onClick={() => moveCalendarMonth(1)}>›</button>
+          </div>
+          <div className="assenza-calendar-grid-scroll">
+            <div className="assenza-calendar-weekdays" aria-hidden="true">
+              {calendarWeekdays.map((day) => <span key={day}>{day}</span>)}
+            </div>
+            <div className="assenza-calendar-grid">
+              {calendarDays.map((day) => {
+                const key = localDateKey(day);
+                const dayEntries = calendarEntriesByDay.get(key) ?? [];
+                const isCurrentMonth = day.getMonth() === calendarMonth.getMonth();
+                return (
+                  <article key={key} className={`assenza-calendar-day${isCurrentMonth ? '' : ' is-outside'}`}>
+                    <span className="assenza-calendar-day-number">{day.getDate()}</span>
+                    <div className="assenza-calendar-events">
+                      {dayEntries.slice(0, 3).map((richiesta) => (
+                        <div
+                          key={richiesta.id}
+                          className={`assenza-calendar-event ${calendarCategoryClass(richiesta.tipoAssenzaCodice)}`}
+                          title={`${richiesta.tipoAssenzaNome ?? richiesta.tipoAssenzaCodice ?? 'Assenza'} · ${statoLabels[richiesta.stato]}${calendarTimeLabel(richiesta)}`}
+                        >
+                          <span>{richiesta.tipoAssenzaNome ?? richiesta.tipoAssenzaCodice ?? 'Assenza'}{calendarTimeLabel(richiesta)}</span>
+                          {richiesta.stato === 'IN_ATTESA' && <small>In attesa</small>}
+                        </div>
+                      ))}
+                      {dayEntries.length > 3 && <span className="assenza-calendar-more">+{dayEntries.length - 3} altre</span>}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+          <div className="assenza-calendar-legend" aria-label="Legenda tipologie di assenza">
+            {calendarLegend.map((type) => (
+              <span key={type.id}><i className={`assenza-calendar-legend-dot ${calendarCategoryClass(type.codice)}`} />{type.nome ?? type.codice ?? 'Assenza'}</span>
+            ))}
+            <span><i className="assenza-calendar-legend-dot assenza-calendar-legend-dot--pending" />Richiesta in attesa</span>
+          </div>
+          {calendarMonthEntries.length === 0 && (
+            <p className="assenza-calendar-empty">In questo mese non ci sono assenze approvate o richieste in attesa.</p>
+          )}
         </div>
       ) : (
         <ul className="assenza-request-list assenza-request-list--driver">
@@ -282,7 +503,18 @@ export function LeMieAssenzePanel() {
                   <span className="assenza-detail-label">Periodo</span>
                   <strong>{formatDate(richiesta.dataInizio)} — {formatDate(richiesta.dataFine)}</strong>
                 </div>
+                {absenceTimeRange(richiesta) && (
+                  <div>
+                    <span className="assenza-detail-label">Orario</span>
+                    <strong>{absenceTimeRange(richiesta)}</strong>
+                  </div>
+                )}
               </div>
+              {richiesta.richiedeApprovazioneEccezionale && (
+                <StatusNotice tone="warning">
+                  La richiesta usa quota ferie scaduta e richiede una conferma esplicita del Gestionale.
+                </StatusNotice>
+              )}
               {richiesta.motivazione && (
                 <p className="assenza-request-note">{richiesta.motivazione}</p>
               )}

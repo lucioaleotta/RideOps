@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -20,11 +21,15 @@ public class ListRichiesteAssenzaUseCase {
 
     private final RichiestaAssenzaRepositoryPort richiestaAssenzaRepositoryPort;
     private final TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort;
+    private final VerificaConflittiAssenzaService verificaConflittiAssenzaService;
 
+    @Autowired
     public ListRichiesteAssenzaUseCase(RichiestaAssenzaRepositoryPort richiestaAssenzaRepositoryPort,
-                                       TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort) {
+                                       TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort,
+                                       VerificaConflittiAssenzaService verificaConflittiAssenzaService) {
         this.richiestaAssenzaRepositoryPort = richiestaAssenzaRepositoryPort;
         this.tipoAssenzaRepositoryPort = tipoAssenzaRepositoryPort;
+        this.verificaConflittiAssenzaService = verificaConflittiAssenzaService;
     }
 
     public List<RichiestaAssenzaDto> execute(Long driverIdScope,
@@ -34,6 +39,22 @@ public class ListRichiesteAssenzaUseCase {
                                              OrigineRichiestaAssenza origineFilter,
                                              LocalDate dataInizioFilter,
                                              LocalDate dataFineFilter) {
+        return execute(driverIdScope, driverIdFilter, statoFilter, tipoAssenzaIdFilter,
+            origineFilter, dataInizioFilter, dataFineFilter, false);
+    }
+
+    public long countPendingForTenant() {
+        return richiestaAssenzaRepositoryPort.countPendingForTenant();
+    }
+
+    public List<RichiestaAssenzaDto> execute(Long driverIdScope,
+                                             Long driverIdFilter,
+                                             StatoRichiestaAssenza statoFilter,
+                                             Long tipoAssenzaIdFilter,
+                                             OrigineRichiestaAssenza origineFilter,
+                                             LocalDate dataInizioFilter,
+                                             LocalDate dataFineFilter,
+                                             boolean includeTurnConflicts) {
         List<RichiestaAssenzaEntity> base = driverIdScope != null
             ? richiestaAssenzaRepositoryPort.findAllForDriver(driverIdScope)
             : richiestaAssenzaRepositoryPort.findAllForTenant();
@@ -47,12 +68,21 @@ public class ListRichiesteAssenzaUseCase {
             .filter(r -> origineFilter == null || origineFilter == r.getOrigine())
             .filter(r -> dataInizioFilter == null || !r.getDataFine().isBefore(dataInizioFilter))
             .filter(r -> dataFineFilter == null || !r.getDataInizio().isAfter(dataFineFilter))
-            .map(r -> RichiestaAssenzaMapper.toDto(r, resolveTipoAssenza(r.getTipoAssenzaId(), tipoAssenzaCache)))
+            .map(r -> RichiestaAssenzaMapper.toDto(r,
+                resolveTipoAssenza(r.getTipoAssenzaId().longValue(), tipoAssenzaCache),
+                includeTurnConflicts && (r.getStato() == StatoRichiestaAssenza.IN_ATTESA
+                    || r.getStato() == StatoRichiestaAssenza.APPROVATA)
+                    ? verificaConflittiAssenzaService.trova(r.getDriverId(), r.getDataInizio(), r.getDataFine(),
+                        r.isGiornataIntera(), r.getOraInizio(), r.getOraFine())
+                    : List.of()))
             .toList();
     }
 
-    private TipoAssenzaEntity resolveTipoAssenza(Long tipoAssenzaId, Map<Long, TipoAssenzaEntity> cache) {
-        return cache.computeIfAbsent(tipoAssenzaId,
-            id -> tipoAssenzaRepositoryPort.findById(id).orElse(null));
+    private TipoAssenzaEntity resolveTipoAssenza(long tipoAssenzaId, Map<Long, TipoAssenzaEntity> cache) {
+        Long key = tipoAssenzaId;
+        if (!cache.containsKey(key)) {
+            cache.put(key, tipoAssenzaRepositoryPort.findById(tipoAssenzaId).orElse(null));
+        }
+        return cache.get(key);
     }
 }

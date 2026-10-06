@@ -22,6 +22,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -73,9 +75,9 @@ public class RichiesteAssenzaController {
     @ResponseStatus(HttpStatus.CREATED)
     public RichiestaAssenzaDto creaRichiesta(@Valid @RequestBody CreaRichiestaRequest request,
                                              @AuthenticationPrincipal IdentityUserDetails principal) {
-        requireAuthenticated(principal);
+        IdentityUserDetails user = requireAuthenticated(principal);
         return createRichiestaAssenzaUseCase.execute(
-            principal.getId(),
+            requireUserId(user),
             request.tipoAssenzaId(),
             request.dataInizio(),
             request.dataFine(),
@@ -91,7 +93,7 @@ public class RichiesteAssenzaController {
     @ResponseStatus(HttpStatus.CREATED)
     public RichiestaAssenzaDto inserimentoGestionale(@Valid @RequestBody InserimentoGestionaleRequest request,
                                                      @AuthenticationPrincipal IdentityUserDetails principal) {
-        requireAuthenticated(principal);
+        IdentityUserDetails user = requireAuthenticated(principal);
         return inserimentoGestionaleAssenzaUseCase.execute(
             request.driverId(),
             request.tipoAssenzaId(),
@@ -101,7 +103,7 @@ public class RichiesteAssenzaController {
             request.oraInizio(),
             request.oraFine(),
             request.motivazione(),
-            principal.getId()
+            requireUserId(user)
         );
     }
 
@@ -113,39 +115,47 @@ public class RichiesteAssenzaController {
                                                    @RequestParam(required = false) LocalDate dataInizio,
                                                    @RequestParam(required = false) LocalDate dataFine,
                                                    @AuthenticationPrincipal IdentityUserDetails principal) {
-        requireAuthenticated(principal);
-        Long driverIdScope = principal.getRole() == UserRole.DRIVER ? principal.getId() : null;
+        IdentityUserDetails user = requireAuthenticated(principal);
+        Long driverIdScope = user.getRole() == UserRole.DRIVER ? requireUserId(user) : null;
         Long driverIdFilter = driverIdScope != null ? driverIdScope : driverId;
-        return listRichiesteAssenzaUseCase.execute(driverIdScope, driverIdFilter, stato, tipoAssenzaId, origine, dataInizio, dataFine);
+        boolean includeTurnConflicts = user.getRole() == UserRole.GESTIONALE;
+        return listRichiesteAssenzaUseCase.execute(
+            driverIdScope, driverIdFilter, stato, tipoAssenzaId, origine, dataInizio, dataFine, includeTurnConflicts);
+    }
+
+    @GetMapping("/pending-count")
+    @PreAuthorize("hasRole('GESTIONALE')")
+    public PendingCountResponse countPending() {
+        return new PendingCountResponse(listRichiesteAssenzaUseCase.countPendingForTenant());
     }
 
     @GetMapping("/{id}")
-    public RichiestaAssenzaDto getRichiesta(@PathVariable Long id, @AuthenticationPrincipal IdentityUserDetails principal) {
-        requireAuthenticated(principal);
-        Long driverIdScope = principal.getRole() == UserRole.DRIVER ? principal.getId() : null;
+    public RichiestaAssenzaDto getRichiesta(@PathVariable long id, @AuthenticationPrincipal IdentityUserDetails principal) {
+        IdentityUserDetails user = requireAuthenticated(principal);
+        Long driverIdScope = user.getRole() == UserRole.DRIVER ? requireUserId(user) : null;
         return getRichiestaAssenzaUseCase.execute(id, driverIdScope);
     }
 
     @PatchMapping("/{id}/approva")
     @PreAuthorize("hasRole('GESTIONALE')")
-    public RichiestaAssenzaDto approva(@PathVariable Long id, @AuthenticationPrincipal IdentityUserDetails principal) {
-        requireAuthenticated(principal);
-        return approvaRichiestaAssenzaUseCase.execute(id, principal.getId());
+    public RichiestaAssenzaDto approva(@PathVariable long id, @AuthenticationPrincipal IdentityUserDetails principal) {
+        IdentityUserDetails user = requireAuthenticated(principal);
+        return approvaRichiestaAssenzaUseCase.execute(id, requireUserId(user));
     }
 
     @PatchMapping("/{id}/rifiuta")
     @PreAuthorize("hasRole('GESTIONALE')")
-    public RichiestaAssenzaDto rifiuta(@PathVariable Long id,
+    public RichiestaAssenzaDto rifiuta(@PathVariable long id,
                                        @Valid @RequestBody RifiutaRequest request,
                                        @AuthenticationPrincipal IdentityUserDetails principal) {
-        requireAuthenticated(principal);
-        return rifiutaRichiestaAssenzaUseCase.execute(id, request.motivoRifiuto(), principal.getId());
+        IdentityUserDetails user = requireAuthenticated(principal);
+        return rifiutaRichiestaAssenzaUseCase.execute(id, request.motivoRifiuto(), requireUserId(user));
     }
 
     @PatchMapping("/{id}/annulla")
-    public RichiestaAssenzaDto annulla(@PathVariable Long id, @AuthenticationPrincipal IdentityUserDetails principal) {
-        requireAuthenticated(principal);
-        Long driverIdScope = principal.getRole() == UserRole.DRIVER ? principal.getId() : null;
+    public RichiestaAssenzaDto annulla(@PathVariable long id, @AuthenticationPrincipal IdentityUserDetails principal) {
+        IdentityUserDetails user = requireAuthenticated(principal);
+        Long driverIdScope = user.getRole() == UserRole.DRIVER ? requireUserId(user) : null;
         return annullaRichiestaAssenzaUseCase.execute(id, driverIdScope);
     }
 
@@ -155,10 +165,18 @@ public class RichiesteAssenzaController {
         return listDriversForAssenzeUseCase.execute();
     }
 
-    private void requireAuthenticated(IdentityUserDetails principal) {
+    private IdentityUserDetails requireAuthenticated(@Nullable IdentityUserDetails principal) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non autorizzato");
         }
+        return principal;
+    }
+
+    private long requireUserId(IdentityUserDetails principal) {
+        if (principal.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Identificativo utente non disponibile");
+        }
+        return principal.getId().longValue();
     }
 
     @ExceptionHandler(AssenzaValidationException.class)
@@ -173,19 +191,19 @@ public class RichiesteAssenzaController {
         return new AssenzeErrorResponse(exception.getMessage());
     }
 
-    record CreaRichiestaRequest(@NotNull Long tipoAssenzaId,
-                                @NotNull LocalDate dataInizio,
-                                @NotNull LocalDate dataFine,
+    record CreaRichiestaRequest(@NonNull @NotNull Long tipoAssenzaId,
+                                @NonNull @NotNull LocalDate dataInizio,
+                                @NonNull @NotNull LocalDate dataFine,
                                 boolean giornataIntera,
                                 LocalTime oraInizio,
                                 LocalTime oraFine,
                                 String motivazione) {
     }
 
-    record InserimentoGestionaleRequest(@NotNull Long driverId,
-                                        @NotNull Long tipoAssenzaId,
-                                        @NotNull LocalDate dataInizio,
-                                        @NotNull LocalDate dataFine,
+    record InserimentoGestionaleRequest(@NonNull @NotNull Long driverId,
+                                        @NonNull @NotNull Long tipoAssenzaId,
+                                        @NonNull @NotNull LocalDate dataInizio,
+                                        @NonNull @NotNull LocalDate dataFine,
                                         boolean giornataIntera,
                                         LocalTime oraInizio,
                                         LocalTime oraFine,
@@ -197,4 +215,6 @@ public class RichiesteAssenzaController {
 
     record AssenzeErrorResponse(String message) {
     }
+
+    record PendingCountResponse(long count) { }
 }

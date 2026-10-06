@@ -9,8 +9,8 @@ import java.time.LocalTime;
 import java.util.List;
 
 /**
- * Regole di validazione comuni alle richieste di assenza (master §4.2, punti 1-4 e 7; R1 non copre
- * monte ore/documenti/preavviso perché saldi e configurabilità sono fuori scope in questa release).
+ * Regole strutturali comuni alle richieste di assenza (master §4.2, punti 1-4 e 7).
+ * Configurazione effettiva, preavviso e capienza saldo sono controllati dai servizi applicativi R2/R3.
  */
 final class RichiestaAssenzaValidationSupport {
 

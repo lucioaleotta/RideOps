@@ -25,11 +25,18 @@ class ApprovaRichiestaAssenzaUseCaseTest {
     @Mock
     private TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort;
 
+    @Mock
+    private SaldiDriverService saldiDriverService;
+
+    @Mock
+    private VerificaConflittiAssenzaService verificaConflittiAssenzaService;
+
     private ApprovaRichiestaAssenzaUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new ApprovaRichiestaAssenzaUseCase(richiestaAssenzaRepositoryPort, tipoAssenzaRepositoryPort);
+        useCase = new ApprovaRichiestaAssenzaUseCase(
+            richiestaAssenzaRepositoryPort, tipoAssenzaRepositoryPort, saldiDriverService, verificaConflittiAssenzaService);
     }
 
     @Test

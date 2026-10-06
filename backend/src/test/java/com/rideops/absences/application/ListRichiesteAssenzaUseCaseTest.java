@@ -24,11 +24,15 @@ class ListRichiesteAssenzaUseCaseTest {
     @Mock
     private TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort;
 
+    @Mock
+    private VerificaConflittiAssenzaService verificaConflittiAssenzaService;
+
     private ListRichiesteAssenzaUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new ListRichiesteAssenzaUseCase(richiestaAssenzaRepositoryPort, tipoAssenzaRepositoryPort);
+        useCase = new ListRichiesteAssenzaUseCase(
+            richiestaAssenzaRepositoryPort, tipoAssenzaRepositoryPort, verificaConflittiAssenzaService);
         when(tipoAssenzaRepositoryPort.findById(org.mockito.ArgumentMatchers.any())).thenReturn(Optional.empty());
     }
 

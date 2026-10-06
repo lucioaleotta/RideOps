@@ -25,11 +25,14 @@ class AnnullaRichiestaAssenzaUseCaseTest {
     @Mock
     private TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort;
 
+    @Mock
+    private SaldiDriverService saldiDriverService;
+
     private AnnullaRichiestaAssenzaUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new AnnullaRichiestaAssenzaUseCase(richiestaAssenzaRepositoryPort, tipoAssenzaRepositoryPort);
+        useCase = new AnnullaRichiestaAssenzaUseCase(richiestaAssenzaRepositoryPort, tipoAssenzaRepositoryPort, saldiDriverService);
     }
 
     @Test
@@ -77,6 +80,15 @@ class AnnullaRichiestaAssenzaUseCaseTest {
     }
 
     @Test
+    void driverCannotCancelGestionaleEntry() {
+        RichiestaAssenzaEntity entity = entity(LocalDate.now().plusDays(2), StatoRichiestaAssenza.APPROVATA, 5L);
+        entity.setOrigine(OrigineRichiestaAssenza.GESTIONALE);
+        when(richiestaAssenzaRepositoryPort.findById(1L)).thenReturn(Optional.of(entity));
+
+        assertThrows(AssenzaValidationException.class, () -> useCase.execute(1L, 5L));
+    }
+
+    @Test
     void gestionaleCanAlwaysCancel() {
         RichiestaAssenzaEntity entity = entity(LocalDate.now().minusDays(10), StatoRichiestaAssenza.APPROVATA, 5L);
         when(richiestaAssenzaRepositoryPort.findById(1L)).thenReturn(Optional.of(entity));
@@ -97,6 +109,7 @@ class AnnullaRichiestaAssenzaUseCaseTest {
         entity.setDataFine(dataInizio.plusDays(2));
         entity.setGiornataIntera(true);
         entity.setStato(stato);
+        org.springframework.test.util.ReflectionTestUtils.setField(entity, "id", 1L);
         return entity;
     }
 }

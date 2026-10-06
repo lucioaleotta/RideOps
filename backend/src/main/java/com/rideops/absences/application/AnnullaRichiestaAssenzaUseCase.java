@@ -1,9 +1,11 @@
 package com.rideops.absences.application;
 
 import com.rideops.absences.adapters.out.RichiestaAssenzaEntity;
+import com.rideops.absences.domain.OrigineRichiestaAssenza;
 import com.rideops.absences.domain.StatoRichiestaAssenza;
 import java.time.LocalDate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Annullamento (master §4.4): il Driver può annullare solo fino al giorno di inizio incluso;
@@ -14,21 +16,28 @@ public class AnnullaRichiestaAssenzaUseCase {
 
     private final RichiestaAssenzaRepositoryPort richiestaAssenzaRepositoryPort;
     private final TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort;
+    private final SaldiDriverService saldiDriverService;
 
     public AnnullaRichiestaAssenzaUseCase(RichiestaAssenzaRepositoryPort richiestaAssenzaRepositoryPort,
-                                          TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort) {
+                                          TipoAssenzaRepositoryPort tipoAssenzaRepositoryPort,
+                                          SaldiDriverService saldiDriverService) {
         this.richiestaAssenzaRepositoryPort = richiestaAssenzaRepositoryPort;
         this.tipoAssenzaRepositoryPort = tipoAssenzaRepositoryPort;
+        this.saldiDriverService = saldiDriverService;
     }
 
-    public RichiestaAssenzaDto execute(Long id, Long driverIdScope) {
+    @Transactional
+    public RichiestaAssenzaDto execute(long id, Long driverIdScope) {
         RichiestaAssenzaEntity entity = richiestaAssenzaRepositoryPort.findById(id)
             .orElseThrow(() -> new AssenzaNotFoundException("Richiesta di assenza non trovata"));
 
-        boolean isDriverRequest = driverIdScope != null;
-        if (isDriverRequest) {
-            if (!driverIdScope.equals(entity.getDriverId())) {
+        if (driverIdScope != null) {
+            if (!java.util.Objects.equals(driverIdScope, entity.getDriverId())) {
                 throw new AssenzaNotFoundException("Richiesta di assenza non trovata");
+            }
+            if (entity.getOrigine() == OrigineRichiestaAssenza.GESTIONALE) {
+                throw new AssenzaValidationException(
+                    "Questa assenza è stata inserita dal Gestionale: rivolgiti al Gestionale per annullarla");
             }
             if (LocalDate.now().isAfter(entity.getDataInizio())) {
                 throw new AssenzaValidationException(
@@ -40,9 +49,14 @@ public class AnnullaRichiestaAssenzaUseCase {
             throw new AssenzaValidationException("Solo una richiesta in attesa o approvata può essere annullata");
         }
 
+        if (entity.getStato() == StatoRichiestaAssenza.APPROVATA) {
+            saldiDriverService.stornaConsumo(entity.getId());
+        }
         entity.setStato(StatoRichiestaAssenza.ANNULLATA);
 
         RichiestaAssenzaEntity saved = richiestaAssenzaRepositoryPort.save(entity);
-        return RichiestaAssenzaMapper.toDto(saved, tipoAssenzaRepositoryPort.findById(saved.getTipoAssenzaId()).orElse(null));
+        return RichiestaAssenzaMapper.toDto(saved,
+            tipoAssenzaRepositoryPort.findById(saved.getTipoAssenzaId().longValue()).orElse(null));
     }
+
 }

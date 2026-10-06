@@ -8,5 +8,7 @@ public interface TipoAssenzaRepository extends JpaRepository<TipoAssenzaEntity, 
 
     List<TipoAssenzaEntity> findAllByAttivoTrueOrderByNomeAsc();
 
+    List<TipoAssenzaEntity> findAllByOrderByNomeAsc();
+
     Optional<TipoAssenzaEntity> findByCodice(String codice);
 }
