@@ -314,7 +314,7 @@ describe('ServicesPanel', () => {
     expect(screen.queryByLabelText(/ricevuto da partner/i)).not.toBeInTheDocument();
   });
 
-  it('mostra la nota di assegnazione interna bloccata per OUTSOURCED in modifica', async () => {
+  it('mostra il campo readonly "Modalita gestione servizio" per OUTSOURCED in modifica', async () => {
     const service = makeService({ serviceAssignmentType: 'OUTSOURCED', partnerId: PARTNER.id });
     global.fetch = setupFetchMock(service) as typeof fetch;
     const user = userEvent.setup();
@@ -324,6 +324,7 @@ describe('ServicesPanel', () => {
 
     await screen.findByRole('heading', { name: /modifica servizio/i });
 
-    expect(screen.getByText(/assegnazione interna bloccata/i)).toBeInTheDocument();
+    const readonlyInput = screen.getByDisplayValue(/affidato/i);
+    expect(readonlyInput).toBeDisabled();
   });
 });

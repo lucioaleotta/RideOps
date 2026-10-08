@@ -595,7 +595,7 @@ export function ConfigurazioneAssenzePanel() {
                       </span>
                       {driver.personalizzato ? 'Modifica' : 'Personalizza'}
                     </button>
-                    {(activeConfiguration.codice === 'FER' || activeConfiguration.codice === 'PER') && (
+                    {activeConfiguration && (activeConfiguration.codice === 'FER' || activeConfiguration.codice === 'PER') && (
                       <button type="button" className="assenze-link-button" onClick={() => void openBalanceCorrection(driver)}>
                         Rettifica saldo anno corrente
                       </button>
@@ -657,7 +657,7 @@ export function ConfigurazioneAssenzePanel() {
               <button type="button" className="tenant-modal-close" aria-label="Chiudi preview rettifica" onClick={() => setBalancePreviewOpen(false)} disabled={balanceSaving}>×</button>
             </div>
             <dl className="assenze-balance-preview">
-              <div><dt>Driver</dt><dd>{driverFullName(driverRows.find((row) => row.driverId === balancePreview.driverId) ?? { driverId: balancePreview.driverId, firstName: null, lastName: null })}</dd></div>
+              <div><dt>Driver</dt><dd>{driverFullName(driverRows.find((row) => row.driverId === balancePreview.driverId) ?? { firstName: null, lastName: null })}</dd></div>
               <div><dt>Tipo / anno</dt><dd>{balancePreview.nome} · {balancePreview.anno}</dd></div>
               <div><dt>Maturato attuale</dt><dd>{balancePreview.maturatoAttuale}</dd></div>
               <div><dt>Già utilizzato</dt><dd>{balancePreview.giaUtilizzato}</dd></div>
