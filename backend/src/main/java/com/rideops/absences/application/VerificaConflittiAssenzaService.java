@@ -13,12 +13,12 @@ public class VerificaConflittiAssenzaService {
     private static final String BLOCCO = "SEGNALA_E_BLOCCA";
 
     private final DriverScheduleConflictService driverScheduleConflictService;
-    private final ConfigurazioneAssenzeService configurazioneAssenzeService;
+    private final RegoleGeneraliAssenzaProvider regoleGeneraliAssenzaProvider;
 
     public VerificaConflittiAssenzaService(DriverScheduleConflictService driverScheduleConflictService,
-                                           ConfigurazioneAssenzeService configurazioneAssenzeService) {
+                                           RegoleGeneraliAssenzaProvider regoleGeneraliAssenzaProvider) {
         this.driverScheduleConflictService = driverScheduleConflictService;
-        this.configurazioneAssenzeService = configurazioneAssenzeService;
+        this.regoleGeneraliAssenzaProvider = regoleGeneraliAssenzaProvider;
     }
 
     public List<ConflittoTurnoAssenzaDto> trova(long driverId,
@@ -49,7 +49,7 @@ public class VerificaConflittiAssenzaService {
         List<ConflittoTurnoAssenzaDto> conflicts = trova(
             driverId, dataInizio, dataFine, giornataIntera, oraInizio, oraFine);
         if (!conflicts.isEmpty()
-            && BLOCCO.equals(configurazioneAssenzeService.getGeneralRules().comportamentoConflittoTurni())) {
+            && BLOCCO.equals(regoleGeneraliAssenzaProvider.getGeneralRules().comportamentoConflittoTurni())) {
             throw new AssenzaValidationException(
                 "Approvazione bloccata: il driver ha " + conflicts.size() + " servizio/i assegnato/i nel periodo richiesto");
         }

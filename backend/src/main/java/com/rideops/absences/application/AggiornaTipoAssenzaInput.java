@@ -15,6 +15,6 @@ public record AggiornaTipoAssenzaInput(
     @NotNull @Min(0) Integer preavvisoMinimoGiorniDefault,
     BigDecimal numeroGiorniAnnuiDefault,
     BigDecimal numeroGiorniMalattiaAnnuiDefault,
-    Integer scadenzaFerieMesiDefault
+    Integer scadenzaMesiAccumuloDefault
 ) {
 }

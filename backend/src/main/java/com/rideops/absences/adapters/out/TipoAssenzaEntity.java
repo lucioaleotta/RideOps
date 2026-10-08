@@ -53,8 +53,8 @@ public class TipoAssenzaEntity {
     @Column(name = "numero_giorni_malattia_annui_default", precision = 8, scale = 2)
     private BigDecimal numeroGiorniMalattiaAnnuiDefault;
 
-    @Column(name = "scadenza_ferie_mesi_default")
-    private Integer scadenzaFerieMesiDefault;
+    @Column(name = "scadenza_mesi_accumulo_default")
+    private Integer scadenzaMesiAccumuloDefault;
 
     @Column(nullable = false)
     private boolean attivo = true;
@@ -151,12 +151,12 @@ public class TipoAssenzaEntity {
         this.numeroGiorniMalattiaAnnuiDefault = numeroGiorniMalattiaAnnuiDefault;
     }
 
-    public Integer getScadenzaFerieMesiDefault() {
-        return scadenzaFerieMesiDefault;
+    public Integer getScadenzaMesiAccumuloDefault() {
+        return scadenzaMesiAccumuloDefault;
     }
 
-    public void setScadenzaFerieMesiDefault(Integer scadenzaFerieMesiDefault) {
-        this.scadenzaFerieMesiDefault = scadenzaFerieMesiDefault;
+    public void setScadenzaMesiAccumuloDefault(Integer scadenzaMesiAccumuloDefault) {
+        this.scadenzaMesiAccumuloDefault = scadenzaMesiAccumuloDefault;
     }
 
     public boolean isAttivo() {

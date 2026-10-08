@@ -133,7 +133,7 @@ describe('RichiesteDaApprovarePanel', () => {
 
     render(<RichiesteDaApprovarePanel />);
 
-    await screen.findByText('Richiesta eccezionale: utilizza quota ferie scaduta e richiede conferma esplicita.');
+    await screen.findByText('Richiesta eccezionale: utilizza quota maturata oltre la scadenza configurata e richiede conferma esplicita.');
     expect(screen.getByText('Conflitto con 1 servizio/i assegnato/i')).toBeInTheDocument();
     expect(screen.getByText(/Sede → Aeroporto/)).toBeInTheDocument();
   });
@@ -202,6 +202,6 @@ describe('RichiesteDaApprovarePanel', () => {
     await userEvent.type(screen.getByLabelText(/^Al$/i), '2026-10-10');
     await userEvent.click(screen.getByRole('button', { name: /^conferma$/i }));
 
-    await screen.findByText('Richiesta inserita in attesa di conferma: utilizza quota ferie scaduta');
+    await screen.findByText('Richiesta inserita in attesa di conferma: utilizza quota maturata oltre la scadenza configurata');
   });
 });

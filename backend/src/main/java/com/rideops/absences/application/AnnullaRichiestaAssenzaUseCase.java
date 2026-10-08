@@ -1,7 +1,6 @@
 package com.rideops.absences.application;
 
 import com.rideops.absences.adapters.out.RichiestaAssenzaEntity;
-import com.rideops.absences.domain.OrigineRichiestaAssenza;
 import com.rideops.absences.domain.StatoRichiestaAssenza;
 import java.time.LocalDate;
 import org.springframework.stereotype.Service;
@@ -34,10 +33,6 @@ public class AnnullaRichiestaAssenzaUseCase {
         if (driverIdScope != null) {
             if (!java.util.Objects.equals(driverIdScope, entity.getDriverId())) {
                 throw new AssenzaNotFoundException("Richiesta di assenza non trovata");
-            }
-            if (entity.getOrigine() == OrigineRichiestaAssenza.GESTIONALE) {
-                throw new AssenzaValidationException(
-                    "Questa assenza è stata inserita dal Gestionale: rivolgiti al Gestionale per annullarla");
             }
             if (LocalDate.now().isAfter(entity.getDataInizio())) {
                 throw new AssenzaValidationException(

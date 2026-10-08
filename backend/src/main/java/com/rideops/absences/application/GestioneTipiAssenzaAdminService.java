@@ -38,7 +38,7 @@ public class GestioneTipiAssenzaAdminService {
 
     @Transactional
     public TipoAssenzaDto create(CreaTipoAssenzaInput input, long adminId) {
-        validateNumericDefaults(input.numeroGiorniAnnuiDefault(), input.numeroGiorniMalattiaAnnuiDefault(), input.scadenzaFerieMesiDefault());
+        validateNumericDefaults(input.numeroGiorniAnnuiDefault(), input.numeroGiorniMalattiaAnnuiDefault(), input.scadenzaMesiAccumuloDefault());
         if (tipoAssenzaRepository.findByCodice(input.codice().trim()).isPresent()) {
             throw new AssenzaValidationException("Esiste già un tipo di assenza con questo codice");
         }
@@ -58,7 +58,7 @@ public class GestioneTipiAssenzaAdminService {
         entity.setPreavvisoMinimoGiorniDefault(input.preavvisoMinimoGiorniDefault());
         entity.setNumeroGiorniAnnuiDefault(input.numeroGiorniAnnuiDefault());
         entity.setNumeroGiorniMalattiaAnnuiDefault(input.numeroGiorniMalattiaAnnuiDefault());
-        entity.setScadenzaFerieMesiDefault(input.scadenzaFerieMesiDefault());
+        entity.setScadenzaMesiAccumuloDefault(input.scadenzaMesiAccumuloDefault());
         entity.setAttivo(true);
         TipoAssenzaEntity saved = tipoAssenzaRepository.save(entity);
         audit(saved, adminId, "CREATO", null);
@@ -67,7 +67,7 @@ public class GestioneTipiAssenzaAdminService {
 
     @Transactional
     public TipoAssenzaDto update(long tipoAssenzaId, AggiornaTipoAssenzaInput input, long adminId) {
-        validateNumericDefaults(input.numeroGiorniAnnuiDefault(), input.numeroGiorniMalattiaAnnuiDefault(), input.scadenzaFerieMesiDefault());
+        validateNumericDefaults(input.numeroGiorniAnnuiDefault(), input.numeroGiorniMalattiaAnnuiDefault(), input.scadenzaMesiAccumuloDefault());
         TipoAssenzaEntity entity = requireTipo(tipoAssenzaId);
         String previous = serialize(RichiestaAssenzaMapper.toDto(entity));
         entity.setNome(input.nome().trim());
@@ -78,7 +78,7 @@ public class GestioneTipiAssenzaAdminService {
         entity.setPreavvisoMinimoGiorniDefault(input.preavvisoMinimoGiorniDefault());
         entity.setNumeroGiorniAnnuiDefault(input.numeroGiorniAnnuiDefault());
         entity.setNumeroGiorniMalattiaAnnuiDefault(input.numeroGiorniMalattiaAnnuiDefault());
-        entity.setScadenzaFerieMesiDefault(input.scadenzaFerieMesiDefault());
+        entity.setScadenzaMesiAccumuloDefault(input.scadenzaMesiAccumuloDefault());
         TipoAssenzaEntity saved = tipoAssenzaRepository.save(entity);
         audit(saved, adminId, "MODIFICATO", previous);
         return RichiestaAssenzaMapper.toDto(saved);

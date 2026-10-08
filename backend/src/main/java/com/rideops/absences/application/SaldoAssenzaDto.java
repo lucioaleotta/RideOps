@@ -14,6 +14,7 @@ public record SaldoAssenzaDto(
     boolean saldoAnnuale,
     boolean saldoCaricato,
     boolean monteOreAbilitato,
-    Integer scadenzaFerieMesi
+    String comportamentoMaturato,
+    Integer scadenzaMesiAccumulo
 ) {
 }

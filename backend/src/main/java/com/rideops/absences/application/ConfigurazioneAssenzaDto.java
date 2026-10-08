@@ -14,7 +14,8 @@ public record ConfigurazioneAssenzaDto(
     boolean monteOreAbilitato,
     BigDecimal numeroGiorniAnnui,
     BigDecimal numeroGiorniMalattiaAnnui,
-    Integer scadenzaFerieMesi,
+    String comportamentoMaturato,
+    Integer scadenzaMesiAccumulo,
     int preavvisoMinimoGiorni,
     String noteConfigurazione,
     ConfigurazioneAssenzaInput defaultPiattaforma

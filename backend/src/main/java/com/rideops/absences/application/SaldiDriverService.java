@@ -131,7 +131,7 @@ public class SaldiDriverService {
         ensureAnnualCohort(driverId, tenantId, tipo, dataInizio.getYear());
         List<SaldoDriverEntity> cohorts = saldoRepository
             .findAllByTenantIdAndDriverIdAndTipoAssenzaIdOrderByAnnoMaturazioneAsc(tenantId, driverId, tipoAssenzaId);
-        BalanceTotals totals = totals(cohorts, configurazione.scadenzaFerieMesi(), dataInizio, tipo);
+        BalanceTotals totals = totals(cohorts, configurazione, dataInizio, tipo);
         if (totals.total().compareTo(quantita) < 0) {
             throw new AssenzaValidationException("Saldo residuo insufficiente per il tipo di assenza selezionato");
         }
@@ -157,21 +157,23 @@ public class SaldiDriverService {
             richiesta.isGiornataIntera(), richiesta.getOraInizio(), richiesta.getOraFine());
         List<SaldoDriverEntity> cohorts = saldoRepository.findAllForUpdate(
             tenantId, richiesta.getDriverId(), richiesta.getTipoAssenzaId());
-        BalanceTotals totals = totals(cohorts, configurazione.scadenzaFerieMesi(), richiesta.getDataInizio(), tipo);
+        BalanceTotals totals = totals(cohorts, configurazione, richiesta.getDataInizio(), tipo);
         if (totals.total().compareTo(quantita) < 0) {
             throw new AssenzaValidationException("Saldo residuo insufficiente al momento dell'approvazione");
         }
         boolean wouldUseExpired = totals.valid().compareTo(quantita) < 0;
         if (wouldUseExpired && !richiesta.isRichiedeApprovazioneEccezionale()) {
-            throw new AssenzaValidationException("Il saldo ferie scaduto richiede una conferma esplicita");
+            throw new AssenzaValidationException("La quota maturata oltre la scadenza richiede una conferma esplicita");
         }
 
         List<SaldoDriverEntity> ordered = cohorts.stream()
+            .filter(saldo -> carriesOver(tipo, configurazione)
+                || saldo.getAnnoMaturazione() == richiesta.getDataInizio().getYear())
             .sorted(Comparator.comparing((SaldoDriverEntity saldo) -> {
-                    LocalDate expiry = expiredAt(saldo.getAnnoMaturazione(), configurazione.scadenzaFerieMesi(), tipo);
+                    LocalDate expiry = expiredAt(saldo.getAnnoMaturazione(), configurazione, tipo);
                     return expiry != null && richiesta.getDataInizio().isAfter(expiry);
                 })
-                .thenComparing(saldo -> expiredAt(saldo.getAnnoMaturazione(), configurazione.scadenzaFerieMesi(), tipo),
+                .thenComparing(saldo -> expiredAt(saldo.getAnnoMaturazione(), configurazione, tipo),
                     Comparator.nullsLast(Comparator.naturalOrder()))
                 .thenComparingInt(saldo -> saldo.getAnnoMaturazione()))
             .toList();
@@ -215,11 +217,11 @@ public class SaldiDriverService {
         ensureAnnualCohort(driverId, tenantId, tipo, year, configurazione);
         List<SaldoDriverEntity> cohorts = saldoRepository
             .findAllByTenantIdAndDriverIdAndTipoAssenzaIdOrderByAnnoMaturazioneAsc(tenantId, driverId, tipo.getId());
-        BalanceTotals totals = totals(cohorts, configurazione.scadenzaFerieMesi(), asOf, tipo);
+        BalanceTotals totals = totals(cohorts, configurazione, asOf, tipo);
         BigDecimal maturata = BigDecimal.ZERO;
         BigDecimal utilizzata = BigDecimal.ZERO;
         for (SaldoDriverEntity cohort : cohorts) {
-            if (!carriesOver(tipo) && cohort.getAnnoMaturazione() != year) continue;
+            if (!carriesOver(tipo, configurazione) && cohort.getAnnoMaturazione() != year) continue;
             maturata = maturata.add(cohort.getQuantitaMaturata());
             utilizzata = utilizzata.add(cohort.getQuantitaUtilizzata());
         }
@@ -227,19 +229,20 @@ public class SaldiDriverService {
             scale(maturata), scale(utilizzata), scale(totals.valid()), scale(totals.expired()),
             isAnnualBalanceType(tipo) && configurazione.abilitato() && configurazione.monteOreAbilitato()
                 && configurazione.numeroGiorniAnnui() != null,
-            !cohorts.isEmpty(), configurazione.monteOreAbilitato(), configurazione.scadenzaFerieMesi());
+            !cohorts.isEmpty(), configurazione.monteOreAbilitato(), configurazione.comportamentoMaturato(),
+            configurazione.scadenzaMesiAccumulo());
     }
 
     private BalanceTotals totals(List<SaldoDriverEntity> cohorts,
-                                 Integer scadenzaMesi,
+                                 ConfigurazioneAssenzaDto configurazione,
                                  LocalDate asOf,
                                  TipoAssenzaEntity tipo) {
         BigDecimal valid = BigDecimal.ZERO;
         BigDecimal expired = BigDecimal.ZERO;
         for (SaldoDriverEntity cohort : cohorts) {
-            if (!carriesOver(tipo) && cohort.getAnnoMaturazione() != asOf.getYear()) continue;
+            if (!carriesOver(tipo, configurazione) && cohort.getAnnoMaturazione() != asOf.getYear()) continue;
             BigDecimal residuo = cohort.getQuantitaMaturata().subtract(cohort.getQuantitaUtilizzata()).max(BigDecimal.ZERO);
-            LocalDate expires = expiredAt(cohort.getAnnoMaturazione(), scadenzaMesi, tipo);
+            LocalDate expires = expiredAt(cohort.getAnnoMaturazione(), configurazione, tipo);
             if (expires != null && asOf.isAfter(expires)) expired = expired.add(residuo);
             else valid = valid.add(residuo);
         }
@@ -267,8 +270,8 @@ public class SaldiDriverService {
         return "FER".equals(tipo.getCodice()) || "PER".equals(tipo.getCodice());
     }
 
-    private boolean carriesOver(TipoAssenzaEntity tipo) {
-        return "FER".equals(tipo.getCodice());
+    private boolean carriesOver(TipoAssenzaEntity tipo, ConfigurazioneAssenzaDto configurazione) {
+        return isMaturedBalanceType(tipo) && "accumulo_esteso".equals(configurazione.comportamentoMaturato());
     }
 
     private BigDecimal configuredAnnualAmount(TipoAssenzaEntity tipo, ConfigurazioneAssenzaDto configurazione) {
@@ -276,10 +279,14 @@ public class SaldiDriverService {
         return scale(configurazione.numeroGiorniAnnui());
     }
 
-    private LocalDate expiredAt(int year, Integer expiryMonths, TipoAssenzaEntity tipo) {
-        if (!"FER".equals(tipo.getCodice())) return null;
-        int months = expiryMonths == null ? 18 : expiryMonths;
+    private LocalDate expiredAt(int year, ConfigurazioneAssenzaDto configurazione, TipoAssenzaEntity tipo) {
+        if (!isMaturedBalanceType(tipo) || !"accumulo_esteso".equals(configurazione.comportamentoMaturato())) return null;
+        int months = configurazione.scadenzaMesiAccumulo() == null ? 18 : configurazione.scadenzaMesiAccumulo();
         return LocalDate.of(year, 12, 31).plusMonths(months);
+    }
+
+    private boolean isMaturedBalanceType(TipoAssenzaEntity tipo) {
+        return "FER".equals(tipo.getCodice()) || "PER".equals(tipo.getCodice()) || "RIP".equals(tipo.getCodice());
     }
 
     private BigDecimal calculateQuantity(TipoAssenzaEntity tipo,

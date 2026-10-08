@@ -18,7 +18,7 @@ type TipoAssenza = {
   preavvisoMinimoGiorniDefault: number;
   numeroGiorniAnnuiDefault: number | null;
   numeroGiorniMalattiaAnnuiDefault: number | null;
-  scadenzaFerieMesiDefault: number | null;
+  scadenzaMesiAccumuloDefault: number | null;
   attivo: boolean;
 };
 
@@ -47,7 +47,7 @@ const emptyForm: FormState = {
   preavvisoMinimoGiorniDefault: 0,
   numeroGiorniAnnuiDefault: null,
   numeroGiorniMalattiaAnnuiDefault: null,
-  scadenzaFerieMesiDefault: null
+  scadenzaMesiAccumuloDefault: null
 };
 
 async function payload<T>(response: Response): Promise<T> {
@@ -183,7 +183,7 @@ export function AdminTipiAssenzaPanel() {
           preavvisoMinimoGiorniDefault: form.preavvisoMinimoGiorniDefault,
           numeroGiorniAnnuiDefault: form.numeroGiorniAnnuiDefault,
           numeroGiorniMalattiaAnnuiDefault: form.numeroGiorniMalattiaAnnuiDefault,
-          scadenzaFerieMesiDefault: form.scadenzaFerieMesiDefault
+          scadenzaMesiAccumuloDefault: form.scadenzaMesiAccumuloDefault
         }
       : form;
 
@@ -347,7 +347,7 @@ export function AdminTipiAssenzaPanel() {
                 <label className="driver-form-field"><span>Preavviso minimo (giorni)</span><input className="form-input" type="number" min="0" step="1" value={form.preavvisoMinimoGiorniDefault} onChange={(event) => updateForm('preavvisoMinimoGiorniDefault', Number(event.target.value))} required /></label>
                 <label className="driver-form-field"><span>Valore annuo standard</span><input className="form-input" type="number" min="0" step="0.5" value={form.numeroGiorniAnnuiDefault ?? ''} onChange={(event) => updateForm('numeroGiorniAnnuiDefault', numberOrNull(event.target.value))} /></label>
                 <label className="driver-form-field"><span>Comporto malattia (giorni)</span><input className="form-input" type="number" min="0" step="1" value={form.numeroGiorniMalattiaAnnuiDefault ?? ''} onChange={(event) => updateForm('numeroGiorniMalattiaAnnuiDefault', numberOrNull(event.target.value))} /></label>
-                <label className="driver-form-field"><span>Scadenza ferie (mesi)</span><input className="form-input" type="number" min="1" step="1" value={form.scadenzaFerieMesiDefault ?? ''} onChange={(event) => updateForm('scadenzaFerieMesiDefault', numberOrNull(event.target.value))} /></label>
+                <label className="driver-form-field"><span>Durata accumulo esteso (mesi)</span><input className="form-input" type="number" min="1" step="1" value={form.scadenzaMesiAccumuloDefault ?? ''} onChange={(event) => updateForm('scadenzaMesiAccumuloDefault', numberOrNull(event.target.value))} /></label>
               </div>
               <div className="admin-assenze-toggle-grid">
                 {!editing && <SwitchField label="Richiedibile dal Driver" checked={form.origineDriverConsentita} onChange={(checked) => updateForm('origineDriverConsentita', checked)} />}

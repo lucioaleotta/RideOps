@@ -19,14 +19,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class VerificaConflittiAssenzaServiceTest {
 
     @Mock private DriverScheduleConflictService driverScheduleConflictService;
-    @Mock private ConfigurazioneAssenzeService configurazioneAssenzeService;
+    @Mock private RegoleGeneraliAssenzaProvider regoleGeneraliAssenzaProvider;
 
     private VerificaConflittiAssenzaService service;
     private List<DriverServiceConflict> conflicts;
 
     @BeforeEach
     void setUp() {
-        service = new VerificaConflittiAssenzaService(driverScheduleConflictService, configurazioneAssenzeService);
+        service = new VerificaConflittiAssenzaService(driverScheduleConflictService, regoleGeneraliAssenzaProvider);
         conflicts = List.of(new DriverServiceConflict(87L, LocalDateTime.of(2026, 10, 5, 9, 0), 2,
             "Sede", "Aeroporto"));
         when(driverScheduleConflictService.findConflicts(12L, LocalDate.of(2026, 10, 5),
@@ -35,7 +35,7 @@ class VerificaConflittiAssenzaServiceTest {
 
     @Test
     void conflictIsInformationalWhenTenantRuleIsSegnala() {
-        when(configurazioneAssenzeService.getGeneralRules()).thenReturn(new RegoleGeneraliAssenzaDto("SEGNALA", "SEGNALA"));
+        when(regoleGeneraliAssenzaProvider.getGeneralRules()).thenReturn(new RegoleGeneraliAssenzaDto("SEGNALA", "SEGNALA"));
 
         service.requireNoBlockingConflict(12L, LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 5), true, null, null);
 
@@ -44,7 +44,7 @@ class VerificaConflittiAssenzaServiceTest {
 
     @Test
     void conflictBlocksApprovalWhenTenantRuleIsSegnalaEBlocca() {
-        when(configurazioneAssenzeService.getGeneralRules())
+        when(regoleGeneraliAssenzaProvider.getGeneralRules())
             .thenReturn(new RegoleGeneraliAssenzaDto("SEGNALA_E_BLOCCA", "SEGNALA"));
 
         AssenzaValidationException exception = assertThrows(AssenzaValidationException.class,

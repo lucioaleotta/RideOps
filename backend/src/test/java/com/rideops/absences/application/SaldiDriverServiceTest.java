@@ -64,7 +64,8 @@ class SaldiDriverServiceTest {
 
     @Test
     void requiresExplicitApprovalWhenOnlyExpiredHolidayBalanceCanCoverRequest() {
-        when(configurazioneAssenzeService.resolveEffectiveConfiguration(12L, 1L)).thenReturn(config(1L, "0"));
+        when(configurazioneAssenzeService.resolveEffectiveConfiguration(12L, 1L))
+            .thenReturn(config(1L, "26", "accumulo_esteso", 0));
         when(saldoRepository.findAllByTenantIdAndDriverIdAndTipoAssenzaIdOrderByAnnoMaturazioneAsc(7L, 12L, 1L))
             .thenReturn(List.of(cohort(2023, "5", "0")));
 
@@ -76,6 +77,8 @@ class SaldiDriverServiceTest {
 
     @Test
     void usesValidHolidayBalanceBeforeExpiredBalance() {
+        when(configurazioneAssenzeService.resolveEffectiveConfiguration(12L, 1L))
+            .thenReturn(config(1L, "26", "accumulo_esteso", 18));
         when(saldoRepository.findAllByTenantIdAndDriverIdAndTipoAssenzaIdOrderByAnnoMaturazioneAsc(7L, 12L, 1L))
             .thenReturn(List.of(cohort(2023, "5", "0"), cohort(LocalDate.now().getYear(), "10", "0")));
 
@@ -108,7 +111,8 @@ class SaldiDriverServiceTest {
         permesso.setUnitaMisura(UnitaMisuraAssenza.ORE);
         permesso.setAttivo(true);
         when(tipoRepository.findAllAttivi()).thenReturn(List.of(permesso));
-        when(configurazioneAssenzeService.resolveEffectiveConfiguration(12L, 2L)).thenReturn(config(2L, "32"));
+        when(configurazioneAssenzeService.resolveEffectiveConfiguration(12L, 2L))
+            .thenReturn(config(2L, "32", "azzeramento_annuale", null));
         when(saldoRepository.findAllByTenantIdAndDriverIdAndTipoAssenzaIdOrderByAnnoMaturazioneAsc(7L, 12L, 2L))
             .thenReturn(List.of(cohort(2L, 2025, "32", "20"), cohort(2L, LocalDate.now().getYear(), "32", "0")));
 
@@ -119,12 +123,55 @@ class SaldiDriverServiceTest {
     }
 
     @Test
+    void annualResetDoesNotExposePreviousHolidayCohortsAsExpired() {
+        when(tipoRepository.findAllAttivi()).thenReturn(List.of(ferie));
+        when(saldoRepository.findAllByTenantIdAndDriverIdAndTipoAssenzaIdOrderByAnnoMaturazioneAsc(7L, 12L, 1L))
+            .thenReturn(List.of(cohort(LocalDate.now().getYear() - 1, "26", "10"),
+                cohort(LocalDate.now().getYear(), "26", "4")));
+
+        SaldoAssenzaDto balance = service.getSaldi(12L).get(0);
+
+        assertEquals(new BigDecimal("22.00"), balance.residuoValido());
+        assertEquals(new BigDecimal("0.00"), balance.residuoScaduto());
+        assertEquals("azzeramento_annuale", balance.comportamentoMaturato());
+    }
+
+    @Test
+    void annualResetDoesNotAllowRequestToUsePreviousHolidayCohort() {
+        when(saldoRepository.findAllByTenantIdAndDriverIdAndTipoAssenzaIdOrderByAnnoMaturazioneAsc(7L, 12L, 1L))
+            .thenReturn(List.of(cohort(LocalDate.now().getYear() - 1, "26", "0")));
+
+        assertThrows(AssenzaValidationException.class, () -> service.richiedeApprovazioneEccezionale(
+            12L, 1L, LocalDate.now().plusDays(1), LocalDate.now().plusDays(1), true, null, null));
+    }
+
+    @Test
+    void extendedAccumulationAppliesToPermitsAndSeparatesExpiredCohorts() {
+        TipoAssenzaEntity permesso = new TipoAssenzaEntity();
+        ReflectionTestUtils.setField(permesso, "id", 2L);
+        permesso.setCodice("PER");
+        permesso.setNome("Permesso");
+        permesso.setUnitaMisura(UnitaMisuraAssenza.ORE);
+        permesso.setAttivo(true);
+        when(tipoRepository.findAllAttivi()).thenReturn(List.of(permesso));
+        when(configurazioneAssenzeService.resolveEffectiveConfiguration(12L, 2L))
+            .thenReturn(config(2L, "32", "accumulo_esteso", 1));
+        when(saldoRepository.findAllByTenantIdAndDriverIdAndTipoAssenzaIdOrderByAnnoMaturazioneAsc(7L, 12L, 2L))
+            .thenReturn(List.of(cohort(2L, 2024, "32", "20"), cohort(2L, LocalDate.now().getYear(), "32", "4")));
+
+        SaldoAssenzaDto balance = service.getSaldi(12L).get(0);
+
+        assertEquals(new BigDecimal("28.00"), balance.residuoValido());
+        assertEquals(new BigDecimal("12.00"), balance.residuoScaduto());
+        assertEquals("accumulo_esteso", balance.comportamentoMaturato());
+    }
+
+    @Test
     void previewsAndAppliesCurrentYearCorrectionWithoutChangingUsedQuantity() {
         SaldoDriverEntity current = cohort(LocalDate.now().getYear(), "20", "5");
         when(saldoRepository.findByTenantIdAndDriverIdAndTipoAssenzaIdAndAnnoMaturazione(
             7L, 12L, 1L, LocalDate.now().getYear())).thenReturn(Optional.of(current));
         when(saldoRepository.findAllForUpdate(7L, 12L, 1L)).thenReturn(List.of(current));
-
         RettificaSaldoDto preview = service.previewRettifica(12L, 1L);
         assertEquals(new BigDecimal("20.00"), preview.maturatoAttuale());
         assertEquals(new BigDecimal("5.00"), preview.giaUtilizzato());
@@ -142,7 +189,8 @@ class SaldiDriverServiceTest {
 
     @Test
     void refusesCorrectionBelowAlreadyUsedQuantity() {
-        when(configurazioneAssenzeService.resolveEffectiveConfiguration(12L, 1L)).thenReturn(config(1L, "4"));
+        when(configurazioneAssenzeService.resolveEffectiveConfiguration(12L, 1L))
+            .thenReturn(config(1L, "4", "azzeramento_annuale", null));
         SaldoDriverEntity current = cohort(LocalDate.now().getYear(), "26", "5");
         when(saldoRepository.findAllForUpdate(7L, 12L, 1L)).thenReturn(List.of(current));
 
@@ -150,14 +198,14 @@ class SaldiDriverServiceTest {
     }
 
     private ConfigurazioneAssenzaDto config(Long typeId) {
-        return config(typeId, "26");
+        return config(typeId, "26", "azzeramento_annuale", null);
     }
 
-    private ConfigurazioneAssenzaDto config(Long typeId, String annualAmount) {
+    private ConfigurazioneAssenzaDto config(Long typeId, String annualAmount, String behavior, Integer months) {
         BigDecimal annual = new BigDecimal(annualAmount);
         return new ConfigurazioneAssenzaDto(typeId, "FER", "Ferie", "GIORNI", false, false,
-            true, false, true, annual, null, 18, 0, null,
-            new ConfigurazioneAssenzaInput(true, false, true, annual, null, 18, 0, null));
+            true, false, true, annual, null, behavior, months, 0, null,
+            new ConfigurazioneAssenzaInput(true, false, true, annual, null, behavior, months, 0, null));
     }
 
     private SaldoDriverEntity cohort(int year, String accrued, String used) {

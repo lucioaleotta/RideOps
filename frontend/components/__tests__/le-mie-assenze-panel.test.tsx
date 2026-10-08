@@ -145,7 +145,8 @@ describe('LeMieAssenzePanel', () => {
       saldoAnnuale: true,
       saldoCaricato: true,
       monteOreAbilitato: true,
-      scadenzaFerieMesi: 18
+      comportamentoMaturato: 'accumulo_esteso',
+      scadenzaMesiAccumulo: 18
     }]) as unknown as typeof fetch;
 
     render(<LeMieAssenzePanel />);
@@ -156,7 +157,7 @@ describe('LeMieAssenzePanel', () => {
     expect(screen.getByText('4 giorni')).toBeInTheDocument();
   });
 
-  it('spiega quando una richiesta richiede approvazione per quota ferie scaduta', async () => {
+  it('spiega quando una richiesta richiede approvazione per quota oltre la scadenza', async () => {
     global.fetch = setupFetchMock([makeRichiesta({
       richiedeApprovazioneEccezionale: true,
       origine: 'GESTIONALE'
@@ -165,7 +166,7 @@ describe('LeMieAssenzePanel', () => {
     render(<LeMieAssenzePanel />);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Elenco' }));
-    await screen.findByText('La richiesta usa quota ferie scaduta e richiede una conferma esplicita del Gestionale.');
+    await screen.findByText('La richiesta usa quota maturata oltre la scadenza configurata e richiede una conferma esplicita del Gestionale.');
   });
 
   it('mostra il saldo annuale zero restituito dal backend', async () => {
@@ -181,7 +182,8 @@ describe('LeMieAssenzePanel', () => {
       saldoAnnuale: true,
       saldoCaricato: true,
       monteOreAbilitato: true,
-      scadenzaFerieMesi: 18
+      comportamentoMaturato: 'accumulo_esteso',
+      scadenzaMesiAccumulo: 18
     }]) as unknown as typeof fetch;
 
     render(<LeMieAssenzePanel />);
@@ -204,7 +206,8 @@ describe('LeMieAssenzePanel', () => {
       saldoAnnuale: false,
       saldoCaricato: false,
       monteOreAbilitato: false,
-      scadenzaFerieMesi: null
+      comportamentoMaturato: 'azzeramento_annuale',
+      scadenzaMesiAccumulo: null
     }]) as unknown as typeof fetch;
 
     render(<LeMieAssenzePanel />);

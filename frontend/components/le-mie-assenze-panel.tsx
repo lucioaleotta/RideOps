@@ -289,7 +289,7 @@ export function LeMieAssenzePanel() {
         throw new Error(responsePayload?.message ?? 'Impossibile creare la richiesta');
       }
       setSuccess(responsePayload?.richiedeApprovazioneEccezionale
-        ? 'Richiesta inviata: la quota ferie scaduta richiede conferma del Gestionale'
+        ? 'Richiesta inviata: la quota maturata oltre la scadenza configurata richiede conferma del Gestionale'
         : 'Richiesta inviata con successo');
       setFormOpen(false);
       await loadData();
@@ -391,10 +391,10 @@ export function LeMieAssenzePanel() {
                   <strong>{saldo.saldoAnnuale ? saldo.residuoValido.toLocaleString('it-IT') : '—'}</strong>
                   <span>{saldo.saldoAnnuale ? (saldo.unitaMisura === 'ORE' ? 'ore disponibili' : 'giorni disponibili') : 'nessun monte annuale'}</span>
                 </div>
-                {saldo.codice === 'FER' && saldo.saldoAnnuale && (
+                {saldo.saldoAnnuale && saldo.comportamentoMaturato === 'accumulo_esteso' && (
                   <div className={saldo.residuoScaduto > 0 ? 'assenza-saldo-expired is-expired' : 'assenza-saldo-expired'}>
                     <span>Quota scaduta</span>
-                    <strong>{saldo.residuoScaduto.toLocaleString('it-IT')} giorni</strong>
+                    <strong>{saldo.residuoScaduto.toLocaleString('it-IT')} {saldo.unitaMisura === 'ORE' ? 'ore' : 'giorni'}</strong>
                   </div>
                 )}
                 <div className="assenza-saldo-progress" aria-hidden="true">
@@ -512,7 +512,7 @@ export function LeMieAssenzePanel() {
               </div>
               {richiesta.richiedeApprovazioneEccezionale && (
                 <StatusNotice tone="warning">
-                  La richiesta usa quota ferie scaduta e richiede una conferma esplicita del Gestionale.
+                  La richiesta usa quota maturata oltre la scadenza configurata e richiede una conferma esplicita del Gestionale.
                 </StatusNotice>
               )}
               {richiesta.motivazione && (

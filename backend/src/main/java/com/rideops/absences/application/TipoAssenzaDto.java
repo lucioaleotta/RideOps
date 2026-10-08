@@ -16,7 +16,7 @@ public record TipoAssenzaDto(
     int preavvisoMinimoGiorniDefault,
     BigDecimal numeroGiorniAnnuiDefault,
     BigDecimal numeroGiorniMalattiaAnnuiDefault,
-    Integer scadenzaFerieMesiDefault,
+    Integer scadenzaMesiAccumuloDefault,
     boolean attivo
 ) {
 }

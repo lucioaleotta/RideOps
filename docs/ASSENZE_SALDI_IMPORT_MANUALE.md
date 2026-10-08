@@ -4,7 +4,7 @@
 
 I saldi annuali FER e PER vengono generati automaticamente dal backend, in modo idempotente, quando un saldo del driver viene letto o utilizzato nell’anno corrente. La quota è risolta secondo l’ordine di precedenza **eccezione driver → configurazione tenant → default Admin/piattaforma**. Il vincolo univoco su tenant, driver, tipo e anno evita la creazione di coorti duplicate.
 
-- FER riceve ogni anno la quota annua effettiva; le coorti non utilizzate restano separate e la quota residua scade secondo `scadenza_ferie_mesi` (default 18 mesi dalla fine dell’anno di maturazione).
+- FER riceve ogni anno la quota annua effettiva; le coorti non utilizzate restano separate. Per FER/PER/RIP la quota residua scade solo con `comportamento_maturato = accumulo_esteso`, secondo `scadenza_mesi_accumulo` (default 18 mesi dalla fine dell’anno di maturazione); con `azzeramento_annuale` non viene riportata né classificata come scaduta.
 - PER riceve ogni anno la quota effettiva configurata; la coorte è spendibile nell’anno di competenza e non si riporta all’anno successivo.
 - MAL, RIP, CON e SGA non ricevono un monte annuale sintetico con questa regola: seguono il proprio comportamento applicativo e di configurazione.
 - Una quota pari a zero è un saldo annuale valido, non un saldo mancante.
@@ -25,4 +25,4 @@ Non sovrascrivere una coorte esistente con un `ON CONFLICT` alla cieca: si risch
 
 ## Calcolo scadenza FER
 
-L’API separa `residuoValido` e `residuoScaduto` usando `scadenza_ferie_mesi` effettiva (driver → tenant → piattaforma). La data limite è calcolata dalla fine dell’anno della coorte; gli altri tipi non vengono classificati come ferie scadute.
+L’API separa `residuoValido` e `residuoScaduto` usando la configurazione effettiva (driver → tenant → piattaforma): `comportamento_maturato` determina se le coorti si riportano; `scadenza_mesi_accumulo` determina il termine in modalità estesa. La data limite è calcolata dalla fine dell’anno della coorte. I mesi non hanno effetto con `azzeramento_annuale`.

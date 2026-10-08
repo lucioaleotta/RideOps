@@ -48,11 +48,6 @@ public class CreateRichiestaAssenzaUseCase {
         if (!configurazione.abilitato()) {
             throw new AssenzaValidationException("Il tipo di assenza non è abilitato per questo driver");
         }
-        long daysUntilStart = ChronoUnit.DAYS.between(LocalDate.now(), dataInizio);
-        if (daysUntilStart < configurazione.preavvisoMinimoGiorni()) {
-            throw new AssenzaValidationException("Questa richiesta richiede almeno "
-                + configurazione.preavvisoMinimoGiorni() + " giorni di preavviso");
-        }
 
         RichiestaAssenzaValidationSupport.validate(
             tipoAssenza,
@@ -65,6 +60,12 @@ public class CreateRichiestaAssenzaUseCase {
             richiestaAssenzaRepositoryPort.findOverlapping(
                 driverId, EnumSet.of(StatoRichiestaAssenza.IN_ATTESA, StatoRichiestaAssenza.APPROVATA), dataInizio, dataFine)
         );
+
+        long daysUntilStart = ChronoUnit.DAYS.between(LocalDate.now(), dataInizio);
+        if (daysUntilStart < configurazione.preavvisoMinimoGiorni()) {
+            throw new AssenzaValidationException("Questa richiesta richiede almeno "
+                + configurazione.preavvisoMinimoGiorni() + " giorni di preavviso");
+        }
 
         boolean exceptional = saldiDriverService.richiedeApprovazioneEccezionale(
             driverId, tipoAssenzaId, dataInizio, dataFine, giornataIntera, oraInizio, oraFine);

@@ -59,8 +59,9 @@ class CreateRichiestaAssenzaUseCaseTest {
             .thenReturn(List.of());
         when(richiestaAssenzaRepositoryPort.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
+        LocalDate startDate = LocalDate.now().plusDays(5);
         RichiestaAssenzaDto dto = useCase.execute(
-            5L, 1L, LocalDate.now().plusDays(10), LocalDate.now().plusDays(13), true, null, null, "Ferie estive");
+            5L, 1L, startDate, startDate.plusDays(3), true, null, null, "Ferie estive");
 
         assertEquals(StatoRichiestaAssenza.IN_ATTESA, dto.stato());
         assertEquals(OrigineRichiestaAssenza.DRIVER, dto.origine());
@@ -75,7 +76,7 @@ class CreateRichiestaAssenzaUseCaseTest {
 
         AssenzaValidationException exception = assertThrows(
             AssenzaValidationException.class,
-            () -> useCase.execute(5L, 6L, LocalDate.now().plusDays(10), LocalDate.now().plusDays(10), true, null, null, null)
+            () -> useCase.execute(5L, 6L, LocalDate.of(2026, 9, 22), LocalDate.of(2026, 9, 22), true, null, null, null)
         );
 
         assertEquals("Il tipo Sganciamento non è richiedibile dal driver", exception.getMessage());
@@ -91,7 +92,7 @@ class CreateRichiestaAssenzaUseCaseTest {
 
         AssenzaValidationException exception = assertThrows(
             AssenzaValidationException.class,
-            () -> useCase.execute(5L, 1L, LocalDate.now().plusDays(10), LocalDate.now().plusDays(13), true, null, null, null)
+            () -> useCase.execute(5L, 1L, LocalDate.of(2026, 9, 22), LocalDate.of(2026, 9, 25), true, null, null, null)
         );
 
         assertEquals("Esiste già una richiesta di assenza nello stesso periodo per questo driver", exception.getMessage());
@@ -116,7 +117,7 @@ class CreateRichiestaAssenzaUseCaseTest {
 
         AssenzaValidationException exception = assertThrows(
             AssenzaValidationException.class,
-            () -> useCase.execute(5L, 3L, LocalDate.now().plusDays(10), LocalDate.now().plusDays(10), true, null, null, null)
+            () -> useCase.execute(5L, 3L, LocalDate.of(2026, 9, 22), LocalDate.of(2026, 9, 22), true, null, null, null)
         );
 
         assertEquals("Ora di inizio e ora di fine sono obbligatorie per questa richiesta", exception.getMessage());
@@ -155,8 +156,8 @@ class CreateRichiestaAssenzaUseCaseTest {
 
     private ConfigurazioneAssenzaDto config(Long tipoId, int preavviso) {
         return new ConfigurazioneAssenzaDto(tipoId, "FER", "Ferie", "GIORNI", false, false,
-            true, false, false, null, null, 18, preavviso, null,
-            new ConfigurazioneAssenzaInput(true, false, true, null, null, 18, preavviso, null));
+            true, false, false, null, null, "azzeramento_annuale", null, preavviso, null,
+            new ConfigurazioneAssenzaInput(true, false, true, null, null, "azzeramento_annuale", null, preavviso, null));
     }
 
     private TipoAssenzaEntity tipoAssenza(Long id, String codice, boolean origineDriver, boolean origineGestionale, boolean richiedeOrario) {

@@ -1,5 +1,7 @@
 export type UnitaMisuraAssenza = 'GIORNI' | 'ORE';
 
+export type ComportamentoMaturatoAssenza = 'azzeramento_annuale' | 'accumulo_esteso';
+
 export type OrigineRichiestaAssenza = 'DRIVER' | 'GESTIONALE';
 
 export type StatoRichiestaAssenza = 'BOZZA' | 'IN_ATTESA' | 'APPROVATA' | 'RIFIUTATA' | 'ANNULLATA';
@@ -17,7 +19,7 @@ export type TipoAssenza = {
   preavvisoMinimoGiorniDefault: number;
   numeroGiorniAnnuiDefault?: number | null;
   numeroGiorniMalattiaAnnuiDefault?: number | null;
-  scadenzaFerieMesiDefault?: number | null;
+  scadenzaMesiAccumuloDefault?: number | null;
   attivo: boolean;
 };
 
@@ -64,7 +66,8 @@ export type SaldoAssenza = {
   saldoAnnuale: boolean;
   saldoCaricato: boolean;
   monteOreAbilitato: boolean;
-  scadenzaFerieMesi: number | null;
+  comportamentoMaturato: ComportamentoMaturatoAssenza;
+  scadenzaMesiAccumulo: number | null;
 };
 
 export type CalendarioAssenza = {
@@ -108,7 +111,8 @@ export type ConfigurazioneAssenzaValues = {
   monteOreAbilitato: boolean;
   numeroGiorniAnnui: number | null;
   numeroGiorniMalattiaAnnui: number | null;
-  scadenzaFerieMesi: number | null;
+  comportamentoMaturato: ComportamentoMaturatoAssenza;
+  scadenzaMesiAccumulo: number | null;
   preavvisoMinimoGiorni: number;
   noteConfigurazione: string | null;
 };

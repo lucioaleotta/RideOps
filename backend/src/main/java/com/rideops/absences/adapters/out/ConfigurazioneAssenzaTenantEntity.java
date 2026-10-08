@@ -42,8 +42,11 @@ public class ConfigurazioneAssenzaTenantEntity {
     @Column(name = "numero_giorni_malattia_annui", precision = 8, scale = 2)
     private BigDecimal numeroGiorniMalattiaAnnui;
 
-    @Column(name = "scadenza_ferie_mesi")
-    private Integer scadenzaFerieMesi;
+    @Column(name = "comportamento_maturato", nullable = false)
+    private String comportamentoMaturato = "azzeramento_annuale";
+
+    @Column(name = "scadenza_mesi_accumulo")
+    private Integer scadenzaMesiAccumulo;
 
     @Column(name = "preavviso_minimo_giorni", nullable = false)
     private int preavvisoMinimoGiorni;
@@ -78,8 +81,10 @@ public class ConfigurazioneAssenzaTenantEntity {
     public void setNumeroGiorniAnnui(BigDecimal value) { this.numeroGiorniAnnui = value; }
     public BigDecimal getNumeroGiorniMalattiaAnnui() { return numeroGiorniMalattiaAnnui; }
     public void setNumeroGiorniMalattiaAnnui(BigDecimal value) { this.numeroGiorniMalattiaAnnui = value; }
-    public Integer getScadenzaFerieMesi() { return scadenzaFerieMesi; }
-    public void setScadenzaFerieMesi(Integer scadenzaFerieMesi) { this.scadenzaFerieMesi = scadenzaFerieMesi; }
+    public String getComportamentoMaturato() { return comportamentoMaturato; }
+    public void setComportamentoMaturato(String comportamentoMaturato) { this.comportamentoMaturato = comportamentoMaturato; }
+    public Integer getScadenzaMesiAccumulo() { return scadenzaMesiAccumulo; }
+    public void setScadenzaMesiAccumulo(Integer scadenzaMesiAccumulo) { this.scadenzaMesiAccumulo = scadenzaMesiAccumulo; }
     public int getPreavvisoMinimoGiorni() { return preavvisoMinimoGiorni; }
     public void setPreavvisoMinimoGiorni(int preavvisoMinimoGiorni) { this.preavvisoMinimoGiorni = preavvisoMinimoGiorni; }
     public String getNoteConfigurazione() { return noteConfigurazione; }

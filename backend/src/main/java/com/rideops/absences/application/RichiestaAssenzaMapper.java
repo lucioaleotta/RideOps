@@ -61,7 +61,7 @@ final class RichiestaAssenzaMapper {
             entity.getPreavvisoMinimoGiorniDefault(),
             entity.getNumeroGiorniAnnuiDefault(),
             entity.getNumeroGiorniMalattiaAnnuiDefault(),
-            entity.getScadenzaFerieMesiDefault(),
+            entity.getScadenzaMesiAccumuloDefault(),
             entity.isAttivo()
         );
     }

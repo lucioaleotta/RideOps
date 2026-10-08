@@ -24,10 +24,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class ConfigurazioneAssenzeService {
+public class ConfigurazioneAssenzeService implements RegoleGeneraliAssenzaProvider {
 
     private static final String DEFAULT_CONFLITTI = "SEGNALA";
     private static final Set<String> COMPORTAMENTI_CONFLITTO = Set.of("SEGNALA", "SEGNALA_E_BLOCCA");
+    private static final String DEFAULT_COMPORTAMENTO_MATURATO = "azzeramento_annuale";
+    private static final Set<String> COMPORTAMENTI_MATURATO = Set.of("azzeramento_annuale", "accumulo_esteso");
 
     private final ConfigurazioneAssenzaTenantRepository tenantRepository;
     private final RegoleGeneraliAssenzaTenantRepository regoleRepository;
@@ -68,8 +70,8 @@ public class ConfigurazioneAssenzeService {
                                                              ConfigurazioneAssenzaInput input,
                                                              long userId) {
         long tenantId = tenantContext.requireTenantId();
-        validateInput(input);
         TipoAssenzaEntity tipo = requireTipo(tipoAssenzaId);
+        validateInput(input, tipo);
         ConfigurazioneAssenzaTenantEntity entity = tenantRepository
             .findByTenantIdAndTipoAssenzaId(tenantId, tipoAssenzaId)
             .orElseGet(ConfigurazioneAssenzaTenantEntity::new);
@@ -88,6 +90,7 @@ public class ConfigurazioneAssenzeService {
     }
 
     @Transactional(readOnly = true)
+    @Override
     public RegoleGeneraliAssenzaDto getGeneralRules() {
         long tenantId = tenantContext.requireTenantId();
         String current = regoleRepository.findById(tenantId)
@@ -160,8 +163,8 @@ public class ConfigurazioneAssenzeService {
                                                                    long userId) {
         long tenantId = tenantContext.requireTenantId();
         UserEntity driver = requireDriver(driverId, tenantId);
-        validateInput(input);
-        requireTipo(tipoAssenzaId);
+        TipoAssenzaEntity tipo = requireTipo(tipoAssenzaId);
+        validateInput(input, tipo);
         ConfigurazioneAssenzaDriverEntity entity = driverConfigurationRepository
             .findByTenantIdAndDriverIdAndTipoAssenzaId(tenantId, driverId, tipoAssenzaId)
             .orElseGet(ConfigurazioneAssenzaDriverEntity::new);
@@ -192,7 +195,7 @@ public class ConfigurazioneAssenzeService {
                                                           long userId) {
         long tenantId = tenantContext.requireTenantId();
         TipoAssenzaEntity tipo = requireTipo(tipoAssenzaId);
-        validateInput(input);
+        validateInput(input, tipo);
         List<Long> uniqueIds = validatedDriverIds(driverIds, tenantId);
         for (Long driverId : uniqueIds) {
             ConfigurazioneAssenzaDriverEntity entity = driverConfigurationRepository
@@ -254,14 +257,23 @@ public class ConfigurazioneAssenzeService {
             .orElseThrow(() -> new AssenzaNotFoundException("Tipo di assenza non trovato o non attivo"));
     }
 
-    private void validateInput(ConfigurazioneAssenzaInput input) {
+    private void validateInput(ConfigurazioneAssenzaInput input, TipoAssenzaEntity tipo) {
+        boolean maturedBalanceType = isMaturedBalanceType(tipo);
         if (input == null || input.abilitato() == null || input.richiedeDocumento() == null
             || input.monteOreAbilitato() == null || input.preavvisoMinimoGiorni() == null
             || input.preavvisoMinimoGiorni() < 0 || negative(input.numeroGiorniAnnui())
             || negative(input.numeroGiorniMalattiaAnnui())
-            || (input.scadenzaFerieMesi() != null && input.scadenzaFerieMesi() < 1)) {
+            || (input.comportamentoMaturato() != null && !COMPORTAMENTI_MATURATO.contains(input.comportamentoMaturato()))
+            || (input.scadenzaMesiAccumulo() != null && input.scadenzaMesiAccumulo() < 1)
+            || (!maturedBalanceType && input.comportamentoMaturato() != null
+                && !DEFAULT_COMPORTAMENTO_MATURATO.equals(input.comportamentoMaturato()))
+            || (!maturedBalanceType && input.scadenzaMesiAccumulo() != null)) {
             throw new AssenzaValidationException("Valori di configurazione non validi");
         }
+    }
+
+    private boolean isMaturedBalanceType(TipoAssenzaEntity tipo) {
+        return Set.of("FER", "PER", "RIP").contains(tipo.getCodice());
     }
 
     private boolean negative(BigDecimal value) {
@@ -272,7 +284,8 @@ public class ConfigurazioneAssenzeService {
         ConfigurazioneAssenzaInput defaults = platformDefaults(tipo);
         ConfigurazioneAssenzaInput values = entity == null ? defaults : new ConfigurazioneAssenzaInput(
             entity.isAbilitato(), entity.isRichiedeDocumento(), entity.isMonteOreAbilitato(),
-            entity.getNumeroGiorniAnnui(), entity.getNumeroGiorniMalattiaAnnui(), entity.getScadenzaFerieMesi(),
+            entity.getNumeroGiorniAnnui(), entity.getNumeroGiorniMalattiaAnnui(), entity.getComportamentoMaturato(),
+            entity.getScadenzaMesiAccumulo(),
             entity.getPreavvisoMinimoGiorni(), entity.getNoteConfigurazione());
         boolean customized = entity != null && !sameConfiguration(values, defaults);
         return dto(tipo, values, customized, defaults);
@@ -282,7 +295,8 @@ public class ConfigurazioneAssenzeService {
         ConfigurazioneAssenzaInput defaults = platformDefaults(tipo);
         ConfigurazioneAssenzaInput values = new ConfigurazioneAssenzaInput(
             entity.isAbilitato(), entity.isRichiedeDocumento(), entity.isMonteOreAbilitato(),
-            entity.getNumeroGiorniAnnui(), entity.getNumeroGiorniMalattiaAnnui(), entity.getScadenzaFerieMesi(),
+            entity.getNumeroGiorniAnnui(), entity.getNumeroGiorniMalattiaAnnui(), entity.getComportamentoMaturato(),
+            entity.getScadenzaMesiAccumulo(),
             entity.getPreavvisoMinimoGiorni(), entity.getMotivo());
         return dto(tipo, values, true, defaults);
     }
@@ -294,7 +308,8 @@ public class ConfigurazioneAssenzeService {
         return new ConfigurazioneAssenzaDto(
             tipo.getId(), tipo.getCodice(), tipo.getNome(), tipo.getUnitaMisura().name(), tipo.isRichiedeOrario(),
             customized, values.abilitato(), values.richiedeDocumento(), values.monteOreAbilitato(),
-            values.numeroGiorniAnnui(), values.numeroGiorniMalattiaAnnui(), values.scadenzaFerieMesi(),
+            values.numeroGiorniAnnui(), values.numeroGiorniMalattiaAnnui(), values.comportamentoMaturato(),
+            values.scadenzaMesiAccumulo(),
             values.preavvisoMinimoGiorni(), values.noteConfigurazione(), defaults);
     }
 
@@ -305,7 +320,8 @@ public class ConfigurazioneAssenzeService {
             tipo.isScalaDaMonteOreDefault(),
             tipo.getNumeroGiorniAnnuiDefault(),
             tipo.getNumeroGiorniMalattiaAnnuiDefault(),
-            tipo.getScadenzaFerieMesiDefault(),
+            DEFAULT_COMPORTAMENTO_MATURATO,
+            isMaturedBalanceType(tipo) ? tipo.getScadenzaMesiAccumuloDefault() : null,
             tipo.getPreavvisoMinimoGiorniDefault(),
             null
         );
@@ -317,7 +333,9 @@ public class ConfigurazioneAssenzeService {
             && Objects.equals(first.monteOreAbilitato(), second.monteOreAbilitato())
             && sameDecimal(first.numeroGiorniAnnui(), second.numeroGiorniAnnui())
             && sameDecimal(first.numeroGiorniMalattiaAnnui(), second.numeroGiorniMalattiaAnnui())
-            && Objects.equals(first.scadenzaFerieMesi(), second.scadenzaFerieMesi())
+            && Objects.equals(first.comportamentoMaturato(), second.comportamentoMaturato())
+            && (!"accumulo_esteso".equals(first.comportamentoMaturato())
+                || Objects.equals(first.scadenzaMesiAccumulo(), second.scadenzaMesiAccumulo()))
             && Objects.equals(first.preavvisoMinimoGiorni(), second.preavvisoMinimoGiorni())
             && Objects.equals(first.noteConfigurazione(), second.noteConfigurazione());
     }
@@ -332,7 +350,11 @@ public class ConfigurazioneAssenzeService {
         target.setMonteOreAbilitato(input.monteOreAbilitato());
         target.setNumeroGiorniAnnui(input.numeroGiorniAnnui());
         target.setNumeroGiorniMalattiaAnnui(input.numeroGiorniMalattiaAnnui());
-        target.setScadenzaFerieMesi(input.scadenzaFerieMesi());
+        target.setComportamentoMaturato(input.comportamentoMaturato() == null
+            ? DEFAULT_COMPORTAMENTO_MATURATO : input.comportamentoMaturato());
+        target.setScadenzaMesiAccumulo("accumulo_esteso".equals(input.comportamentoMaturato())
+            ? input.scadenzaMesiAccumulo() == null ? 18 : input.scadenzaMesiAccumulo()
+            : null);
         target.setPreavvisoMinimoGiorni(input.preavvisoMinimoGiorni());
         target.setNoteConfigurazione(input.noteConfigurazione());
     }
@@ -343,7 +365,11 @@ public class ConfigurazioneAssenzeService {
         target.setMonteOreAbilitato(input.monteOreAbilitato());
         target.setNumeroGiorniAnnui(input.numeroGiorniAnnui());
         target.setNumeroGiorniMalattiaAnnui(input.numeroGiorniMalattiaAnnui());
-        target.setScadenzaFerieMesi(input.scadenzaFerieMesi());
+        target.setComportamentoMaturato(input.comportamentoMaturato() == null
+            ? DEFAULT_COMPORTAMENTO_MATURATO : input.comportamentoMaturato());
+        target.setScadenzaMesiAccumulo("accumulo_esteso".equals(input.comportamentoMaturato())
+            ? input.scadenzaMesiAccumulo() == null ? 18 : input.scadenzaMesiAccumulo()
+            : null);
         target.setPreavvisoMinimoGiorni(input.preavvisoMinimoGiorni());
     }
 }

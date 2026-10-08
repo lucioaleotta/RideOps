@@ -266,7 +266,7 @@ export function RichiesteDaApprovarePanel() {
         throw new Error(responsePayload?.message ?? 'Impossibile completare l\'operazione');
       }
       setSuccess(responsePayload?.richiedeApprovazioneEccezionale
-        ? 'Richiesta inserita in attesa di conferma: utilizza quota ferie scaduta'
+        ? 'Richiesta inserita in attesa di conferma: utilizza quota maturata oltre la scadenza configurata'
         : successMessage);
       setInserimentoOpen(false);
       setSganciamentoOpen(false);
@@ -375,7 +375,7 @@ export function RichiesteDaApprovarePanel() {
               </div>
               {richiesta.richiedeApprovazioneEccezionale && (
                 <StatusNotice tone="warning">
-                  Richiesta eccezionale: utilizza quota ferie scaduta e richiede conferma esplicita.
+                  Richiesta eccezionale: utilizza quota maturata oltre la scadenza configurata e richiede conferma esplicita.
                 </StatusNotice>
               )}
               {(richiesta.conflittiTurno?.length ?? 0) > 0 && (

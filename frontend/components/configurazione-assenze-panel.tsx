@@ -23,7 +23,8 @@ const editableFields: ConfigurationField[] = [
   'monteOreAbilitato',
   'numeroGiorniAnnui',
   'numeroGiorniMalattiaAnnui',
-  'scadenzaFerieMesi',
+  'comportamentoMaturato',
+  'scadenzaMesiAccumulo',
   'preavvisoMinimoGiorni',
   'noteConfigurazione'
 ];
@@ -34,7 +35,8 @@ const fieldLabels: Record<ConfigurationField, string> = {
   monteOreAbilitato: 'Scala dal monte ore',
   numeroGiorniAnnui: 'Giorni/ore annui spettanti',
   numeroGiorniMalattiaAnnui: 'Comporto malattia (giorni)',
-  scadenzaFerieMesi: 'Scadenza saldo (mesi)',
+  comportamentoMaturato: 'Comportamento del maturato',
+  scadenzaMesiAccumulo: 'Durata accumulo esteso (mesi)',
   preavvisoMinimoGiorni: 'Preavviso minimo richiesto (giorni)',
   noteConfigurazione: 'Motivo / note'
 };
@@ -42,6 +44,9 @@ const fieldLabels: Record<ConfigurationField, string> = {
 function displayValue(field: ConfigurationField, value: ConfigurationInput[ConfigurationField]) {
   if (field === 'abilitato' || field === 'richiedeDocumento' || field === 'monteOreAbilitato') {
     return value ? 'Sì' : 'No';
+  }
+  if (field === 'comportamentoMaturato') {
+    return value === 'accumulo_esteso' ? 'Accumulo esteso' : 'Non accumulabile oltre l’anno';
   }
   if (value === null || value === '') return '—';
   if (field === 'numeroGiorniAnnui' && typeof value === 'number') return String(value);
@@ -55,7 +60,8 @@ function editableValues(configuration: ConfigurazioneAssenza): ConfigurationInpu
     monteOreAbilitato: configuration.monteOreAbilitato,
     numeroGiorniAnnui: configuration.numeroGiorniAnnui,
     numeroGiorniMalattiaAnnui: configuration.numeroGiorniMalattiaAnnui,
-    scadenzaFerieMesi: configuration.scadenzaFerieMesi,
+    comportamentoMaturato: configuration.comportamentoMaturato,
+    scadenzaMesiAccumulo: configuration.scadenzaMesiAccumulo,
     preavvisoMinimoGiorni: configuration.preavvisoMinimoGiorni,
     noteConfigurazione: configuration.noteConfigurazione
   };
@@ -502,8 +508,21 @@ export function ConfigurazioneAssenzePanel() {
                       </small>
                     </label>
                   )}
-                  {activeConfiguration.codice === 'FER' && (
-                      <NumberConfigurationField field="scadenzaFerieMesi" label={fieldLabels.scadenzaFerieMesi} value={tenantDraft.scadenzaFerieMesi} defaultValue={activeConfiguration.defaultPiattaforma.scadenzaFerieMesi} onChange={(value) => setTenantDraft({ ...tenantDraft, scadenzaFerieMesi: value })} />
+                  {['FER', 'PER', 'RIP'].includes(activeConfiguration.codice) && (
+                    <MaturedBehaviorFields
+                      behavior={tenantDraft.comportamentoMaturato}
+                      months={tenantDraft.scadenzaMesiAccumulo}
+                      defaultBehavior={activeConfiguration.defaultPiattaforma.comportamentoMaturato}
+                      defaultMonths={activeConfiguration.defaultPiattaforma.scadenzaMesiAccumulo}
+                      onBehaviorChange={(comportamentoMaturato) => setTenantDraft({
+                        ...tenantDraft,
+                        comportamentoMaturato,
+                        scadenzaMesiAccumulo: comportamentoMaturato === 'accumulo_esteso'
+                          ? tenantDraft.scadenzaMesiAccumulo ?? activeConfiguration.defaultPiattaforma.scadenzaMesiAccumulo ?? 18
+                          : null
+                      })}
+                      onMonthsChange={(scadenzaMesiAccumulo) => setTenantDraft({ ...tenantDraft, scadenzaMesiAccumulo })}
+                    />
                   )}
                   <NumberConfigurationField field="preavvisoMinimoGiorni" label={fieldLabels.preavvisoMinimoGiorni} value={tenantDraft.preavvisoMinimoGiorni} defaultValue={activeConfiguration.defaultPiattaforma.preavvisoMinimoGiorni} onChange={(value) => setTenantDraft({ ...tenantDraft, preavvisoMinimoGiorni: value ?? 0 })} />
                   <ToggleConfigurationField field="abilitato" label={fieldLabels.abilitato} checked={tenantDraft.abilitato} defaultValue={activeConfiguration.defaultPiattaforma.abilitato} onChange={(checked) => setTenantDraft({ ...tenantDraft, abilitato: checked })} />
@@ -576,7 +595,7 @@ export function ConfigurazioneAssenzePanel() {
                       </span>
                       {driver.personalizzato ? 'Modifica' : 'Personalizza'}
                     </button>
-                    {activeConfiguration && (activeConfiguration.codice === 'FER' || activeConfiguration.codice === 'PER') && (
+                    {(activeConfiguration.codice === 'FER' || activeConfiguration.codice === 'PER') && (
                       <button type="button" className="assenze-link-button" onClick={() => void openBalanceCorrection(driver)}>
                         Rettifica saldo anno corrente
                       </button>
@@ -638,7 +657,7 @@ export function ConfigurazioneAssenzePanel() {
               <button type="button" className="tenant-modal-close" aria-label="Chiudi preview rettifica" onClick={() => setBalancePreviewOpen(false)} disabled={balanceSaving}>×</button>
             </div>
             <dl className="assenze-balance-preview">
-              <div><dt>Driver</dt><dd>{driverFullName(driverRows.find((row) => row.driverId === balancePreview.driverId) ?? { firstName: null, lastName: null })}</dd></div>
+              <div><dt>Driver</dt><dd>{driverFullName(driverRows.find((row) => row.driverId === balancePreview.driverId) ?? { driverId: balancePreview.driverId, firstName: null, lastName: null })}</dd></div>
               <div><dt>Tipo / anno</dt><dd>{balancePreview.nome} · {balancePreview.anno}</dd></div>
               <div><dt>Maturato attuale</dt><dd>{balancePreview.maturatoAttuale}</dd></div>
               <div><dt>Già utilizzato</dt><dd>{balancePreview.giaUtilizzato}</dd></div>
@@ -723,6 +742,48 @@ function NumberConfigurationField({
   );
 }
 
+function MaturedBehaviorFields({
+  behavior,
+  months,
+  defaultBehavior,
+  defaultMonths,
+  onBehaviorChange,
+  onMonthsChange
+}: {
+  behavior: ConfigurazioneAssenzaValues['comportamentoMaturato'];
+  months: number | null;
+  defaultBehavior: ConfigurazioneAssenzaValues['comportamentoMaturato'];
+  defaultMonths: number | null;
+  onBehaviorChange: (value: ConfigurazioneAssenzaValues['comportamentoMaturato']) => void;
+  onMonthsChange: (value: number | null) => void;
+}) {
+  return (
+    <>
+      <label className="assenze-config-field">
+        <span>{fieldLabels.comportamentoMaturato}</span>
+        <select className="form-input" value={behavior} onChange={(event) => onBehaviorChange(event.target.value as ConfigurazioneAssenzaValues['comportamentoMaturato'])}>
+          <option value="azzeramento_annuale">Non accumulabile oltre l’anno</option>
+          <option value="accumulo_esteso">Accumulo esteso fino a {months ?? defaultMonths ?? 18} mesi</option>
+        </select>
+        <small>
+          Default piattaforma: {defaultBehavior === 'accumulo_esteso' ? 'Accumulo esteso' : 'Non accumulabile oltre l’anno'}
+          {behavior !== defaultBehavior && <em className="assenze-personalized-label">Personalizzato</em>}
+        </small>
+      </label>
+      {behavior === 'accumulo_esteso' && (
+        <label className="assenze-config-field">
+          <span>{fieldLabels.scadenzaMesiAccumulo}</span>
+          <input className="form-input" type="number" min="1" step="1" value={months ?? ''} onChange={(event) => onMonthsChange(event.target.value === '' ? null : Number(event.target.value))} />
+          <small>
+            Default piattaforma: {defaultMonths ?? 18} mesi
+            {months !== defaultMonths && <em className="assenze-personalized-label">Personalizzato</em>}
+          </small>
+        </label>
+      )}
+    </>
+  );
+}
+
 function ToggleConfigurationField({ field, label, checked, defaultValue, onChange }: { field: ConfigurationField; label: string; checked: boolean; defaultValue: boolean; onChange: (checked: boolean) => void }) {
   return (
     <label className="assenze-config-toggle">
@@ -757,7 +818,22 @@ function ConfigurationEditor({
           <input className="form-input" type="number" min="0" value={values.numeroGiorniMalattiaAnnui ?? ''} onChange={(event) => onChange({ ...values, numeroGiorniMalattiaAnnui: event.target.value === '' ? null : Number(event.target.value) })} />
         </label>
       )}
-      {configuration.codice === 'FER' && <NumberConfigurationField field="scadenzaFerieMesi" label="Scadenza saldo (mesi)" value={values.scadenzaFerieMesi} defaultValue={configuration.defaultPiattaforma.scadenzaFerieMesi} onChange={(value) => onChange({ ...values, scadenzaFerieMesi: value })} />}
+      {['FER', 'PER', 'RIP'].includes(configuration.codice) && (
+        <MaturedBehaviorFields
+          behavior={values.comportamentoMaturato}
+          months={values.scadenzaMesiAccumulo}
+          defaultBehavior={configuration.defaultPiattaforma.comportamentoMaturato}
+          defaultMonths={configuration.defaultPiattaforma.scadenzaMesiAccumulo}
+          onBehaviorChange={(comportamentoMaturato) => onChange({
+            ...values,
+            comportamentoMaturato,
+            scadenzaMesiAccumulo: comportamentoMaturato === 'accumulo_esteso'
+              ? values.scadenzaMesiAccumulo ?? configuration.defaultPiattaforma.scadenzaMesiAccumulo ?? 18
+              : null
+          })}
+          onMonthsChange={(scadenzaMesiAccumulo) => onChange({ ...values, scadenzaMesiAccumulo })}
+        />
+      )}
       <NumberConfigurationField field="preavvisoMinimoGiorni" label="Preavviso minimo (giorni)" value={values.preavvisoMinimoGiorni} defaultValue={configuration.defaultPiattaforma.preavvisoMinimoGiorni} onChange={(value) => onChange({ ...values, preavvisoMinimoGiorni: value ?? 0 })} />
       <ToggleConfigurationField field="abilitato" label="Tipo abilitato" checked={values.abilitato} defaultValue={configuration.defaultPiattaforma.abilitato} onChange={(checked) => onChange({ ...values, abilitato: checked })} />
       <ToggleConfigurationField field="monteOreAbilitato" label="Scala dal monte ore" checked={values.monteOreAbilitato} defaultValue={configuration.defaultPiattaforma.monteOreAbilitato} onChange={(checked) => onChange({ ...values, monteOreAbilitato: checked })} />
