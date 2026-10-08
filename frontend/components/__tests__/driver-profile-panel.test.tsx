@@ -31,15 +31,15 @@ describe('DriverProfilePanel', () => {
       email: 'luigi.bianchi@rideops.it'
     };
 
-    const fetchMock = jest.fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => profile
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => updatedProfile
-      });
+    const fetchMock = jest.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (url === '/api/prefissi-telefonici') {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      if (init?.method === 'PUT') {
+        return Promise.resolve({ ok: true, json: async () => updatedProfile });
+      }
+      return Promise.resolve({ ok: true, json: async () => profile });
+    });
 
     global.fetch = fetchMock as unknown as typeof fetch;
 
@@ -60,10 +60,10 @@ describe('DriverProfilePanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /aggiorna driver/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock.mock.calls.some((call) => call[1]?.method === 'PUT')).toBe(true);
     });
 
-    const putCall = fetchMock.mock.calls[1];
+    const putCall = fetchMock.mock.calls.find((call) => call[1]?.method === 'PUT')!;
     expect(putCall[0]).toBe('/api/driver/profile');
     expect(putCall[1]?.method).toBe('PUT');
 

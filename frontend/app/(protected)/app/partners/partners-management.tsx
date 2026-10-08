@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AddIcon, ButtonContent, CursorIcon, DeleteIcon, EditIcon, LockIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon } from '../../../../components/action-icons';
 import { StatusNotice } from '../../../../components/status-notice';
+import { PhoneInput } from '../../../../components/phone-input';
 
 type PartnerType = 'AGENZIA' | 'NCC' | 'ALTRO';
 
@@ -782,7 +783,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
               </label>
               <label>
                 Telefono
-                <input className="form-input" value={form.telefono} onChange={(e) => setForm((p) => ({ ...p, telefono: e.target.value }))} />
+                <PhoneInput value={form.telefono} onChange={(telefono) => setForm((p) => ({ ...p, telefono }))} />
               </label>
               <label>
                 Email
@@ -822,7 +823,7 @@ export function PartnersManagement({ userRole = 'UNKNOWN' }: PartnersManagementP
               </label>
               <label>
                 Telefono WhatsApp
-                <input className="form-input" value={form.telefonoWhatsApp} onChange={(e) => setForm((p) => ({ ...p, telefonoWhatsApp: e.target.value }))} />
+                <PhoneInput value={form.telefonoWhatsApp} onChange={(telefonoWhatsApp) => setForm((p) => ({ ...p, telefonoWhatsApp }))} />
               </label>
               <label>
                 Note Operative

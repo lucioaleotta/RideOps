@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, SaveIcon } from './action-icons';
+import { PhoneInput } from './phone-input';
 import { StatusNotice } from './status-notice';
 
 type LicenseType = 'AM' | 'A1' | 'A2' | 'A' | 'B' | 'BE' | 'C' | 'CE' | 'D' | 'DE' | 'CQC';
@@ -337,11 +338,9 @@ export function DriverProfilePanel() {
                   </label>
                   <label>
                     Cellulare
-                    <input
-                      className="form-input"
+                    <PhoneInput
                       value={form.mobilePhone}
-                      onChange={(event) => setForm((prev) => (prev ? { ...prev, mobilePhone: event.target.value } : prev))}
-                      placeholder="+39..."
+                      onChange={(mobilePhone) => setForm((prev) => (prev ? { ...prev, mobilePhone } : prev))}
                       required
                     />
                   </label>

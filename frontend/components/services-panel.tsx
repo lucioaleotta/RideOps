@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CalendarIcon, CancelIcon, CursorIcon, FilterIcon, LockIcon, OpenIcon, PartnerIcon as SharedPartnerIcon, PrintIcon as SharedPrintIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon, UserIcon } from './action-icons';
 import { StatusNotice } from './status-notice';
+import { PhoneInput } from './phone-input';
 import { formatCurrencyEUR } from '../lib/currency';
 import { ExportIcon } from './services-export/ExportIcon';
 
@@ -2504,10 +2505,9 @@ export function ServicesPanel() {
 
             <label>
               Telefono cliente
-              <input
-                className="form-input"
+              <PhoneInput
                 value={form.clientPhone}
-                onChange={(event) => setForm((prev) => ({ ...prev, clientPhone: event.target.value }))}
+                onChange={(clientPhone) => setForm((prev) => ({ ...prev, clientPhone }))}
               />
             </label>
 
@@ -2542,6 +2542,13 @@ export function ServicesPanel() {
                 rows={3}
               />
             </label>
+
+            {editingId && form.serviceAssignmentType === 'OUTSOURCED' && (
+              <label>
+                Modalità gestione servizio
+                <input className="form-input" value={assignmentTypeLabel(form.serviceAssignmentType)} readOnly disabled />
+              </label>
+            )}
 
             {form.serviceAssignmentType !== 'OUTSOURCED' && form.serviceAssignmentType !== 'INCOMING_OUTSOURCED' && (
               <label className="inline-checkbox" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8 }}>

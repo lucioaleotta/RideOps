@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { AddIcon, ButtonContent, CancelIcon, CopyIcon, SaveIcon, SearchIcon } from './action-icons';
+import { PhoneInput } from './phone-input';
 import { StatusNotice } from './status-notice';
 
 type TenantOperationalStatus = 'ACTIVE' | 'SUSPENDED';
@@ -711,7 +712,7 @@ export function AdminTenantsPanel() {
 
                   <label className="tenant-field">
                     Telefono
-                    <input className="form-input" value={form.contactPhone} onChange={(event) => setForm((prev) => ({ ...prev, contactPhone: event.target.value }))} placeholder="+39 02 1234567" />
+                    <PhoneInput value={form.contactPhone} onChange={(contactPhone) => setForm((prev) => ({ ...prev, contactPhone }))} />
                   </label>
 
                   <label className="tenant-field full-width">
