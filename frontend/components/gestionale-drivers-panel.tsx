@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, FilterIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon } from './action-icons';
+import { PhoneInput } from './phone-input';
 import { PasswordInput } from './password-input';
 import { StatusNotice } from './status-notice';
 
@@ -988,10 +989,9 @@ export function GestionaleDriversPanel() {
                   </label>
                   <label className="driver-form-field">
                     <span>Cellulare</span>
-                    <input
-                      className="form-input"
+                    <PhoneInput
                       value={form.mobilePhone}
-                      onChange={(event) => setForm((prev) => ({ ...prev, mobilePhone: event.target.value }))}
+                      onChange={(mobilePhone) => setForm((prev) => ({ ...prev, mobilePhone }))}
                       required
                     />
                   </label>

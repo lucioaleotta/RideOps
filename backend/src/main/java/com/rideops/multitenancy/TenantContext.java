@@ -1,6 +1,7 @@
 package com.rideops.multitenancy;
 
 import com.rideops.identity.application.IdentityUserDetails;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TenantContext {
 
+    @NonNull
     public Long requireTenantId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof IdentityUserDetails userDetails)) {

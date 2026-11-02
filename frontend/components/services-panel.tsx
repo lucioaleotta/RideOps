@@ -4,6 +4,8 @@ import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'reac
 import { useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CalendarIcon, CancelIcon, CursorIcon, FilterIcon, LockIcon, OpenIcon, PartnerIcon as SharedPartnerIcon, PrintIcon as SharedPrintIcon, ResetIcon, SaveIcon, SearchIcon, SelectIcon, UserIcon } from './action-icons';
+import { StatusNotice } from './status-notice';
+import { PhoneInput } from './phone-input';
 import { formatCurrencyEUR } from '../lib/currency';
 import { ExportIcon } from './services-export/ExportIcon';
 
@@ -973,6 +975,7 @@ export function ServicesPanel() {
     if (editingId === serviceId) {
       resetForm();
     }
+    setDeleteConfirmServiceId(null);
     setSuccess('Servizio eliminato');
     await loadServices();
   }
@@ -1312,6 +1315,9 @@ export function ServicesPanel() {
 
   const allCurrentPageSelected = paginatedServices.length > 0
     && paginatedServices.every((service) => selectedForPrintIds.includes(service.id));
+  const hasOpenServicesDialog = isFormOpen
+    || (outsourceOpen && selectedService !== null)
+    || deleteConfirmServiceId !== null;
 
   const selectedDriverFilter = filters.driverId
     ? drivers.find((driver) => driver.id === filters.driverId) ?? null
@@ -1570,7 +1576,6 @@ export function ServicesPanel() {
             <ExportIcon
               services={orderedServices}
               onBeforeExport={clearFeedbackNotice}
-              onExportError={(message) => setError(message)}
               onExportSuccess={(message) => setSuccess(message)}
             />
           </div>
@@ -1587,7 +1592,7 @@ export function ServicesPanel() {
             </div>
           </div>
         )}
-        {error && (
+        {error && !hasOpenServicesDialog && (
           <div className="services-notice services-notice--error" role="alert" aria-live="assertive" style={{ marginBottom: 10 }}>
             <span className="services-notice-icon" aria-hidden="true"><ServiceNoticeIcon tone="error" /></span>
             <div className="services-notice-text">
@@ -2248,6 +2253,8 @@ export function ServicesPanel() {
               </button>
             </div>
 
+            {error && <StatusNotice tone="error" className="services-modal-error services-modal-error--outside">{error}</StatusNotice>}
+
             <div className="services-outsource-modal-grid">
               {selectedService.serviceAssignmentType === 'INCOMING' && (
                 <div className="services-outsource-modal-field">
@@ -2339,7 +2346,10 @@ export function ServicesPanel() {
               <button
                 type="button"
                 className="services-outsource-modal-close"
-                onClick={() => setDeleteConfirmServiceId(null)}
+                onClick={() => {
+                  setDeleteConfirmServiceId(null);
+                  clearFeedbackNotice();
+                }}
                 aria-label="Chiudi finestra"
                 title="Chiudi"
               >
@@ -2347,18 +2357,21 @@ export function ServicesPanel() {
               </button>
             </div>
             <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {error && <StatusNotice tone="error" className="services-modal-error">{error}</StatusNotice>}
               <p style={{ margin: 0, color: 'var(--color-text, #333)' }}>
                 Sei sicuro di voler eliminare il servizio #{deleteConfirmServiceId}? Questa azione non può essere annullata.
               </p>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                <button type="button" className="logout-button compact-button" onClick={() => setDeleteConfirmServiceId(null)}>
+                <button type="button" className="logout-button compact-button" onClick={() => {
+                  setDeleteConfirmServiceId(null);
+                  clearFeedbackNotice();
+                }}>
                   <ButtonContent icon={<CancelIcon />}>Annulla</ButtonContent>
                 </button>
                 <button
                   type="button"
                   className="primary-button compact-button"
                   onClick={() => {
-                    setDeleteConfirmServiceId(null);
                     onDelete(deleteConfirmServiceId);
                   }}
                   style={{ background: '#d32f2f' }}
@@ -2385,6 +2398,7 @@ export function ServicesPanel() {
               <button type="button" className="services-modal-close" onClick={closeForm} aria-label="Chiudi modale servizio">×</button>
             </div>
             <div className="services-modal-body">
+              {error && <StatusNotice tone="error" className="services-modal-error">{error}</StatusNotice>}
               <form className="form-grid" onSubmit={onSubmit}>
             <label>
               Data/ora inizio
@@ -2491,10 +2505,9 @@ export function ServicesPanel() {
 
             <label>
               Telefono cliente
-              <input
-                className="form-input"
+              <PhoneInput
                 value={form.clientPhone}
-                onChange={(event) => setForm((prev) => ({ ...prev, clientPhone: event.target.value }))}
+                onChange={(clientPhone) => setForm((prev) => ({ ...prev, clientPhone }))}
               />
             </label>
 
@@ -2529,6 +2542,13 @@ export function ServicesPanel() {
                 rows={3}
               />
             </label>
+
+            {editingId && form.serviceAssignmentType === 'OUTSOURCED' && (
+              <label>
+                Modalità gestione servizio
+                <input className="form-input" value={assignmentTypeLabel(form.serviceAssignmentType)} readOnly disabled />
+              </label>
+            )}
 
             {form.serviceAssignmentType !== 'OUTSOURCED' && form.serviceAssignmentType !== 'INCOMING_OUTSOURCED' && (
               <label className="inline-checkbox" style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 8 }}>

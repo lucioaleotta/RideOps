@@ -54,6 +54,7 @@ describe('LoginForm Component', () => {
   });
 
   it('shows loading state while submitting', async () => {
+    global.fetch = jest.fn(() => new Promise(() => {})) as unknown as typeof fetch;
     render(<LoginForm />);
     const user = userEvent.setup();
     
@@ -67,7 +68,7 @@ describe('LoginForm Component', () => {
     
     // Check for loading indicator
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /accedi/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /accesso/i })).toBeDisabled();
     });
   });
 

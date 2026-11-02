@@ -4,12 +4,10 @@ import com.rideops.identity.application.admin.UserAdminRepositoryPort;
 import com.rideops.identity.domain.UserRole;
 import com.rideops.multitenancy.TenantContext;
 import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 
-@Component
 public class UserAdminJpaAdapter implements UserAdminRepositoryPort {
 
     private final UserRepository userRepository;

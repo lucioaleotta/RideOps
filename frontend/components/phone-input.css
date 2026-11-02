@@ -1,0 +1,116 @@
+.phone-input {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+}
+
+.phone-input-prefix {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid #bcd0e6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1d2735;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.phone-input-prefix:focus-visible {
+  outline: 2px solid #6eaee7;
+  outline-offset: 1px;
+}
+
+.phone-input-prefix.is-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.phone-input-chevron {
+  font-size: 12px;
+  color: #5a6e84;
+}
+
+.phone-input-number {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.phone-input-flag {
+  flex: 0 0 auto;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(15, 30, 50, 0.12);
+}
+
+.phone-input-popup {
+  position: fixed;
+  z-index: 2000;
+  max-height: 340px;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #d7dde5;
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(12, 26, 42, 0.22);
+  overflow: hidden;
+}
+
+.phone-input-search {
+  margin: 8px;
+  padding: 8px 10px;
+  border: 1px solid #bcd0e6;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.phone-input-search:focus-visible {
+  outline: 2px solid #6eaee7;
+  outline-offset: 1px;
+}
+
+.phone-input-list {
+  margin: 0;
+  padding: 0 0 6px;
+  list-style: none;
+  overflow-y: auto;
+}
+
+.phone-input-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.phone-input-option.is-active {
+  background: #eef4fa;
+}
+
+.phone-input-option[aria-selected='true'] {
+  font-weight: 700;
+}
+
+.phone-input-option-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phone-input-option-code {
+  flex: 0 0 auto;
+  color: #5a6e84;
+}
+
+.phone-input-empty {
+  padding: 10px 12px;
+  color: #5a6e84;
+}

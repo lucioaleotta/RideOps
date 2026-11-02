@@ -652,6 +652,71 @@ a:hover {
   gap: 8px;
 }
 
+.menu-group {
+  display: grid;
+  gap: 4px;
+}
+
+.menu-link-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.menu-link-row .menu-link {
+  flex: 1;
+  min-width: 0;
+}
+
+.menu-toggle {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.85);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.menu-toggle-chevron {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  transition: transform 0.2s ease;
+}
+
+.menu-toggle-chevron svg {
+  width: 100%;
+  height: 100%;
+}
+
+.menu-toggle.is-open .menu-toggle-chevron {
+  transform: rotate(180deg);
+}
+
+.menu-submenu {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.22s ease;
+}
+
+.menu-submenu.is-open {
+  grid-template-rows: 1fr;
+}
+
+.menu-submenu-inner {
+  overflow: hidden;
+  display: grid;
+  gap: 4px;
+}
+
 .menu-link {
   color: white;
   display: flex;
@@ -664,6 +729,19 @@ a:hover {
 .menu-link:hover {
   background: rgba(255, 255, 255, 0.18);
   text-decoration: none;
+}
+
+.menu-sublink {
+  margin-left: 22px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  border-left: 2px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0 8px 8px 0;
+}
+
+.menu-sublink .menu-icon {
+  font-size: 15px;
 }
 
 .menu-icon {
@@ -3918,6 +3996,14 @@ a:hover {
   flex: 1;
 }
 
+.services-modal-error {
+  margin: 0 0 16px;
+}
+
+.services-modal-error--outside {
+  margin: 16px 0 0;
+}
+
 .services-modal-overlay {
   position: fixed;
   inset: 0;
@@ -6045,6 +6131,2415 @@ a:hover {
   color: #6b7280;
 }
 
+/* === Tenant absence configuration (Release 2) === */
+.assenze-config-page {
+  --assenze-config-ink: #243750;
+  --assenze-config-muted: #8192aa;
+  --assenze-config-blue: #4b94d5;
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: clamp(16px, 2vw, 24px);
+  color: var(--assenze-config-ink);
+  background: #eef1f5;
+}
+
+.assenze-config-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.assenze-config-eyebrow {
+  color: #71849d;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .12em;
+}
+
+.assenze-config-heading h1 {
+  margin: 4px 0;
+  color: var(--assenze-config-ink);
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 750;
+  letter-spacing: -.035em;
+}
+
+.assenze-config-heading p,
+.assenze-config-card-heading p {
+  margin: 0;
+  color: var(--assenze-config-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (min-width: 701px) {
+  .assenze-config-eyebrow {
+    font-size: 13px;
+  }
+
+  .assenze-config-heading p,
+  .assenze-config-card-heading p {
+    font-size: 15px;
+  }
+
+  .assenze-config-card-heading h2 {
+    font-size: 20px;
+  }
+
+  .assenze-config-card-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 17px;
+  }
+
+  .assenze-config-card-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .assenze-config-field > span,
+  .assenze-config-toggle > span:first-child {
+    font-size: 16px;
+  }
+
+  .assenze-config-field .form-input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .assenze-config-field small,
+  .assenze-toggle-default,
+  .assenze-config-difference {
+    font-size: 14px;
+  }
+
+  .assenze-type-tab {
+    padding: 12px 13px;
+    font-size: 15px;
+  }
+
+  .assenze-active-type-title {
+    font-size: 17px;
+  }
+
+  .assenze-type-unit {
+    font-size: 14px;
+  }
+
+  .assenze-config-card .primary-button,
+  .assenze-config-card .secondary-button,
+  .assenze-bulk-bar .primary-button,
+  .assenze-bulk-bar .secondary-button {
+    min-height: 46px;
+    font-size: 15px;
+  }
+
+  .assenze-driver-search input {
+    font-size: 16px;
+  }
+
+  .assenze-driver-name-wrap strong {
+    font-size: 16px;
+  }
+
+  .assenze-driver-name-wrap small,
+  .assenze-driver-row-footer > span,
+  .assenze-link-button,
+  .assenze-driver-row-footer .secondary-button {
+    font-size: 13px;
+  }
+
+  .assenze-driver-status {
+    font-size: 13px;
+  }
+
+  .assenze-bulk-heading {
+    font-size: 14px;
+  }
+
+  .assenze-driver-modal .tenant-modal-header h3,
+  .assenze-preview-modal .tenant-modal-header h3 {
+    font-size: 19px;
+  }
+
+  .assenze-driver-modal .tenant-modal-header p,
+  .assenze-preview-modal .tenant-modal-header p {
+    font-size: 14px;
+  }
+}
+
+.assenze-config-header-icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #dae3ec;
+  border-radius: 12px;
+  background: #fff;
+  color: #315a80;
+}
+
+.assenze-config-header-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.assenze-config-card-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.assenze-inline-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.assenze-inline-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.assenze-config-notices {
+  display: grid;
+  gap: 8px;
+}
+
+.assenze-config-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, .88fr) minmax(310px, 1.12fr) minmax(310px, 1.04fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.assenze-config-column,
+.assenze-config-card {
+  min-width: 0;
+}
+
+.assenze-config-card {
+  padding: 16px;
+  border: 1px solid #e1e7ee;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(36, 55, 80, .045);
+}
+
+.assenze-config-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.assenze-config-card-heading h2 {
+  margin: 1px 0 4px;
+  color: var(--assenze-config-ink);
+  font-size: 14px;
+  font-weight: 750;
+  letter-spacing: -.015em;
+}
+
+.assenze-config-card-heading p {
+  font-size: 10px;
+}
+
+.assenze-config-card-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9px;
+  background: #edf3f8;
+  color: #315a80;
+  font-size: 15px;
+}
+
+.assenze-config-field {
+  display: grid;
+  gap: 5px;
+  margin: 0 0 13px;
+}
+
+.assenze-config-field > span,
+.assenze-config-toggle > span:first-child {
+  color: var(--assenze-config-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.assenze-config-field .form-input {
+  min-height: 38px;
+  margin-top: 0;
+  padding: 8px 12px;
+  border-color: #e1e7ee;
+  border-radius: 999px;
+  background: #f0f2f5;
+  color: #33455e;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.assenze-config-field textarea.form-input {
+  border-radius: 11px;
+  resize: vertical;
+}
+
+.assenze-config-field small {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  color: var(--assenze-config-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.assenze-config-field select:disabled {
+  opacity: 1;
+  color: #33455e;
+}
+
+.assenze-config-card .primary-button,
+.assenze-config-card .secondary-button,
+.assenze-bulk-bar .primary-button,
+.assenze-bulk-bar .secondary-button,
+.assenze-driver-modal .primary-button,
+.assenze-driver-modal .secondary-button,
+.assenze-preview-modal .primary-button,
+.assenze-preview-modal .secondary-button {
+  min-height: 36px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.assenze-config-card .primary-button,
+.assenze-preview-modal .primary-button,
+.assenze-driver-modal .primary-button {
+  background: var(--assenze-config-blue);
+  box-shadow: 0 3px 8px rgba(75, 148, 213, .18);
+}
+
+.assenze-config-card .secondary-button,
+.assenze-preview-modal .secondary-button,
+.assenze-driver-modal .secondary-button {
+  border: 1px solid #e0e6ed;
+  background: #eef1f5;
+  color: #344862;
+  box-shadow: none;
+}
+
+.assenze-config-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f4;
+}
+
+.assenze-config-card-footer--stacked {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.assenze-config-card-footer--stacked button {
+  width: 100%;
+}
+
+.assenze-config-card-footer--stacked .secondary-button {
+  background: #f0f2f5;
+}
+
+.assenze-type-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: 3px;
+  margin: 0 0 14px;
+  border-bottom: 1px solid #e7ebf0;
+  scrollbar-width: thin;
+}
+
+.assenze-type-tab {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 9px 8px;
+  border: 0;
+  background: transparent;
+  color: #7889a0;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.assenze-type-tab.is-active {
+  color: #284767;
+}
+
+.assenze-type-tab.is-active::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: #4b94d5;
+  content: '';
+}
+
+.assenze-active-type-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: #2a3f59;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.assenze-type-unit {
+  color: var(--assenze-config-muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.assenze-config-fields {
+  display: grid;
+  gap: 1px;
+}
+
+.assenze-config-toggle {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 42px;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #edf0f4;
+  cursor: pointer;
+}
+
+.assenze-toggle-default {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -8px;
+  padding-bottom: 7px;
+  color: var(--assenze-config-muted);
+  font-size: 10px;
+}
+
+.assenze-config-toggle input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.assenze-toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #dce3eb;
+  transition: background .16s ease;
+}
+
+.assenze-toggle-track::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(20, 38, 58, .2);
+  content: '';
+  transition: transform .16s ease;
+}
+
+.assenze-config-toggle input:checked + .assenze-toggle-track {
+  background: #24496c;
+}
+
+.assenze-config-toggle input:checked + .assenze-toggle-track::after {
+  transform: translateX(16px);
+}
+
+.assenze-config-toggle input:focus-visible + .assenze-toggle-track {
+  outline: 2px solid #4b94d5;
+  outline-offset: 2px;
+}
+
+.assenze-personalized-label,
+.assenze-driver-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #46617e;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.assenze-personalized-label,
+.assenze-driver-status.is-custom {
+  background: #fff0dc;
+  color: #9a5a12;
+}
+
+.assenze-config-difference {
+  margin: 10px 0 2px;
+  color: #8091a8;
+  font-size: 10px;
+}
+
+.assenze-driver-search {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 12px;
+  border: 1px solid #e2e8ef;
+  border-radius: 999px;
+  background: #f0f2f5;
+  color: #8293aa;
+}
+
+.assenze-driver-search > span {
+  font-size: 17px;
+}
+
+.assenze-driver-search .assenze-search-icon {
+  display: grid;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  place-items: center;
+}
+
+.assenze-search-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.assenze-driver-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #30445f;
+  font: inherit;
+  font-size: 11px;
+}
+
+.assenze-driver-list {
+  display: grid;
+  max-height: 580px;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.assenze-driver-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #e0e6ed;
+  border-radius: 11px;
+  background: #f0f2f5;
+}
+
+.assenze-driver-select {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.assenze-driver-select input,
+.assenze-driver-select input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  margin: 0;
+  accent-color: #24496c;
+}
+
+.assenze-driver-avatar {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #e0e8f0;
+  color: #385878;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.assenze-driver-name-wrap {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.assenze-driver-name-wrap strong {
+  overflow: hidden;
+  color: #263b55;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assenze-driver-name-wrap small {
+  color: #8393a9;
+  font-size: 9px;
+}
+
+.assenze-driver-status {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.assenze-driver-row-footer {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid #dfe5ec;
+}
+
+.assenze-driver-row-footer > span {
+  flex: 1 1 100px;
+  color: #8292a8;
+  font-size: 9px;
+}
+
+.assenze-driver-row-footer .secondary-button {
+  min-height: 30px;
+  padding: 6px 9px;
+  font-size: 9px;
+}
+
+.assenze-link-button {
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  color: #42668b;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.assenze-bulk-bar {
+  position: sticky;
+  z-index: 5;
+  bottom: 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid #294f73;
+  border-radius: 12px;
+  background: #24496c;
+  box-shadow: 0 8px 22px rgba(27, 52, 78, .2);
+  color: #fff;
+}
+
+.assenze-bulk-heading {
+  display: grid;
+  flex: 1 1 180px;
+  gap: 3px;
+  font-size: 10px;
+}
+
+.assenze-bulk-heading span {
+  overflow: hidden;
+  color: #d5e0eb;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assenze-bulk-bar .primary-button {
+  background: #4b94d5;
+}
+
+.assenze-bulk-bar .secondary-button {
+  border: 0;
+  background: #e9eef4;
+  color: #294969;
+  box-shadow: none;
+}
+
+.assenze-driver-modal,
+.assenze-preview-modal {
+  width: min(700px, 100%);
+  max-height: min(88vh, 850px);
+  overflow: auto;
+  border: 1px solid #e1e7ee;
+  border-radius: 13px;
+  background: #fff;
+  color: var(--assenze-config-ink);
+}
+
+.assenze-driver-modal .tenant-modal-header,
+.assenze-preview-modal .tenant-modal-header {
+  border-bottom-color: #e8edf2;
+}
+
+.assenze-driver-modal .tenant-modal-header h3,
+.assenze-preview-modal .tenant-modal-header h3 {
+  color: #263b55;
+  font-size: 14px;
+}
+
+.assenze-driver-modal .tenant-modal-header p,
+.assenze-preview-modal .tenant-modal-header p {
+  color: #8192a8;
+  font-size: 10px;
+}
+
+.assenze-config-fields--modal {
+  padding: 8px 18px 0;
+}
+
+.assenze-driver-modal .form-actions,
+.assenze-preview-modal .form-actions {
+  justify-content: flex-end;
+  margin: 0;
+  padding: 12px 18px 16px;
+  border-top: 1px solid #e8edf2;
+}
+
+.assenze-preview-modal {
+  width: min(900px, 100%);
+}
+
+.assenze-balance-preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 14px 18px;
+}
+
+.assenze-balance-preview > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #e2e8ef;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.assenze-balance-preview dt {
+  color: #71839a;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.assenze-balance-preview dd {
+  margin: 4px 0 0;
+  color: #243750;
+  font-size: 15px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 520px) {
+  .assenze-balance-preview {
+    grid-template-columns: 1fr;
+  }
+}
+
+.assenze-preview-summary {
+  margin: 14px 18px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #24496c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.assenze-preview-table-wrap {
+  max-height: 45vh;
+  overflow: auto;
+  margin: 0 18px 14px;
+  border: 1px solid #e2e8ef;
+  border-radius: 9px;
+}
+
+.assenze-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+
+.assenze-preview-table th,
+.assenze-preview-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #edf0f4;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.assenze-preview-table th {
+  position: sticky;
+  top: 0;
+  background: #f0f2f5;
+  color: #71839a;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+/* === Platform absence type administration === */
+.admin-assenze-page {
+  display: grid;
+  gap: 16px;
+  color: #243750;
+}
+
+.admin-assenze-page .admin-page-header {
+  align-items: center;
+}
+
+.admin-assenze-header-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #315a80;
+}
+
+.admin-assenze-header-icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+.admin-assenze-eyebrow {
+  color: #71849d;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .12em;
+}
+
+.admin-assenze-page .admin-page-title {
+  margin-top: 3px;
+}
+
+.admin-assenze-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-assenze-summary-card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #e1e7ee;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(36, 55, 80, .045);
+}
+
+.admin-assenze-summary-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  grid-row: span 2;
+  place-items: center;
+  border-radius: 10px;
+  background: #edf3f8;
+  color: #4b94d5;
+}
+
+.admin-assenze-summary-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-assenze-summary-card > span:nth-child(2) {
+  color: #8192aa;
+  font-size: 11px;
+}
+
+.admin-assenze-summary-card > strong {
+  color: #243750;
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+.admin-assenze-catalog,
+.admin-assenze-audit {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e1e7ee;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(36, 55, 80, .045);
+}
+
+.admin-assenze-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-assenze-toolbar h2 {
+  margin: 0 0 4px;
+  color: #243750;
+  font-size: 16px;
+}
+
+.admin-assenze-toolbar p {
+  margin: 0;
+  color: #8192aa;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.admin-assenze-toolbar .primary-button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  border-radius: 999px;
+  background: #4b94d5;
+}
+
+.admin-assenze-toolbar .button-icon svg,
+.admin-assenze-toolbar .button-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-assenze-filters {
+  display: flex;
+  gap: 5px;
+  margin: 16px 0 12px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #f0f2f5;
+  width: fit-content;
+}
+
+.admin-assenze-filters button {
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #75869d;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.admin-assenze-filters button.is-active {
+  background: #fff;
+  color: #294969;
+  box-shadow: 0 1px 3px rgba(31, 51, 79, .1);
+}
+
+.admin-assenze-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e4e9ef;
+  border-radius: 10px;
+}
+
+.admin-assenze-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.admin-assenze-table th,
+.admin-assenze-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #edf0f4;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.admin-assenze-table th {
+  background: #f7f9fb;
+  color: #7c8da3;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.admin-assenze-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-assenze-table tbody tr:hover td {
+  background: #fafbfd;
+}
+
+.admin-assenze-table tr.is-disabled td {
+  color: #8795a8;
+  background: #fafbfd;
+}
+
+.admin-assenze-type-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.admin-assenze-type-cell > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-assenze-type-cell strong {
+  color: #273b55;
+  font-size: 11px;
+}
+
+.admin-assenze-type-cell small {
+  color: #8192aa;
+  font-size: 9px;
+  letter-spacing: .06em;
+}
+
+.admin-assenze-type-mark {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 9px;
+  background: #edf3f8;
+  color: #4b94d5;
+}
+
+.admin-assenze-type-mark svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-assenze-chip-row {
+  display: flex;
+  gap: 4px;
+}
+
+.admin-assenze-chip-row span {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #536a84;
+  font-size: 9px;
+}
+
+.admin-assenze-state {
+  display: inline-flex;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #edf0f4;
+  color: #6e7d91;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.admin-assenze-state.is-active {
+  background: #e2f3e9;
+  color: #247448;
+}
+
+.admin-assenze-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.admin-assenze-actions .secondary-button,
+.admin-assenze-mobile-card footer .secondary-button {
+  min-height: 30px;
+  padding: 6px 9px;
+  border: 1px solid #e0e6ed;
+  border-radius: 999px;
+  background: #f0f2f5;
+  color: #344862;
+  box-shadow: none;
+  font-size: 9px;
+}
+
+.admin-assenze-actions .secondary-button svg,
+.admin-assenze-mobile-card footer .secondary-button svg {
+  width: 13px;
+  height: 13px;
+  vertical-align: middle;
+}
+
+.admin-assenze-deactivate {
+  padding: 5px 7px;
+  border: 0;
+  background: transparent;
+  color: #a24c4c;
+  cursor: pointer;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.admin-assenze-deactivate:disabled {
+  opacity: .55;
+  cursor: progress;
+}
+
+.admin-assenze-empty {
+  padding: 24px 12px;
+  color: #8192aa;
+  font-size: 12px;
+  text-align: center;
+}
+
+.admin-assenze-mobile-list {
+  display: none;
+}
+
+.admin-assenze-audit-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #344862;
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-assenze-audit-toggle > span:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-assenze-audit-toggle > span:first-child > svg {
+  width: 20px;
+  height: 20px;
+  color: #4b94d5;
+}
+
+.admin-assenze-audit-toggle > span:first-child > span {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-assenze-audit-toggle strong {
+  font-size: 12px;
+}
+
+.admin-assenze-audit-toggle small {
+  color: #8192aa;
+  font-size: 10px;
+}
+
+.admin-assenze-audit-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.admin-assenze-audit-entry {
+  padding: 11px 12px;
+  border: 1px solid #e6ebf0;
+  border-radius: 10px;
+  background: #fafbfd;
+}
+
+.admin-assenze-audit-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #273b55;
+  font-size: 10px;
+}
+
+.admin-assenze-audit-title > span:last-child {
+  margin-left: auto;
+  color: #8192aa;
+  font-size: 9px;
+}
+
+.admin-assenze-audit-action {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #e6eff8;
+  color: #385f84;
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.admin-assenze-audit-action.action-disattivato {
+  background: #fae9e9;
+  color: #a34d4d;
+}
+
+.admin-assenze-audit-by {
+  margin-top: 5px;
+  color: #7f90a6;
+  font-size: 9px;
+}
+
+.admin-assenze-audit-diff {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.admin-assenze-audit-diff > span {
+  display: grid;
+  gap: 4px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: #fff;
+  color: #536981;
+  font-size: 9px;
+}
+
+.admin-assenze-audit-diff small {
+  color: #8797aa;
+  font-size: 8px;
+  text-transform: uppercase;
+}
+
+.admin-assenze-modal {
+  width: min(680px, 100%);
+  max-height: min(90vh, 900px);
+  overflow: auto;
+  border-radius: 14px;
+}
+
+.admin-assenze-modal .tenant-modal-header h3 {
+  color: #263b55;
+  font-size: 15px;
+}
+
+.admin-assenze-modal .tenant-modal-header p {
+  color: #8192aa;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.admin-assenze-form {
+  padding: 14px 18px 18px;
+}
+
+.admin-assenze-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.admin-assenze-form .driver-form-field {
+  margin: 0;
+  color: #344862;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.admin-assenze-form .form-input {
+  min-height: 38px;
+  border-color: #dfe6ed;
+  border-radius: 9px;
+  background: #f6f8fa;
+  font-size: 11px;
+}
+
+.admin-assenze-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
+  margin: 14px 0 8px;
+}
+
+.admin-assenze-switch {
+  position: relative;
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #edf0f4;
+  color: #344862;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.admin-assenze-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.admin-assenze-switch-track {
+  position: relative;
+  width: 34px;
+  height: 19px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #dce3eb;
+  transition: background .16s ease;
+}
+
+.admin-assenze-switch-track::after {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(20, 38, 58, .2);
+  content: '';
+  transition: transform .16s ease;
+}
+
+.admin-assenze-switch input:checked + .admin-assenze-switch-track {
+  background: #315a80;
+}
+
+.admin-assenze-switch input:checked + .admin-assenze-switch-track::after {
+  transform: translateX(15px);
+}
+
+.admin-assenze-switch input:focus-visible + .admin-assenze-switch-track {
+  outline: 2px solid #4b94d5;
+  outline-offset: 2px;
+}
+
+.admin-assenze-form-note,
+.admin-assenze-validation {
+  margin: 9px 0;
+  color: #8192aa;
+  font-size: 10px;
+}
+
+.admin-assenze-validation {
+  color: #b9383e;
+}
+
+.admin-assenze-form .form-actions {
+  justify-content: flex-end;
+  margin: 14px -18px -18px;
+  padding: 12px 18px 0;
+  border-top: 1px solid #edf0f4;
+}
+
+.admin-assenze-form .primary-button {
+  background: #4b94d5;
+}
+
+.admin-assenze-form .secondary-button {
+  border: 1px solid #e0e6ed;
+  background: #f0f2f5;
+  color: #344862;
+  box-shadow: none;
+}
+
+@media (max-width: 880px) {
+  .admin-assenze-table-wrap {
+    display: none;
+  }
+
+  .admin-assenze-mobile-list {
+    display: grid;
+    gap: 9px;
+  }
+
+  .admin-assenze-mobile-card {
+    padding: 12px;
+    border: 1px solid #e2e8ef;
+    border-radius: 10px;
+    background: #fafbfd;
+  }
+
+  .admin-assenze-mobile-card.is-disabled {
+    opacity: .75;
+  }
+
+  .admin-assenze-mobile-card header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .admin-assenze-mobile-data {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 7px 10px;
+    margin: 11px 0;
+    padding: 9px 0;
+    border-top: 1px solid #e7ebf0;
+    border-bottom: 1px solid #e7ebf0;
+    font-size: 10px;
+  }
+
+  .admin-assenze-mobile-data span {
+    color: #8192aa;
+  }
+
+  .admin-assenze-mobile-data strong {
+    color: #344862;
+    text-align: right;
+  }
+
+  .admin-assenze-mobile-card footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-assenze-page {
+    gap: 11px;
+  }
+
+  .admin-assenze-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .admin-assenze-summary-card {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    gap: 5px;
+    padding: 10px;
+  }
+
+  .admin-assenze-summary-icon {
+    width: 28px;
+    height: 28px;
+    grid-row: auto;
+  }
+
+  .admin-assenze-summary-card > span:nth-child(2) {
+    font-size: 9px;
+  }
+
+  .admin-assenze-summary-card > strong {
+    font-size: 16px;
+  }
+
+  .admin-assenze-catalog,
+  .admin-assenze-audit {
+    padding: 13px;
+  }
+
+  .admin-assenze-toolbar {
+    align-items: flex-start;
+  }
+
+  .admin-assenze-toolbar p {
+    max-width: 230px;
+  }
+
+  .admin-assenze-toolbar .primary-button {
+    min-height: 34px;
+    padding: 8px 10px;
+    font-size: 10px;
+  }
+
+  .admin-assenze-filters {
+    margin-top: 12px;
+  }
+
+  .admin-assenze-form-grid,
+  .admin-assenze-toggle-grid,
+  .admin-assenze-audit-diff {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-assenze-form {
+    padding: 12px 14px 14px;
+  }
+
+  .admin-assenze-form .form-actions {
+    margin: 12px -14px -14px;
+    padding: 10px 14px 0;
+  }
+}
+
+.assenze-preview-modal .form-actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 1100px) {
+  .assenze-config-layout {
+    grid-template-columns: minmax(240px, .85fr) minmax(300px, 1.15fr);
+  }
+
+  .assenze-config-column--drivers {
+    grid-column: 1 / -1;
+  }
+
+  .assenze-driver-list {
+    max-height: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .assenze-config-page {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .assenze-config-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .assenze-config-column--drivers {
+    grid-column: auto;
+  }
+
+  .assenze-driver-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .assenze-bulk-bar {
+    bottom: 8px;
+    align-items: stretch;
+  }
+
+  .assenze-bulk-heading {
+    flex-basis: 100%;
+  }
+
+  .assenze-bulk-bar > button {
+    flex: 1 1 140px;
+  }
+}
+
+/* === Absence dashboard, aligned with the approved PDF concept === */
+.assenze-panel {
+  --assenza-ink: #1f334f;
+  --assenza-muted: #8293aa;
+  --assenza-blue: #4b94d5;
+  padding: clamp(16px, 2.2vw, 28px);
+  border-radius: 16px;
+  background: #eef1f5;
+  color: var(--assenza-ink);
+}
+
+.assenze-panel .services-page-header {
+  margin-bottom: 20px;
+}
+
+.assenze-panel .services-page-header h1 {
+  color: var(--assenza-ink);
+  font-size: clamp(1.4rem, 2vw, 1.8rem);
+  font-weight: 750;
+  letter-spacing: -0.035em;
+}
+
+.assenze-panel .services-page-subtitle {
+  color: var(--assenza-muted);
+  font-size: 13px;
+}
+
+.assenza-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.assenze-panel .primary-button,
+.assenze-panel .secondary-button {
+  min-height: 40px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.assenze-panel .primary-button {
+  background: var(--assenza-blue);
+  box-shadow: 0 4px 10px rgba(75, 148, 213, 0.18);
+}
+
+.assenze-panel .secondary-button {
+  border: 1px solid #dce4ed;
+  background: #f3f5f8;
+  color: var(--assenza-ink);
+  box-shadow: none;
+}
+
+.assenza-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 22px;
+}
+
+.assenza-stat-card {
+  position: relative;
+  min-width: 0;
+  min-height: 118px;
+  padding: 18px 20px;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 3px rgba(31, 51, 79, 0.035);
+}
+
+.assenza-stat-icon {
+  position: absolute;
+  top: 15px;
+  right: 17px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  color: var(--assenza-blue);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.assenza-stat-icon--calendar {
+  color: #171717;
+}
+
+.assenza-stat-icon svg {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.assenza-stat-label,
+.assenza-stat-caption {
+  display: block;
+  color: var(--assenza-muted);
+  font-size: 12px;
+}
+
+.assenza-stat-label {
+  padding-right: 24px;
+  font-weight: 600;
+}
+
+.assenza-stat-value {
+  margin: 8px 0 3px;
+  color: var(--assenza-ink);
+  font-size: clamp(1.45rem, 2.1vw, 1.8rem);
+  font-weight: 750;
+  line-height: 1.15;
+}
+
+.assenza-stat-card:last-child .assenza-stat-value {
+  font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+}
+
+.assenza-section {
+  min-width: 0;
+}
+
+.assenza-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+
+.assenza-section-heading h2 {
+  margin: 0;
+  color: var(--assenza-ink);
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.assenza-section-heading p {
+  margin: 3px 0 0;
+  color: var(--assenza-muted);
+  font-size: 12px;
+}
+
+.assenza-section-count {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--assenza-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.assenza-view-switch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #e1e7ee;
+  border-radius: 999px;
+  background: #f5f7fa;
+}
+
+.assenza-view-switch button {
+  min-height: 32px;
+  padding: 6px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #687c94;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.assenza-view-switch button.is-active {
+  background: #4b94d5;
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(42, 105, 160, .2);
+}
+
+.assenza-calendar {
+  padding: 14px;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(31, 51, 79, .035);
+}
+
+.assenza-calendar-toolbar {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.assenza-calendar-toolbar h3 {
+  margin: 0;
+  color: #263b55;
+  font-size: 14px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.assenza-calendar-nav {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #e1e7ee;
+  border-radius: 50%;
+  background: #f6f8fb;
+  color: #42688d;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.assenza-calendar-nav:hover {
+  border-color: #b8d2e8;
+  background: #edf5fc;
+}
+
+.assenza-calendar-grid-scroll {
+  overflow-x: auto;
+  border: 1px solid #e5eaf0;
+  border-radius: 9px;
+}
+
+.assenza-calendar-weekdays,
+.assenza-calendar-grid {
+  display: grid;
+  min-width: 690px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.assenza-calendar-weekdays {
+  background: #f7f9fb;
+  color: #7a8da4;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.assenza-calendar-weekdays span {
+  padding: 9px 4px;
+  border-right: 1px solid #e5eaf0;
+}
+
+.assenza-calendar-weekdays span:last-child {
+  border-right: 0;
+}
+
+.assenza-calendar-day {
+  min-width: 0;
+  min-height: 94px;
+  padding: 6px;
+  border-top: 1px solid #e5eaf0;
+  border-right: 1px solid #e5eaf0;
+  background: #fff;
+}
+
+.assenza-calendar-day:nth-child(7n) {
+  border-right: 0;
+}
+
+.assenza-calendar-day.is-outside {
+  background: #fafbfd;
+}
+
+.assenza-calendar-day-number {
+  display: block;
+  margin: 0 0 5px 2px;
+  color: #344862;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.assenza-calendar-day.is-outside .assenza-calendar-day-number {
+  color: #aab5c2;
+}
+
+.assenza-calendar-events {
+  display: grid;
+  gap: 3px;
+}
+
+.assenza-calendar-event {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 4px 5px;
+  border-left: 3px solid #4b94d5;
+  border-radius: 4px;
+  background: #edf5fc;
+  color: #294969;
+  font-size: 9px;
+  line-height: 1.25;
+}
+
+.assenza-calendar-event > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assenza-calendar-event small {
+  flex: 0 0 auto;
+  color: inherit;
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.assenza-calendar-event--fer,
+.assenza-calendar-legend-dot.assenza-calendar-event--fer {
+  border-color: #4b94d5;
+  background: #e8f2fb;
+  color: #285c87;
+}
+
+.assenza-calendar-event--mal,
+.assenza-calendar-legend-dot.assenza-calendar-event--mal {
+  border-color: #d76b6b;
+  background: #fff0ef;
+  color: #9b4141;
+}
+
+.assenza-calendar-event--per,
+.assenza-calendar-legend-dot.assenza-calendar-event--per {
+  border-color: #8a6ac1;
+  background: #f2edfa;
+  color: #5e478b;
+}
+
+.assenza-calendar-event--rip,
+.assenza-calendar-legend-dot.assenza-calendar-event--rip {
+  border-color: #4d9b75;
+  background: #eaf6ef;
+  color: #2d704d;
+}
+
+.assenza-calendar-event--con,
+.assenza-calendar-legend-dot.assenza-calendar-event--con {
+  border-color: #d28a3f;
+  background: #fff4e8;
+  color: #92591f;
+}
+
+.assenza-calendar-event--sga,
+.assenza-calendar-legend-dot.assenza-calendar-event--sga {
+  border-color: #66758a;
+  background: #eef1f5;
+  color: #4c5c70;
+}
+
+.assenza-calendar-event--default,
+.assenza-calendar-legend-dot.assenza-calendar-event--default {
+  border-color: #258c99;
+  background: #e9f6f7;
+  color: #246a73;
+}
+
+.assenza-calendar-more {
+  padding: 2px 4px;
+  color: #71839a;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.assenza-calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 12px;
+  color: #687c94;
+  font-size: 10px;
+}
+
+.assenza-calendar-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assenza-calendar-legend-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 3px;
+  background: #4b94d5;
+}
+
+.assenza-calendar-legend-dot--pending {
+  border: 1px dashed #d28a3f;
+  background: #fff4e8;
+}
+
+.assenza-calendar-empty {
+  margin: 11px 0 0;
+  color: #8192aa;
+  font-size: 11px;
+  text-align: center;
+}
+
+.assenza-filter-bar {
+  display: flex;
+  align-items: end;
+  margin: 0 0 12px;
+  padding: 12px 16px;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.assenza-filter-field {
+  display: grid;
+  width: min(280px, 100%);
+  gap: 6px;
+}
+
+.assenza-filter-field .services-filter-label {
+  color: var(--assenza-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.assenza-request-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assenza-request-list--driver {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.assenza-request-list--manager {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.assenza-request-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(31, 51, 79, 0.035);
+}
+
+.assenza-request-card-header,
+.assenza-request-title-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.assenza-request-card-header {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.assenza-request-title-wrap {
+  min-width: 0;
+  gap: 10px;
+}
+
+.assenza-request-avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #e7edf4;
+  color: #365575;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.assenza-request-title-wrap > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.assenza-request-title {
+  overflow: hidden;
+  color: var(--assenza-ink);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assenza-request-reference {
+  color: var(--assenza-muted);
+  font-size: 11px;
+}
+
+.assenza-status-badge {
+  display: inline-flex;
+  min-height: 23px;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.assenza-status-badge--bozza,
+.assenza-status-badge--annullata {
+  background: #e9edf2;
+  color: #65758a;
+}
+
+.assenza-status-badge--in-attesa {
+  background: #fff0d9;
+  color: #a75a00;
+}
+
+.assenza-status-badge--approvata {
+  background: #dff3e7;
+  color: #217344;
+}
+
+.assenza-status-badge--rifiutata {
+  background: #fde7e8;
+  color: #b9383e;
+}
+
+.assenza-request-details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 16px;
+  margin: 16px 0 0 48px;
+}
+
+.assenza-request-details > div {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.assenza-detail-label {
+  color: var(--assenza-muted);
+  font-size: 11px;
+}
+
+.assenza-request-details strong {
+  overflow-wrap: anywhere;
+  color: var(--assenza-ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.assenza-request-note,
+.assenza-request-rejection {
+  margin: 12px 0 0 48px;
+  color: #61738a;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.assenza-request-rejection {
+  color: #b9383e;
+}
+
+.assenza-origin-label {
+  display: inline-flex;
+  margin: 12px 0 0 48px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #e7f0fa;
+  color: #315c85;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.assenza-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 0 48px;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f4;
+}
+
+.assenza-cancel-button {
+  margin: 14px 0 0 48px;
+}
+
+.assenza-empty-state {
+  display: grid;
+  min-height: 150px;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 24px;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--assenza-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.assenza-empty-state strong {
+  color: var(--assenza-ink);
+  font-size: 14px;
+}
+
+.assenza-empty-icon {
+  color: #9bb7d2;
+  font-size: 24px;
+}
+
+.assenza-saldi-section {
+  margin: 0 0 22px;
+}
+
+.assenza-saldi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.assenza-saldo-card {
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid #e2e8ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(31, 51, 79, .035);
+}
+
+.assenza-saldo-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.assenza-saldo-type-mark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #e7edf4;
+  color: #365575;
+  font-size: 10px;
+  font-weight: 750;
+}
+
+.assenza-saldo-heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.assenza-saldo-heading strong {
+  color: #263b55;
+  font-size: 13px;
+}
+
+.assenza-saldo-heading small,
+.assenza-saldo-footnote {
+  color: #8192aa;
+  font-size: 10px;
+}
+
+.assenza-saldo-value {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 13px 0 9px;
+}
+
+.assenza-saldo-value strong {
+  color: #243750;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.assenza-saldo-value span {
+  color: #74869d;
+  font-size: 10px;
+}
+
+.assenza-saldo-expired {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #f0f2f5;
+  color: #66788f;
+  font-size: 10px;
+}
+
+.assenza-saldo-expired.is-expired {
+  background: #fff0dc;
+  color: #965710;
+}
+
+.assenza-saldo-progress {
+  height: 5px;
+  overflow: hidden;
+  margin: 12px 0 8px;
+  border-radius: 999px;
+  background: #e8edf2;
+}
+
+.assenza-saldo-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #4b94d5;
+}
+
+.assenza-saldo-footnote {
+  display: block;
+  line-height: 1.45;
+}
+
+.assenza-saldi-empty {
+  min-height: 100px;
+}
+
+.assenza-conflict-notice {
+  margin: 12px 0 0 48px;
+  padding: 10px 12px;
+  border: 1px solid #f1d28d;
+  border-radius: 10px;
+  background: #fff8e9;
+  color: #80500c;
+  font-size: 11px;
+}
+
+.assenza-conflict-notice strong {
+  display: block;
+}
+
+.assenza-conflict-notice ul {
+  display: grid;
+  gap: 3px;
+  margin: 6px 0 0;
+  padding-left: 17px;
+}
+
+.mobile-alert-chip-absence.is-alert {
+  border-color: #efb0a8;
+  background: #fff0ed;
+  color: #9b3328;
+}
+
+.mobile-alert-chip-absence.is-alert .alert-chip-count {
+  background: #c74738;
+}
+
+.mobile-alert-chip-absence.is-clear {
+  border-color: #9ed9bf;
+  background: #f2fbf6;
+  color: #2b6a55;
+}
+
+.mobile-alert-chip-absence.is-clear .alert-chip-count {
+  background: #2da980;
+}
+
+@media (max-width: 760px) {
+  .assenza-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .assenza-stat-card {
+    min-height: 108px;
+    padding: 15px;
+  }
+
+  .assenza-request-list--driver {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .assenza-calendar-day {
+    min-height: 82px;
+    padding: 5px;
+  }
+}
+
+@media (max-width: 520px) {
+  .assenze-panel {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .assenze-panel .services-page-header {
+    align-items: stretch;
+  }
+
+  .assenze-panel .services-page-header > button,
+  .assenza-header-actions {
+    width: 100%;
+  }
+
+  .assenza-section-heading {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .assenza-view-switch {
+    width: 100%;
+  }
+
+  .assenza-view-switch button {
+    flex: 1 1 50%;
+  }
+
+  .assenza-calendar {
+    padding: 9px;
+  }
+
+  .assenza-calendar-weekdays,
+  .assenza-calendar-grid {
+    min-width: 630px;
+  }
+
+  .assenza-calendar-day {
+    min-height: 76px;
+    padding: 4px;
+  }
+
+  .assenza-calendar-event {
+    padding: 3px 4px;
+    font-size: 8px;
+  }
+
+  .assenza-header-actions > button {
+    flex: 1 1 auto;
+  }
+
+  .assenza-stat-card {
+    min-height: 104px;
+    padding: 13px;
+  }
+
+  .assenza-stat-label,
+  .assenza-stat-caption {
+    font-size: 11px;
+  }
+
+  .assenza-filter-bar {
+    padding: 10px 12px;
+  }
+
+  .assenza-filter-field {
+    width: 100%;
+  }
+
+  .assenza-request-card {
+    padding: 15px;
+  }
+
+  .assenza-request-details {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin-left: 0;
+  }
+
+  .assenza-request-note,
+  .assenza-request-rejection,
+  .assenza-conflict-notice,
+  .assenza-origin-label,
+  .assenza-request-actions,
+  .assenza-cancel-button {
+    margin-left: 0;
+  }
+}
+
 /* === Services status stat cards === */
 .services-stat-cards {
   display: grid;
@@ -7437,5 +9932,384 @@ a:hover {
     margin: 0;
     padding: 0;
     box-shadow: none;
+  }
+}
+
+/* === Team absence calendar === */
+.calendario-team-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.calendario-team-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.calendario-team-header h1 {
+  margin: 3px 0 5px;
+  color: #1f334f;
+  font-size: clamp(1.45rem, 2vw, 1.8rem);
+  letter-spacing: -.03em;
+}
+
+.calendario-team-eyebrow {
+  color: #71849d;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .12em;
+}
+
+.calendario-team-controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+
+.calendario-team-controls .secondary-button {
+  min-width: 38px;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid #dce4ed;
+  border-radius: 999px;
+  background: #fff;
+  color: #294969;
+  font-size: 17px;
+  box-shadow: none;
+}
+
+.calendario-team-controls .calendario-team-today {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.calendario-team-card,
+.calendario-team-detail {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e1e7ee;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(36, 55, 80, .045);
+}
+
+.calendario-team-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.calendario-team-toolbar h2,
+.calendario-team-detail h2 {
+  margin: 0;
+  color: #243750;
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.calendario-team-toolbar p,
+.calendario-team-detail .assenza-section-heading p {
+  margin: 4px 0 0;
+  color: #8192aa;
+  font-size: 11px;
+}
+
+.calendario-team-driver-filter {
+  display: grid;
+  min-width: min(220px, 42vw);
+  gap: 4px;
+  color: #71839a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.calendario-team-driver-filter .form-input {
+  min-height: 36px;
+  border: 1px solid #dce4ed;
+  border-radius: 9px;
+  background: #fff;
+  color: #344862;
+  font-size: 12px;
+}
+
+.calendario-team-grid-scroll {
+  overflow-x: auto;
+  border: 1px solid #e6ebf0;
+  border-radius: 11px;
+  scrollbar-color: #c4d2e1 transparent;
+}
+
+.calendario-team-weekdays,
+.calendario-team-grid {
+  display: grid;
+  min-width: 780px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendario-team-weekdays {
+  background: #f6f8fb;
+  color: #8192aa;
+  font-size: 10px;
+  font-weight: 750;
+  text-align: right;
+  text-transform: uppercase;
+}
+
+.calendario-team-weekdays > div {
+  padding: 9px 10px;
+  border-right: 1px solid #e6ebf0;
+}
+
+.calendario-team-weekdays > div:last-child {
+  border-right: 0;
+}
+
+.calendario-team-day {
+  min-width: 0;
+  min-height: 124px;
+  padding: 6px;
+  border-top: 1px solid #e6ebf0;
+  border-right: 1px solid #e6ebf0;
+  background: #fff;
+}
+
+.calendario-team-day:nth-child(7n) {
+  border-right: 0;
+}
+
+.calendario-team-day.is-outside {
+  background: #fafbfd;
+}
+
+.calendario-team-day.is-selected {
+  box-shadow: inset 0 0 0 2px #4b94d5;
+}
+
+.calendario-team-day-number {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 3px 6px;
+  border: 0;
+  background: transparent;
+  color: #344862;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 750;
+  text-align: left;
+}
+
+.calendario-team-day.is-outside .calendario-team-day-number {
+  color: #a5b0bd;
+}
+
+.calendario-team-day-count {
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  place-items: center;
+  border-radius: 999px;
+  background: #eaf2fa;
+  color: #315a80;
+  font-size: 9px;
+}
+
+.calendario-team-day-events {
+  display: grid;
+  gap: 4px;
+}
+
+.calendario-team-event {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+  padding: 5px 6px;
+  border: 0;
+  border-left: 3px solid #4b94d5;
+  border-radius: 5px;
+  background: #edf5fc;
+  color: #294969;
+  cursor: pointer;
+  text-align: left;
+}
+
+.calendario-team-event.is-sganciamento {
+  border-left-color: #9a72c4;
+  background: #f4eff9;
+  color: #60437e;
+}
+
+.calendario-team-event strong,
+.calendario-team-event span {
+  overflow: hidden;
+  font-size: 9px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendario-team-event strong {
+  font-weight: 750;
+}
+
+.calendario-team-more {
+  padding: 2px 5px;
+  color: #71839a;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.calendario-team-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 12px;
+  color: #71839a;
+  font-size: 10px;
+}
+
+.calendario-team-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendario-team-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #4b94d5;
+}
+
+.calendario-team-legend-dot.is-sganciamento {
+  background: #9a72c4;
+}
+
+.calendario-team-detail .assenza-section-heading {
+  margin-bottom: 12px;
+}
+
+.calendario-team-entry-list {
+  display: grid;
+  gap: 8px;
+}
+
+.calendario-team-entry {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid #e4ebf2;
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+
+.calendario-team-entry.is-sganciamento {
+  border-color: #e7dcef;
+  background: #fcfaff;
+}
+
+.calendario-team-entry-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 10px;
+  background: #eaf2fa;
+  color: #315a80;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.calendario-team-entry.is-sganciamento .calendario-team-entry-mark {
+  background: #f0e8f7;
+  color: #76539a;
+}
+
+.calendario-team-entry-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.calendario-team-entry-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 9px;
+  color: #273b55;
+  font-size: 12px;
+}
+
+.calendario-team-entry-title span {
+  color: #62768e;
+}
+
+.calendario-team-entry-main p {
+  margin: 4px 0 0;
+  color: #8192aa;
+  font-size: 10px;
+}
+
+.calendario-team-origin {
+  flex: 0 0 auto;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #edf2f7;
+  color: #536a84;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.calendario-team-origin.origin-gestionale {
+  background: #e7f4ec;
+  color: #2d7049;
+}
+
+.calendario-team-empty,
+.calendario-team-loading {
+  padding: 20px 12px;
+  color: #8192aa;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 700px) {
+  .calendario-team-panel {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .calendario-team-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .calendario-team-card,
+  .calendario-team-detail {
+    padding: 13px;
+  }
+
+  .calendario-team-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .calendario-team-driver-filter {
+    width: 100%;
+  }
+
+  .calendario-team-entry {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .calendario-team-origin {
+    margin-left: 45px;
   }
 }

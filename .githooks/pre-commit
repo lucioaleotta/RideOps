@@ -1,0 +1,131 @@
+#!/bin/sh
+
+set -e
+
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+cd "$ROOT_DIR"
+
+echo ""
+echo "========================================"
+echo " RideOps pre-commit checks"
+echo "========================================"
+echo ""
+
+RUN_BACKEND=false
+RUN_FRONTEND=false
+
+# Check only staged files
+STAGED_FILES=$(git diff --cached --name-only)
+
+if [ -z "$STAGED_FILES" ]; then
+    echo "No staged files found."
+    exit 0
+fi
+
+echo "Changed files:"
+echo "$STAGED_FILES"
+echo ""
+
+# ----------------------------------------
+# Detect affected areas
+# ----------------------------------------
+
+while IFS= read -r file; do
+
+    case "$file" in
+
+        backend/*)
+            RUN_BACKEND=true
+            ;;
+
+        frontend/*)
+            RUN_FRONTEND=true
+            ;;
+
+        pom.xml|docker-compose.yml|docker-compose.prod.yml)
+            RUN_BACKEND=true
+            RUN_FRONTEND=true
+            ;;
+
+        .github/*)
+            RUN_BACKEND=true
+            RUN_FRONTEND=true
+            ;;
+
+    esac
+
+done <<EOF
+$STAGED_FILES
+EOF
+
+# ----------------------------------------
+# Backend
+# ----------------------------------------
+
+if [ "$RUN_BACKEND" = true ]; then
+
+    echo "▶ Backend checks"
+    echo ""
+
+    cd "$ROOT_DIR/backend"
+
+    if [ -x "./mvnw" ]; then
+        ./mvnw verify
+    else
+        mvn verify
+    fi
+
+    echo ""
+    echo "✓ Backend checks passed"
+    echo ""
+
+else
+
+    echo "⏭ Backend unchanged - skipped"
+    echo ""
+
+fi
+
+# ----------------------------------------
+# Frontend
+# ----------------------------------------
+
+if [ "$RUN_FRONTEND" = true ]; then
+
+    echo "▶ Frontend lint"
+    echo ""
+
+    cd "$ROOT_DIR/frontend"
+
+    npm run lint
+
+    echo ""
+    echo "✓ Frontend lint passed"
+    echo ""
+
+    echo "▶ Frontend build"
+    echo ""
+
+    npm run build
+
+    echo ""
+    echo "✓ Frontend build passed"
+    echo ""
+
+else
+
+    echo "⏭ Frontend unchanged - skipped"
+    echo ""
+
+fi
+
+# ----------------------------------------
+# Result
+# ----------------------------------------
+
+echo "========================================"
+echo " ✓ Pre-commit checks passed"
+echo " ✓ Commit allowed"
+echo "========================================"
+echo ""
