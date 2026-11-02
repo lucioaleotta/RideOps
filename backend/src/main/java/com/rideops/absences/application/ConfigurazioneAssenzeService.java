@@ -3,9 +3,9 @@ package com.rideops.absences.application;
 import com.rideops.absences.adapters.out.ConfigurazioneAssenzaDriverEntity;
 import com.rideops.absences.adapters.out.ConfigurazioneAssenzaDriverRepository;
 import com.rideops.absences.adapters.out.ConfigurazioneAssenzaTenantEntity;
-import com.rideops.absences.adapters.out.ConfigurazioneAssenzaTenantRepository;
+import com.rideops.absences.adapters.out.ConfigurazioneAssenzaDefaultRepository;
 import com.rideops.absences.adapters.out.RegoleGeneraliAssenzaTenantEntity;
-import com.rideops.absences.adapters.out.RegoleGeneraliAssenzaTenantRepository;
+import com.rideops.absences.adapters.out.RegoleGeneraliAssenzaRepository;
 import com.rideops.absences.adapters.out.TipoAssenzaEntity;
 import com.rideops.identity.adapters.out.UserEntity;
 import com.rideops.identity.application.admin.UserAdminRepositoryPort;
@@ -31,16 +31,16 @@ public class ConfigurazioneAssenzeService implements RegoleGeneraliAssenzaProvid
     private static final String DEFAULT_COMPORTAMENTO_MATURATO = "azzeramento_annuale";
     private static final Set<String> COMPORTAMENTI_MATURATO = Set.of("azzeramento_annuale", "accumulo_esteso");
 
-    private final ConfigurazioneAssenzaTenantRepository tenantRepository;
-    private final RegoleGeneraliAssenzaTenantRepository regoleRepository;
+    private final ConfigurazioneAssenzaDefaultRepository tenantRepository;
+    private final RegoleGeneraliAssenzaRepository regoleRepository;
     private final ConfigurazioneAssenzaDriverRepository driverConfigurationRepository;
     private final TipoAssenzaRepositoryPort tipoAssenzaRepository;
     private final UserAdminRepositoryPort userAdminRepository;
     private final ListDriversForAssenzeUseCase listDriversForAssenzeUseCase;
     private final TenantContext tenantContext;
 
-    public ConfigurazioneAssenzeService(ConfigurazioneAssenzaTenantRepository tenantRepository,
-                                        RegoleGeneraliAssenzaTenantRepository regoleRepository,
+    public ConfigurazioneAssenzeService(ConfigurazioneAssenzaDefaultRepository tenantRepository,
+                                        RegoleGeneraliAssenzaRepository regoleRepository,
                                         ConfigurazioneAssenzaDriverRepository driverConfigurationRepository,
                                         TipoAssenzaRepositoryPort tipoAssenzaRepository,
                                         UserAdminRepositoryPort userAdminRepository,

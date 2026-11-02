@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface ConfigurazioneAssenzaTenantRepository extends JpaRepository<ConfigurazioneAssenzaTenantEntity, Long> {
+public interface ConfigurazioneAssenzaDefaultRepository extends JpaRepository<ConfigurazioneAssenzaTenantEntity, Long> {
 
     List<ConfigurazioneAssenzaTenantEntity> findAllByTenantId(Long tenantId);
 
