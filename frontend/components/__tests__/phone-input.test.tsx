@@ -75,6 +75,21 @@ describe('PhoneInput', () => {
     expect(screen.getByRole('combobox', { name: /prefisso internazionale/i })).toHaveTextContent('+44');
   });
 
+  it('mantiene il prefisso digitato e lo separa dal numero nazionale', () => {
+    render(<Harness />);
+    const phoneField = screen.getByLabelText('Telefono');
+
+    fireEvent.change(phoneField, { target: { value: '+' } });
+    expect(phoneField).toHaveValue('+');
+    fireEvent.change(phoneField, { target: { value: '+4' } });
+    expect(phoneField).toHaveValue('+4');
+    fireEvent.change(phoneField, { target: { value: '+44 7700 900123' } });
+
+    expect(screen.getByTestId('value')).toHaveTextContent('+44 7700 900123');
+    expect(phoneField).toHaveValue('7700 900123');
+    expect(screen.getByRole('combobox', { name: /prefisso internazionale/i })).toHaveTextContent('+44');
+  });
+
   it('cambia prefisso dal selettore con ricerca e aggiorna il valore', async () => {
     const user = userEvent.setup();
     render(<Harness initial="+39 335 1122334" />);
@@ -86,6 +101,16 @@ describe('PhoneInput', () => {
 
     expect(screen.getByTestId('value')).toHaveTextContent('+44 335 1122334');
     expect(screen.getByRole('combobox', { name: /prefisso internazionale/i })).toHaveTextContent('+44');
+  });
+
+  it('mantiene aperto il selettore se il viewport mobile cambia dimensione', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+
+    await user.click(screen.getByRole('combobox', { name: /prefisso internazionale/i }));
+    fireEvent.resize(window);
+
+    expect(screen.getByRole('listbox', { name: /prefissi internazionali/i })).toBeInTheDocument();
   });
 
   it('con campo vuoto emette stringa vuota anche dopo aver scelto un prefisso', async () => {
