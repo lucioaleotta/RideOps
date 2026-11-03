@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { KeyboardEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import 'flag-icons/css/flag-icons.min.css';
 import './phone-input.css';
@@ -108,7 +108,7 @@ export function PhoneInput({ value, onChange, required, disabled, placeholder, n
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
-  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0, maxHeight: POPUP_HEIGHT });
   const triggerRef = useRef<HTMLDivElement | null>(null);
   const popupRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -146,14 +146,25 @@ export function PhoneInput({ value, onChange, required, disabled, placeholder, n
     );
   }, [prefixes, query]);
 
+  const updatePopupPosition = useCallback(() => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const viewportTop = window.visualViewport?.offsetTop ?? 0;
+    const viewportBottom = viewportTop + (window.visualViewport?.height ?? window.innerHeight);
+    const availableBelow = Math.max(0, viewportBottom - rect.bottom - 8);
+    const availableAbove = Math.max(0, rect.top - viewportTop - 8);
+    const fitsBelow = availableBelow >= Math.min(POPUP_HEIGHT, 220) || availableBelow >= availableAbove;
+    const maxHeight = Math.max(120, Math.min(POPUP_HEIGHT, fitsBelow ? availableBelow : availableAbove));
+    setPopupPosition({
+      top: fitsBelow ? rect.bottom + 4 : Math.max(viewportTop + 8, rect.top - maxHeight - 4),
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - POPUP_WIDTH - 8)),
+      maxHeight
+    });
+  }, []);
+
   function openPopup() {
     if (disabled || !triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    const fitsBelow = rect.bottom + POPUP_HEIGHT + 8 <= window.innerHeight;
-    setPopupPosition({
-      top: fitsBelow ? rect.bottom + 4 : Math.max(8, rect.top - POPUP_HEIGHT - 4),
-      left: Math.max(8, Math.min(rect.left, window.innerWidth - POPUP_WIDTH - 8))
-    });
+    updatePopupPosition();
     setQuery('');
     setActiveIndex(0);
     setOpen(true);
@@ -187,18 +198,20 @@ export function PhoneInput({ value, onChange, required, disabled, placeholder, n
       setOpen(false);
     }
     function onResize() {
-      setOpen(false);
+      updatePopupPosition();
     }
 
     document.addEventListener('mousedown', onMouseDown);
     window.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', onResize);
+    window.visualViewport?.addEventListener('resize', onResize);
     return () => {
       document.removeEventListener('mousedown', onMouseDown);
       window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('resize', onResize);
+      window.visualViewport?.removeEventListener('resize', onResize);
     };
-  }, [open]);
+  }, [open, updatePopupPosition]);
 
   function onTriggerKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
@@ -230,6 +243,20 @@ export function PhoneInput({ value, onChange, required, disabled, placeholder, n
   }, [open, activeIndex, listId]);
 
   const nationalValue = parsed.prefix ? parsed.national : value;
+
+  function handleNumberChange(inputValue: string) {
+    if (inputValue.trimStart().startsWith('+')) {
+      const enteredPhone = parsePhone(inputValue, prefixes);
+      if (enteredPhone.prefix) {
+        setIso(enteredPhone.prefix.codiceIso2);
+        onChange(joinPhone(enteredPhone.prefix, enteredPhone.national));
+      } else {
+        onChange(inputValue);
+      }
+      return;
+    }
+    onChange(joinPhone(current, inputValue));
+  }
 
   return (
     <div className="phone-input">
@@ -268,13 +295,13 @@ export function PhoneInput({ value, onChange, required, disabled, placeholder, n
         placeholder={placeholder}
         required={required}
         disabled={disabled}
-        onChange={(event) => onChange(joinPhone(current, event.target.value))}
+        onChange={(event) => handleNumberChange(event.target.value)}
       />
       {open && typeof document !== 'undefined' && createPortal(
         <div
           ref={popupRef}
           className="phone-input-popup"
-          style={{ top: popupPosition.top, left: popupPosition.left, width: POPUP_WIDTH }}
+          style={{ top: popupPosition.top, left: popupPosition.left, width: POPUP_WIDTH, maxHeight: popupPosition.maxHeight }}
           onClick={(event) => event.preventDefault()}
         >
           <input

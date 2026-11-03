@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeftIcon, ArrowRightIcon, ButtonContent, LockIcon, OpenIcon, SelectIcon, TodayIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
@@ -18,7 +18,7 @@ type ServiceItem = {
   durationHours: number | null;
   notes: string | null;
   price: number | null;
-  externalBookingReference: number | null;
+  externalBookingReference: string | number | null;
   internalBookingReference: string | null;
   clientName: string | null;
   clientPhone: string | null;
@@ -229,6 +229,323 @@ function CalDetailRow({ icon, label, value, bold = false }: { icon: ReactNode; l
 
 const calDetailDivider = <hr style={{ border: 'none', borderTop: '1px solid #dce8f5', margin: '10px 0' }} />;
 
+type NavigationApp = 'google' | 'waze' | 'apple' | 'ask';
+
+function navigationUrl(app: Exclude<NavigationApp, 'ask'>, address: string) {
+  if (app === 'google') {
+    const url = new URL('https://www.google.com/maps/dir/');
+    url.searchParams.set('api', '1');
+    url.searchParams.set('destination', address);
+    url.searchParams.set('travelmode', 'driving');
+    return url.toString();
+  }
+  if (app === 'waze') {
+    const url = new URL('https://www.waze.com/ul');
+    url.searchParams.set('q', address);
+    url.searchParams.set('navigate', 'yes');
+    return url.toString();
+  }
+  const url = new URL('https://maps.apple.com/');
+  url.searchParams.set('daddr', address);
+  url.searchParams.set('dirflg', 'd');
+  return url.toString();
+}
+
+function navigationAddress(value: string | null | undefined) {
+  const address = value?.trim();
+  if (!address || /^(null|undefined)$/i.test(address)) {
+    return null;
+  }
+  return address;
+}
+
+function NavigationAppIcon({ app }: { app: Exclude<NavigationApp, 'ask'> }) {
+  if (app === 'waze') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 13.2A8 8 0 1 1 19.2 16L21 18h-7.5A8 8 0 0 1 4 13.2Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        <circle cx="9" cy="11" r=".8" fill="currentColor" /><circle cx="15" cy="11" r=".8" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (app === 'apple') {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M4 6.5 9.5 4l5 2 5.5-2v13.5L14.5 20l-5-2L4 20Z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+        <path d="M9.5 4v14m5-12v14" fill="none" stroke="currentColor" strokeWidth="1.5" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 21s-7-7.1-7-12a7 7 0 1 1 14 0c0 4.9-7 12-7 12Z" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="9" r="2.3" fill="none" stroke="currentColor" strokeWidth="1.8" />
+    </svg>
+  );
+}
+
+function DriverServiceDetailSheet({
+  service,
+  vehicle,
+  hidePrice,
+  canClose,
+  submittingClose,
+  onClose,
+  onMarkExecuted
+}: {
+  service: ServiceItem;
+  vehicle: VehicleItem | null;
+  hidePrice: boolean;
+  canClose: boolean;
+  submittingClose: boolean;
+  onClose: () => void;
+  onMarkExecuted: () => void;
+}) {
+  const [preferredApp, setPreferredApp] = useState<NavigationApp>('ask');
+  const [pendingAddress, setPendingAddress] = useState<string | null>(null);
+  const [showAppPicker, setShowAppPicker] = useState(false);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const swipeStartY = useRef<number | null>(null);
+  const pickupAddress = navigationAddress(service.pickupLocation);
+  const destinationAddress = navigationAddress(service.destination);
+  const phone = service.clientPhone?.trim() ?? '';
+  const phoneNumber = phone.replace(/(?!^)\+|[^\d+]/g, '');
+  const phoneHref = /\d/.test(phoneNumber) ? `tel:${phoneNumber}` : null;
+  const email = service.clientEmail?.trim() ?? '';
+  const serviceDate = new Date(service.startAt);
+  const vehicleType = vehicle?.type?.trim() || null;
+  const vehicleNotes = vehicle?.notes?.trim() || null;
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('rideops.driver.navigation-app');
+      if (saved === 'google' || saved === 'waze' || saved === 'apple' || saved === 'ask') {
+        setPreferredApp(saved);
+      }
+    } catch {
+      setPreferredApp('ask');
+    }
+  }, []);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    closeButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) {
+        return;
+      }
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
+      ));
+      if (focusable.length === 0) {
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  function rememberPreferredApp(app: NavigationApp) {
+    setPreferredApp(app);
+    try {
+      window.localStorage.setItem('rideops.driver.navigation-app', app);
+    } catch {
+      setPreferredApp(app);
+    }
+  }
+
+  function startNavigation(address: string) {
+    if (preferredApp === 'ask') {
+      setPendingAddress(address);
+      setShowAppPicker(true);
+      return;
+    }
+    window.open(navigationUrl(preferredApp, address), '_blank', 'noopener,noreferrer');
+  }
+
+  function chooseApp(app: Exclude<NavigationApp, 'ask'>) {
+    if (pendingAddress) {
+      window.open(navigationUrl(app, pendingAddress), '_blank', 'noopener,noreferrer');
+    }
+    setPendingAddress(null);
+    setShowAppPicker(false);
+  }
+
+  function setPreference(app: NavigationApp) {
+    rememberPreferredApp(app);
+  }
+
+  function closePicker() {
+    setPendingAddress(null);
+    setShowAppPicker(false);
+  }
+
+  return (
+    <div className="driver-service-overlay">
+      <button type="button" className="driver-service-backdrop" aria-label="Chiudi dettaglio servizio" onClick={onClose} />
+      <div
+        ref={dialogRef}
+        className="driver-service-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="driver-service-title"
+        tabIndex={-1}
+      >
+        <div
+          className="driver-service-drag-area"
+          aria-hidden="true"
+          onPointerDown={(event) => { swipeStartY.current = event.clientY; }}
+          onPointerUp={(event) => {
+            if (swipeStartY.current !== null && event.clientY - swipeStartY.current > 80) {
+              onClose();
+            }
+            swipeStartY.current = null;
+          }}
+        >
+          <span />
+        </div>
+        <header className="driver-service-header">
+          <div className="driver-service-header-copy">
+            <h2 id="driver-service-title">Dettaglio servizio #{service.id}</h2>
+            <div className="driver-service-badges">
+              <span className={`services-selected-chip services-selected-chip-status ${service.status.toLowerCase()}`}>
+                {service.status === 'OPEN' ? 'Aperto' : service.status === 'ASSIGNED' ? 'Assegnato' : service.status === 'EXECUTED' ? 'Eseguito' : 'Chiuso'}
+              </span>
+              <span className="services-selected-chip services-selected-chip-type">{service.type === 'TRANSFER' ? 'Transfer' : 'Tour'}</span>
+              {service.internalBookingReference && <span className="services-selected-chip">{service.internalBookingReference}</span>}
+            </div>
+          </div>
+          <button ref={closeButtonRef} type="button" className="driver-service-close" aria-label="Chiudi dettaglio servizio" onClick={onClose}>×</button>
+        </header>
+
+        <div className="driver-service-body">
+          <p className="driver-service-datetime">
+            <CalClockIcon />
+            {Number.isNaN(serviceDate.getTime()) ? 'Data non disponibile' : serviceDate.toLocaleString('it-IT')}
+          </p>
+
+          <div className="driver-route-timeline" aria-label="Percorso del servizio">
+            <div className="driver-route-point driver-route-pickup">
+              <span className="driver-route-dot" aria-hidden="true" />
+              <span className="driver-route-label">Pickup</span>
+              <span className="driver-route-address">{pickupAddress ?? 'Indirizzo pickup non disponibile'}</span>
+            </div>
+            <div className="driver-route-point driver-route-destination">
+              <span className="driver-route-dot" aria-hidden="true" />
+              <span className="driver-route-label">Destinazione</span>
+              <span className="driver-route-address">{destinationAddress ?? 'Indirizzo destinazione non disponibile'}</span>
+            </div>
+          </div>
+
+          {(pickupAddress || destinationAddress) && (
+            <section className="driver-navigation-card" aria-labelledby="driver-navigation-title">
+              <h3 id="driver-navigation-title">Avvia navigazione</h3>
+              <div className="driver-navigation-actions">
+                {pickupAddress && <button type="button" className="driver-navigation-button is-primary" onClick={() => startNavigation(pickupAddress)}>Naviga al pickup</button>}
+                {destinationAddress && <button type="button" className="driver-navigation-button" onClick={() => startNavigation(destinationAddress)}>Naviga alla destinazione</button>}
+              </div>
+              <p className="driver-navigation-label">App preferita</p>
+              <div className="driver-navigation-options" role="group" aria-label="App di navigazione preferita">
+                <button type="button" className={preferredApp === 'google' ? 'is-selected' : ''} aria-pressed={preferredApp === 'google'} onClick={() => setPreference('google')}><NavigationAppIcon app="google" />Google Maps</button>
+                <button type="button" className={preferredApp === 'waze' ? 'is-selected' : ''} aria-pressed={preferredApp === 'waze'} onClick={() => setPreference('waze')}><NavigationAppIcon app="waze" />Waze</button>
+                <button type="button" className={preferredApp === 'apple' ? 'is-selected' : ''} aria-pressed={preferredApp === 'apple'} onClick={() => setPreference('apple')}><NavigationAppIcon app="apple" />Mappe Apple</button>
+                <button type="button" className={preferredApp === 'ask' ? 'is-selected' : ''} aria-pressed={preferredApp === 'ask'} onClick={() => setPreference('ask')}>Chiedi ogni volta</button>
+              </div>
+              {showAppPicker && pendingAddress && (
+                <div className="driver-navigation-picker" role="group" aria-label="Scegli app per questa navigazione">
+                  <div className="driver-navigation-picker-heading">
+                    <strong>Apri con</strong>
+                    <button type="button" aria-label="Annulla scelta app" onClick={closePicker}>×</button>
+                  </div>
+                  <div className="driver-navigation-options">
+                    <button type="button" onClick={() => chooseApp('google')}><NavigationAppIcon app="google" />Google Maps</button>
+                    <button type="button" onClick={() => chooseApp('waze')}><NavigationAppIcon app="waze" />Waze</button>
+                    <button type="button" onClick={() => chooseApp('apple')}><NavigationAppIcon app="apple" />Mappe Apple</button>
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          {service.notes?.trim() && (
+            <aside className="driver-service-notes" aria-label="Note importanti">
+              <span aria-hidden="true">⚠</span>
+              <div><strong>Note</strong><p>{service.notes.trim()}</p></div>
+            </aside>
+          )}
+
+          {service.itinerary?.trim() && (
+            <section className="driver-service-section">
+              <h3>Itinerario</h3>
+              <p className="driver-service-long-text">{service.itinerary.trim()}</p>
+            </section>
+          )}
+
+          <section className="driver-service-section">
+            <h3>Dettagli operativi</h3>
+            <div className="driver-vehicle-card">
+              <span className="driver-vehicle-icon"><CalCarIcon /></span>
+              <div className="driver-vehicle-copy">
+                <strong>{vehicleType ?? (vehicle ? 'Veicolo assegnato' : 'Veicolo non disponibile')}</strong>
+                {vehicleNotes && <span>{vehicleNotes}</span>}
+              </div>
+              {vehicle?.plate && <span className="driver-vehicle-plate">{vehicle.plate}</span>}
+            </div>
+            <div className="driver-service-ops-grid">
+              {!hidePrice && (
+                <div className="driver-service-ops-card"><span className="driver-service-ops-icon"><CalEuroIcon /></span><span><small>Prezzo</small><strong className="driver-service-price">{formatCurrencyEUR(service.price)}</strong></span></div>
+              )}
+              <div className="driver-service-ops-card"><span className="driver-service-ops-icon"><CalPeopleIcon /></span><span><small>Passeggeri</small><strong>{service.passengersCount ?? '—'}</strong></span></div>
+              <div className="driver-service-ops-card"><span className="driver-service-ops-icon"><CalDocIcon /></span><span><small>Rif. interno</small><strong>{service.internalBookingReference ?? '—'}</strong></span></div>
+              <div className="driver-service-ops-card"><span className="driver-service-ops-icon"><CalDocIcon /></span><span><small>Rif. esterno</small><strong>{service.externalBookingReference ?? '—'}</strong></span></div>
+            </div>
+          </section>
+
+          <section className="driver-service-section driver-service-contacts">
+            <h3>Contatti</h3>
+            {service.clientName && <div className="driver-contact-item"><span className="driver-contact-icon"><CalUserIcon /></span><span><small>Cliente</small><strong>{service.clientName}</strong></span></div>}
+            {phone && <div className="driver-contact-item"><span className="driver-contact-icon"><CalPhoneIcon /></span><span><small>Telefono cliente</small>{phoneHref ? <a href={phoneHref}>{phone}</a> : <strong>{phone}</strong>}</span></div>}
+            {email && <div className="driver-contact-item"><span className="driver-contact-icon"><CalMailIcon /></span><span><small>Email cliente</small><a href={`mailto:${email}`}>{email}</a></span></div>}
+            {!service.clientName && !phone && !email && <p className="driver-service-empty-contact">Nessun contatto disponibile.</p>}
+          </section>
+        </div>
+
+        <footer className="driver-service-footer">
+          <Link className="driver-service-print" href={`/services/${service.id}/print`} target="_blank" rel="noreferrer">
+            <CalPrintIcon />Apri dettaglio stampa
+          </Link>
+          {canClose && (
+            <button type="button" className="driver-service-execute" onClick={onMarkExecuted} disabled={submittingClose}>
+              {submittingClose ? 'Salvataggio…' : 'Segna eseguito'}
+            </button>
+          )}
+        </footer>
+      </div>
+    </div>
+  );
+}
+
 export function CalendarDashboard({ driverMode = false, hidePrice = false }: CalendarDashboardProps) {
   const [view, setView] = useState<ViewMode>('month');
   const [cursorDate, setCursorDate] = useState(() => startOfDay(new Date()));
@@ -238,6 +555,8 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+  const [driverDetailOpen, setDriverDetailOpen] = useState(false);
+  const driverDetailTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [submittingClose, setSubmittingClose] = useState(false);
@@ -516,8 +835,14 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
       <button
         key={service.id}
         type="button"
-        onClick={() => setSelectedServiceId(service.id)}
-        className="logout-button"
+        onClick={(event) => {
+          setSelectedServiceId(service.id);
+          if (driverMode) {
+            driverDetailTriggerRef.current = event.currentTarget;
+            setDriverDetailOpen(true);
+          }
+        }}
+        className={`logout-button${driverMode ? ' driver-calendar-service-trigger' : ''}`}
         style={{
           width: '100%',
           textAlign: 'left',
@@ -531,12 +856,23 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
       >
         <span className="button-icon" aria-hidden="true" style={{ flexShrink: 0 }}><SelectIcon /></span>
         <span style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-          <strong>{new Date(service.startAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</strong>
+          <strong style={{ fontSize: '1.1rem', lineHeight: 1.2 }}>
+            {new Date(service.startAt).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+          </strong>
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.85em', color: 'var(--muted)' }}>{service.pickupLocation}</span>
         </span>
       </button>
     );
   }
+
+  const closeDriverDetail = useCallback(() => {
+    setDriverDetailOpen(false);
+    window.requestAnimationFrame(() => driverDetailTriggerRef.current?.focus());
+  }, []);
+
+  const selectedVehicle = selectedService
+    ? vehicles.find((vehicle) => vehicle.id === selectedService.assignedVehicleId) ?? null
+    : null;
 
   function renderMonthView() {
     return (
@@ -730,7 +1066,7 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
             {view === 'day' && renderDayView()}
           </article>
 
-          <article className="dashboard-card calendar-detail">
+          {!driverMode && <article className="dashboard-card calendar-detail">
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <span style={{ color: 'var(--color-primary, #1565c0)', display: 'flex' }}><CalClipboardIcon /></span>
               <strong style={{ fontSize: '1.05rem' }}>Dettaglio servizio</strong>
@@ -770,7 +1106,11 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
 
                 {/* Sezione logistica */}
                 <div style={{ display: 'grid', gap: 10, marginBottom: 4 }}>
-                  <CalDetailRow icon={<CalClockIcon />} label="Quando" value={new Date(selectedService.startAt).toLocaleString('it-IT')} />
+                  <CalDetailRow
+                    icon={<CalClockIcon />}
+                    label="Quando"
+                    value={<span style={{ fontSize: '1rem', fontWeight: 700 }}>{new Date(selectedService.startAt).toLocaleString('it-IT')}</span>}
+                  />
                   <CalDetailRow icon={<CalPinIcon />} label="Pickup" value={selectedService.pickupLocation} />
                   <CalDetailRow icon={<CalPinIcon />} label="Destinazione" value={selectedService.destination} />
                 </div>
@@ -890,8 +1230,20 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
                 </div>
               </div>
             )}
-          </article>
+          </article>}
         </div>
+      )}
+
+      {driverMode && driverDetailOpen && selectedService && (
+        <DriverServiceDetailSheet
+          service={selectedService}
+          vehicle={selectedVehicle}
+          hidePrice={hidePrice}
+          canClose={canDriverCloseSelectedService}
+          submittingClose={submittingClose}
+          onClose={closeDriverDetail}
+          onMarkExecuted={() => onDriverClose(selectedService.id)}
+        />
       )}
     </section>
   );
