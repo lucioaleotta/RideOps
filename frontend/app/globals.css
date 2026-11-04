@@ -4022,6 +4022,170 @@ a:hover {
   box-shadow: 0 24px 70px rgba(12, 26, 42, 0.22);
 }
 
+.manual-close-modal-overlay {
+  background: rgba(31, 41, 55, 0.42);
+  backdrop-filter: blur(3px);
+}
+
+.manual-close-modal {
+  width: min(550px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 28px 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #fff;
+  color: #1a202c;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.manual-close-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.manual-close-modal-title {
+  margin: 0;
+  color: #111827;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.manual-close-modal-dismiss {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.manual-close-modal-dismiss:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.manual-close-modal-dismiss svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.5;
+}
+
+.manual-close-modal-body {
+  margin-bottom: 24px;
+  color: #374151;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.manual-close-modal-body p {
+  margin: 0 0 12px;
+}
+
+.manual-close-modal-body p:last-of-type {
+  margin-bottom: 0;
+}
+
+.manual-close-modal-body strong {
+  color: #111827;
+}
+
+.manual-close-modal-body .services-modal-error {
+  margin: 0 0 20px;
+}
+
+.manual-close-system-note {
+  margin-top: 16px;
+  padding-left: 12px;
+  border-left: 3px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.manual-close-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 28px;
+  color: #111827;
+  cursor: pointer;
+}
+
+.manual-close-checkbox input[type='checkbox'] {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 3px 0 0;
+  accent-color: #5b8def;
+  cursor: pointer;
+}
+
+.manual-close-checkbox span {
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.manual-close-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.manual-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 20px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.manual-close-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.5;
+}
+
+.manual-close-btn-cancel {
+  background: #f0f4f8;
+  color: #475569;
+}
+
+.manual-close-btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.manual-close-btn-confirm {
+  background: #2583e8;
+  color: #fff;
+}
+
+.manual-close-btn-confirm:hover:not(:disabled) {
+  background: #176fce;
+}
+
+.manual-close-btn-confirm:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .services-outsource-modal-card {
   width: min(760px, 100%);
   padding: 28px 40px 34px;
@@ -9058,9 +9222,28 @@ a:hover {
     align-items: end;
   }
 
+  .manual-close-modal-overlay {
+    align-items: center;
+  }
+
   .services-modal-card {
     width: 100%;
     max-height: min(88vh, 760px);
+  }
+
+  .manual-close-modal {
+    width: 100%;
+    max-height: min(88vh, 760px);
+    padding: 24px 20px;
+    border-radius: 12px;
+  }
+
+  .manual-close-modal-footer {
+    flex-wrap: wrap;
+  }
+
+  .manual-close-modal-footer .manual-close-btn {
+    flex: 1 1 auto;
   }
 
   .services-outsource-modal-card {

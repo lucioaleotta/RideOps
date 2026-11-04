@@ -10,11 +10,18 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 
 public interface RideServiceRepository extends JpaRepository<RideServiceEntity, Long>,
     JpaSpecificationExecutor<RideServiceEntity> {
 
     java.util.Optional<RideServiceEntity> findByIdAndTenantId(Long id, Long tenantId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select s from RideServiceEntity s where s.id = :id and s.tenantId = :tenantId")
+    java.util.Optional<RideServiceEntity> findByIdAndTenantIdForUpdate(@Param("id") Long id,
+                                                                      @Param("tenantId") Long tenantId);
 
     List<RideServiceEntity> findAllByTenantIdOrderByStartAtDesc(Long tenantId);
 
@@ -80,6 +87,10 @@ public interface RideServiceRepository extends JpaRepository<RideServiceEntity, 
                                                                  ServiceAssignmentType serviceAssignmentType,
                                                                  Long tenantId);
 
+        long countByOutgoingPartnerIdAndServiceAssignmentTypeAndTenantId(Long outgoingPartnerId,
+                                         ServiceAssignmentType serviceAssignmentType,
+                                         Long tenantId);
+
         @Query("""
                 SELECT COALESCE(SUM(s.margin), 0)
                 FROM RideServiceEntity s
@@ -90,6 +101,28 @@ public interface RideServiceRepository extends JpaRepository<RideServiceEntity, 
         BigDecimal sumMarginByPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
                                                          @Param("assignmentType") ServiceAssignmentType assignmentType,
                                                          @Param("tenantId") Long tenantId);
+
+        @Query("""
+            SELECT COALESCE(SUM(s.pricePartner), 0)
+            FROM RideServiceEntity s
+            WHERE s.outgoingPartnerId = :partnerId
+                AND s.tenantId = :tenantId
+                AND s.serviceAssignmentType = :assignmentType
+            """)
+        BigDecimal sumPricePartnerByOutgoingPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
+                                           @Param("assignmentType") ServiceAssignmentType assignmentType,
+                                           @Param("tenantId") Long tenantId);
+
+        @Query("""
+            SELECT COALESCE(SUM(s.margin), 0)
+            FROM RideServiceEntity s
+            WHERE s.outgoingPartnerId = :partnerId
+                AND s.tenantId = :tenantId
+                AND s.serviceAssignmentType = :assignmentType
+            """)
+        BigDecimal sumMarginByOutgoingPartnerIdAndAssignmentType(@Param("partnerId") Long partnerId,
+                                     @Param("assignmentType") ServiceAssignmentType assignmentType,
+                                     @Param("tenantId") Long tenantId);
 
         java.util.List<RideServiceEntity> findAllByPartnerIdAndTenantIdOrderByStartAtDesc(Long partnerId, Long tenantId);
 

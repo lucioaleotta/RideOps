@@ -64,9 +64,9 @@ public class PartnerPaymentReportUseCase {
 
         return listServicesUseCase.execute(from, to, null, null, null)
             .stream()
-            .filter(service -> service.partnerId() != null)
+            .filter(service -> paymentPartnerId(service) != null)
             .filter(service -> service.status() != ServiceStatus.OPEN && service.status() != ServiceStatus.ASSIGNED)
-            .filter(service -> partnerId == null || partnerId.equals(service.partnerId()))
+            .filter(service -> partnerId == null || partnerId.equals(paymentPartnerId(service)))
             .map(service -> toRow(service, driverLabels, vehiclePlates))
             .sorted((left, right) -> {
                 String leftPartner = left.partnerName() == null ? "" : left.partnerName();
@@ -111,16 +111,22 @@ public class PartnerPaymentReportUseCase {
     private PartnerPaymentReportRowDto toRow(ServiceDto service,
                                              Map<Long, String> driverLabels,
                                              Map<Long, String> vehiclePlates) {
-        String partnerName = safe(service.partnerRagioneSociale());
+        String partnerName = safe(paymentPartnerName(service));
         String rideCode = firstNonBlank(
             service.externalBookingReference(),
             service.internalBookingReference(),
             "RID-" + service.id()
         );
 
-        BigDecimal amount = service.pricePartner() != null
-            ? service.pricePartner()
-            : (service.price() == null ? BigDecimal.ZERO : service.price());
+        BigDecimal amount;
+        if (service.serviceAssignmentType() == com.rideops.services.domain.ServiceAssignmentType.OUTSOURCED
+            || service.serviceAssignmentType() == com.rideops.services.domain.ServiceAssignmentType.INCOMING_OUTSOURCED) {
+            amount = service.pricePartner() == null ? BigDecimal.ZERO : service.pricePartner();
+        } else {
+            amount = service.pricePartner() != null
+                ? service.pricePartner()
+                : (service.price() == null ? BigDecimal.ZERO : service.price());
+        }
 
         String driverName = service.assignedDriverId() == null
             ? "-"
@@ -135,7 +141,7 @@ public class PartnerPaymentReportUseCase {
         String destination = safe(service.destination());
 
         return new PartnerPaymentReportRowDto(
-            service.partnerId(),
+            paymentPartnerId(service),
             partnerName,
             service.id(),
             rideCode,
@@ -148,6 +154,18 @@ public class PartnerPaymentReportUseCase {
             destination,
             pickup + " -> " + destination
         );
+    }
+
+    private Long paymentPartnerId(ServiceDto service) {
+        return service.serviceAssignmentType() == com.rideops.services.domain.ServiceAssignmentType.INCOMING_OUTSOURCED
+            ? service.outgoingPartnerId()
+            : service.partnerId();
+    }
+
+    private String paymentPartnerName(ServiceDto service) {
+        return service.serviceAssignmentType() == com.rideops.services.domain.ServiceAssignmentType.INCOMING_OUTSOURCED
+            ? service.outgoingPartnerRagioneSociale()
+            : service.partnerRagioneSociale();
     }
 
     private byte[] toCsv(List<PartnerPaymentReportRowDto> rows) {

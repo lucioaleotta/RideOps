@@ -35,7 +35,7 @@ public class AutoCreateTransactionFromClosedServiceUseCase {
             return;
         }
 
-        // For OUTSOURCED, use margin; for INTERNAL or others, use full price
+        // For partner-executed services, use margin; for INTERNAL services, use full price.
         BigDecimal amount = determineAmount(event);
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             return;
@@ -60,7 +60,8 @@ public class AutoCreateTransactionFromClosedServiceUseCase {
     }
 
     private BigDecimal determineAmount(ServiceClosedEvent event) {
-        if (event.serviceAssignmentType() == ServiceAssignmentType.OUTSOURCED) {
+        if (event.serviceAssignmentType() == ServiceAssignmentType.OUTSOURCED
+            || event.serviceAssignmentType() == ServiceAssignmentType.INCOMING_OUTSOURCED) {
             // For outsourced services, record the margin
             return event.margin() == null ? BigDecimal.ZERO : event.margin();
         }

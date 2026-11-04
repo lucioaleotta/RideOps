@@ -15,6 +15,8 @@ public interface ServiceRepositoryPort {
 
     Optional<RideServiceEntity> findById(@NonNull Long id);
 
+    Optional<RideServiceEntity> findByIdForUpdate(@NonNull Long id);
+
     List<RideServiceEntity> findAllByOrderByStartAtDesc();
 
     List<RideServiceEntity> findByFilters(LocalDateTime from,

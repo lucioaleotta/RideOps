@@ -24,6 +24,23 @@ class RideServiceTest {
     }
 
     @Test
+    void openCanBeClosedManuallyAfterPartnerConfirmation() {
+        RideService service = new RideService(ServiceStatus.OPEN);
+
+        service.closeManuallyAfterPartnerConfirmation();
+
+        assertEquals(ServiceStatus.CLOSED, service.getStatus());
+    }
+
+    @Test
+    void manualPartnerCloseOnlyAcceptsOpenState() {
+        RideService service = new RideService(ServiceStatus.ASSIGNED);
+
+        assertThrows(ServiceDomainException.class, service::closeManuallyAfterPartnerConfirmation);
+        assertEquals(ServiceStatus.ASSIGNED, service.getStatus());
+    }
+
+    @Test
     void assignedCanBeExecuted() {
         RideService service = new RideService(ServiceStatus.ASSIGNED);
 

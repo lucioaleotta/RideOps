@@ -99,6 +99,21 @@ class RideServiceRepositoryIntegrationTest {
   }
 
   @Test
+  void lockedServiceLookupIsScopedToTenant() {
+    RideServiceEntity service = new RideServiceEntity();
+    service.setPickupLocation("Location tenant one");
+    service.setDestination("Destination tenant one");
+    service.setStartAt(LocalDateTime.now().plusHours(1));
+    service.setType(ServiceType.TRANSFER);
+    service.setTenantId(1L);
+    RideServiceEntity saved = repository.save(service);
+    entityManager.flush();
+
+    assertThat(repository.findByIdAndTenantIdForUpdate(saved.getId(), 1L)).isPresent();
+    assertThat(repository.findByIdAndTenantIdForUpdate(saved.getId(), 2L)).isEmpty();
+  }
+
+  @Test
   void testFindAllServices() {
     // Arrange
     RideServiceEntity service1 = new RideServiceEntity();

@@ -108,6 +108,36 @@ class PartnerPaymentReportUseCaseTest {
     }
 
     @Test
+    void incomingOutsourcedPaymentIsAttributedToExecutorPartner() {
+        LocalDate from = LocalDate.of(2026, 6, 1);
+        LocalDate to = LocalDate.of(2026, 6, 30);
+        ServiceDto incomingOutsourced = incomingOutsourcedService(
+            12L,
+            ServiceStatus.CLOSED,
+            99L,
+            "Agenzia mittente",
+            42L,
+            "Partner esecutore",
+            LocalDateTime.of(2026, 6, 12, 9, 0),
+            new BigDecimal("85.00"),
+            "REF-OUT"
+        );
+
+        when(listServicesUseCase.execute(from.atStartOfDay(), to.plusDays(1).atStartOfDay(), null, null, null))
+            .thenReturn(List.of(incomingOutsourced));
+        when(listDriversUseCase.execute(true)).thenReturn(List.of());
+        when(fleetService.listVehicles()).thenReturn(List.of());
+
+        PartnerPaymentReportUseCase useCase = new PartnerPaymentReportUseCase(listServicesUseCase, listDriversUseCase, fleetService);
+        List<PartnerPaymentReportRowDto> rows = useCase.list(from, to, 42L);
+
+        assertEquals(1, rows.size());
+        assertEquals(42L, rows.get(0).partnerId());
+        assertEquals("Partner esecutore", rows.get(0).partnerName());
+        assertEquals(new BigDecimal("85.00"), rows.get(0).amount());
+    }
+
+    @Test
     void exportXlsxBuildsWorkbookAndUsesXlsxMetadata() {
         LocalDate from = LocalDate.of(2026, 4, 1);
         LocalDate to = LocalDate.of(2026, 4, 30);
@@ -171,6 +201,48 @@ class PartnerPaymentReportUseCaseTest {
             null,
             null,
             null,
+            LocalDateTime.now(),
+            LocalDateTime.now()
+        );
+    }
+
+    private ServiceDto incomingOutsourcedService(Long id,
+                                                 ServiceStatus status,
+                                                 Long supplierPartnerId,
+                                                 String supplierPartnerName,
+                                                 Long executorPartnerId,
+                                                 String executorPartnerName,
+                                                 LocalDateTime startAt,
+                                                 BigDecimal pricePartner,
+                                                 String externalReference) {
+        return new ServiceDto(
+            id,
+            startAt,
+            "Via Roma",
+            "Aeroporto",
+            ServiceType.TRANSFER,
+            null,
+            null,
+            new BigDecimal("300.00"),
+            externalReference,
+            "INT-" + id,
+            null,
+            null,
+            null,
+            null,
+            null,
+            status,
+            null,
+            null,
+            null,
+            null,
+            ServiceAssignmentType.INCOMING_OUTSOURCED,
+            supplierPartnerId,
+            supplierPartnerName,
+            pricePartner,
+            new BigDecimal("215.00"),
+            executorPartnerId,
+            executorPartnerName,
             LocalDateTime.now(),
             LocalDateTime.now()
         );

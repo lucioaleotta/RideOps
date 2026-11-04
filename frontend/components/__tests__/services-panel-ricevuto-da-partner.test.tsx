@@ -6,7 +6,7 @@ import { ServicesPanel } from '../services-panel';
 
 function makeService(overrides: Partial<{
   id: number;
-  serviceAssignmentType: 'INTERNAL' | 'INCOMING' | 'OUTSOURCED';
+  serviceAssignmentType: 'INTERNAL' | 'INCOMING' | 'OUTSOURCED' | 'INCOMING_OUTSOURCED';
   partnerId: number | null;
   status: 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
 }> = {}) {
@@ -33,6 +33,7 @@ function makeService(overrides: Partial<{
     assignedAt: null,
     serviceAssignmentType: overrides.serviceAssignmentType ?? 'INTERNAL',
     partnerId: overrides.partnerId ?? null,
+    outgoingPartnerId: null,
     pricePartner: null,
     margin: null,
     createdAt: '2026-05-01T10:00:00',
@@ -173,6 +174,34 @@ describe('ServicesPanel', () => {
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Errore di affidamento test');
     expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('richiede la conferma dell’esecuzione partner prima della chiusura manuale', async () => {
+    const fetchMock = setupFetchMock(makeService({ serviceAssignmentType: 'OUTSOURCED', partnerId: PARTNER.id }));
+    global.fetch = fetchMock as typeof fetch;
+    const user = userEvent.setup();
+
+    render(<ServicesPanel />);
+    await user.click(await screen.findByRole('button', { name: /azioni servizio 1/i }));
+    await user.click(await screen.findByRole('button', { name: /apri dettaglio/i }));
+    await user.click(await screen.findByRole('button', { name: /chiudi servizio/i }));
+
+    const dialog = screen.getByRole('dialog', { name: /conferma esecuzione partner/i });
+    const confirmButton = within(dialog).getByRole('button', { name: /conferma chiusura/i });
+    expect(confirmButton).toBeDisabled();
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/services/1/close-manually', expect.anything());
+
+    await user.click(within(dialog).getByRole('checkbox', { name: /confermo di aver ricevuto conferma/i }));
+    expect(confirmButton).toBeEnabled();
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/services/1/close-manually', expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ partnerExecutionConfirmed: true })
+      }));
+    });
+    expect(await screen.findByText(/il dovuto resta nel saldo\/report partner ed è stato registrato il ricavo del margine/i)).toBeInTheDocument();
   });
 
   it('mantiene aperta la conferma eliminazione e mostra lì l’errore', async () => {

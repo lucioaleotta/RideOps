@@ -7,6 +7,7 @@ import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CalendarIcon, Ca
 import { StatusNotice } from './status-notice';
 import { PhoneInput } from './phone-input';
 import { formatCurrencyEUR } from '../lib/currency';
+import { dispatchRideOpsEvent } from '../lib/app-events';
 import { ExportIcon } from './services-export/ExportIcon';
 
 type ServiceType = 'TRANSFER' | 'TOUR' | 'DISPOSIZIONE';
@@ -532,6 +533,8 @@ export function ServicesPanel() {
   const [newButtonPortalTarget, setNewButtonPortalTarget] = useState<HTMLElement | null>(null);
   const [rowMenuServiceId, setRowMenuServiceId] = useState<number | null>(null);
   const [deleteConfirmServiceId, setDeleteConfirmServiceId] = useState<number | null>(null);
+  const [manualCloseServiceId, setManualCloseServiceId] = useState<number | null>(null);
+  const [manualCloseConfirmed, setManualCloseConfirmed] = useState(false);
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
 
@@ -906,6 +909,8 @@ export function ServicesPanel() {
       return;
     }
 
+    dispatchRideOpsEvent('services:refresh');
+
     const serviceId = editingId ?? payload.id;
     if (!serviceId) {
       setSubmitting(false);
@@ -920,6 +925,7 @@ export function ServicesPanel() {
     }
 
     setSuccess(editingId ? 'Servizio aggiornato' : 'Servizio creato');
+    dispatchRideOpsEvent('services:refresh');
     closeForm();
     await loadServices();
   }
@@ -977,6 +983,7 @@ export function ServicesPanel() {
     }
     setDeleteConfirmServiceId(null);
     setSuccess('Servizio eliminato');
+    dispatchRideOpsEvent('services:refresh');
     await loadServices();
   }
 
@@ -991,7 +998,49 @@ export function ServicesPanel() {
       return;
     }
 
-    setSuccess('Servizio chiuso (pagamento registrato)');
+    setSuccess('Servizio chiuso e ricavo registrato');
+    dispatchRideOpsEvent('services:refresh');
+    await loadServices();
+  }
+
+  function openManualCloseConfirmation(serviceId: number) {
+    clearFeedbackNotice();
+    setManualCloseServiceId(serviceId);
+    setManualCloseConfirmed(false);
+  }
+
+  function cancelManualClose() {
+    setManualCloseServiceId(null);
+    setManualCloseConfirmed(false);
+    clearFeedbackNotice();
+  }
+
+  async function submitManualOutsourcedClose() {
+    if (manualCloseServiceId === null || !manualCloseConfirmed || submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/services/${manualCloseServiceId}/close-manually`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ partnerExecutionConfirmed: true })
+    });
+    const payload = (await response.json().catch(() => ({}))) as { message?: string };
+    setSubmitting(false);
+
+    if (!response.ok) {
+      setError(payload.message ?? 'Chiusura manuale fallita');
+      return;
+    }
+
+    setManualCloseServiceId(null);
+    setManualCloseConfirmed(false);
+    setSuccess('Servizio chiuso: il dovuto resta nel saldo/report partner ed è stato registrato il ricavo del margine');
+    dispatchRideOpsEvent('services:refresh');
     await loadServices();
   }
 
@@ -1048,6 +1097,7 @@ export function ServicesPanel() {
     }
 
     setSuccess('Servizio affidato a partner. Invio email in corso: verifica esito nello storico (OK/KO).');
+    dispatchRideOpsEvent('services:refresh');
     closeOutsourceModal();
     await loadServices();
     await loadPartnerHistory(selectedService.id);
@@ -1317,7 +1367,8 @@ export function ServicesPanel() {
     && paginatedServices.every((service) => selectedForPrintIds.includes(service.id));
   const hasOpenServicesDialog = isFormOpen
     || (outsourceOpen && selectedService !== null)
-    || deleteConfirmServiceId !== null;
+    || deleteConfirmServiceId !== null
+    || manualCloseServiceId !== null;
 
   const selectedDriverFilter = filters.driverId
     ? drivers.find((driver) => driver.id === filters.driverId) ?? null
@@ -1784,12 +1835,11 @@ export function ServicesPanel() {
                     </button>
                   )}
                   {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED')
-                    && selectedService.status !== 'CLOSED'
-                    && selectedService.status !== 'EXECUTED' && (
+                    && selectedService.status === 'OPEN' && (
                     <button
                       type="button"
                       className="compact-button services-selected-close-service"
-                      onClick={() => onClose(selectedService.id)}
+                      onClick={() => openManualCloseConfirmation(selectedService.id)}
                     >
                       <span className="action-button-icon"><ActionLockIcon /></span>
                       Chiudi servizio
@@ -2379,6 +2429,66 @@ export function ServicesPanel() {
                   <ButtonContent icon={<ActionDeleteIcon />}>Elimina</ButtonContent>
                 </button>
               </div>
+            </div>
+          </article>
+        </div>
+      )}
+
+      {manualCloseServiceId !== null && (
+        <div className="services-modal-overlay manual-close-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="manual-close-title">
+          <article className="dashboard-card services-modal-card manual-close-modal">
+            <div className="manual-close-modal-header">
+              <h2 id="manual-close-title" className="manual-close-modal-title">Conferma esecuzione partner</h2>
+              <button
+                type="button"
+                className="manual-close-modal-dismiss"
+                onClick={cancelManualClose}
+                aria-label="Chiudi modale"
+                title="Chiudi"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="manual-close-modal-body">
+              {error && <StatusNotice tone="error" className="services-modal-error">{error}</StatusNotice>}
+              <p>
+                Confermi che il partner esecutore ha completato il servizio <strong>#{manualCloseServiceId}</strong>?
+              </p>
+              <p>
+                La chiusura renderà il dovuto visibile nel report partner e registrerà il ricavo pari al margine.
+              </p>
+              <div className="manual-close-system-note">
+                Non crea un movimento COSTO né esegue un pagamento bancario.
+              </div>
+            </div>
+
+            <label className="manual-close-checkbox">
+                <input
+                  type="checkbox"
+                  checked={manualCloseConfirmed}
+                  onChange={(event) => setManualCloseConfirmed(event.target.checked)}
+                />
+              <span>Confermo di aver ricevuto conferma dell&apos;esecuzione da parte del partner.</span>
+            </label>
+
+            <div className="manual-close-modal-footer">
+                <button type="button" className="manual-close-btn manual-close-btn-cancel" onClick={cancelManualClose}>
+                  <CancelIcon />
+                  Annulla
+                </button>
+                <button
+                  type="button"
+                  className="manual-close-btn manual-close-btn-confirm"
+                  onClick={submitManualOutsourcedClose}
+                  disabled={!manualCloseConfirmed || submitting}
+                >
+                  <ActionLockIcon />
+                  {submitting ? 'Chiusura in corso...' : 'Conferma chiusura'}
+                </button>
             </div>
           </article>
         </div>
