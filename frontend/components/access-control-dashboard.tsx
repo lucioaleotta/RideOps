@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSessionContext } from './session-context';
+import { fetchPollingJson, PollingRequestError, usePolling } from '../lib/use-polling';
 
 type KpisPayload = {
   total7d: number;
@@ -65,6 +67,7 @@ type StatusFilter = 'all' | 'anomaly' | 'normal';
 type AnomalyKind = 'impossibleTravel' | 'country' | 'device' | 'night' | 'other';
 
 const POLLING_MS = 60_000;
+const SEARCH_DEBOUNCE_MS = 450;
 
 const anomalyOrder: Record<AnomalyKind, number> = {
   impossibleTravel: 0,
@@ -75,6 +78,12 @@ const anomalyOrder: Record<AnomalyKind, number> = {
 };
 
 export function AccessControlDashboard() {
+  const session = useSessionContext();
+  const isAdmin = session?.userRole.toUpperCase() === 'ADMIN';
+  const requestSequenceRef = useRef(0);
+  const filtersReadyRef = useRef(false);
+  const tenantsLoadedRef = useRef(false);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [kpis, setKpis] = useState<KpisPayload>({ total7d: 0, total24h: 0, anomaliesTotal: 0, uniqueIps: 0 });
   const [hourly, setHourly] = useState<number[]>(new Array(24).fill(0));
   const [hourlyAnomalies, setHourlyAnomalies] = useState<number[]>(new Array(24).fill(0));
@@ -91,15 +100,19 @@ export function AccessControlDashboard() {
   const [tenantFilter, setTenantFilter] = useState('');
   const [page, setPage] = useState(0);
 
-  const loadTenants = useCallback(async () => {
-    const response = await fetch('/api/admin/tenants', { cache: 'no-store' });
-    const payload = (await response.json().catch(() => [])) as TenantOption[];
-    if (response.ok && Array.isArray(payload)) {
+  const loadTenants = useCallback(async (signal: AbortSignal) => {
+    if (tenantsLoadedRef.current) return;
+    const payload = await fetchPollingJson<TenantOption[]>('/api/admin/tenants', signal);
+    if (Array.isArray(payload)) {
       setTenants(payload);
+      tenantsLoadedRef.current = true;
     }
   }, []);
 
-  const loadDashboard = useCallback(async () => {
+  const loadDashboard = useCallback(async (signal: AbortSignal) => {
+    if (!isAdmin) return;
+    const requestId = ++requestSequenceRef.current;
+    const requestedSessionKey = session?.sessionKey;
     setError(null);
 
     const sessionsParams = new URLSearchParams({
@@ -108,7 +121,7 @@ export function AccessControlDashboard() {
       per_page: '12',
       anomaly_only: statusFilter === 'anomaly' ? 'true' : 'false',
       normal_only: statusFilter === 'normal' ? 'true' : 'false',
-      search: search.trim()
+      search: debouncedSearch.trim()
     });
 
     if (tenantFilter) {
@@ -122,28 +135,16 @@ export function AccessControlDashboard() {
       anomaly_only: 'true'
     });
 
-    const [kpisRes, hourlyRes, topIpsRes, countriesRes, sessionsRes, anomalyRes] = await Promise.all([
-      fetch('/api/owner/sessions/kpis?days=7', { cache: 'no-store' }),
-      fetch('/api/owner/sessions/hourly', { cache: 'no-store' }),
-      fetch('/api/owner/sessions/top-ips?days=7', { cache: 'no-store' }),
-      fetch('/api/owner/sessions/countries?days=7&exclude_unknown=true', { cache: 'no-store' }),
-      fetch(`/api/owner/sessions?${sessionsParams.toString()}`, { cache: 'no-store' }),
-      fetch(`/api/owner/sessions?${bannerParams.toString()}`, { cache: 'no-store' })
-    ]);
-
-    if (!kpisRes.ok || !hourlyRes.ok || !topIpsRes.ok || !countriesRes.ok || !sessionsRes.ok || !anomalyRes.ok) {
-      setError('Errore caricamento dashboard accessi');
-      return;
-    }
-
     const [kpisData, hourlyData, topIpsData, countriesData, sessionsData, anomalyData] = await Promise.all([
-      kpisRes.json() as Promise<KpisPayload>,
-      hourlyRes.json() as Promise<HourlyPayload>,
-      topIpsRes.json() as Promise<TopIpsPayload>,
-      countriesRes.json() as Promise<CountriesPayload>,
-      sessionsRes.json() as Promise<SessionsPayload>,
-      anomalyRes.json() as Promise<SessionsPayload>
+      fetchPollingJson<KpisPayload>('/api/owner/sessions/kpis?days=7', signal),
+      fetchPollingJson<HourlyPayload>('/api/owner/sessions/hourly', signal),
+      fetchPollingJson<TopIpsPayload>('/api/owner/sessions/top-ips?days=7', signal),
+      fetchPollingJson<CountriesPayload>('/api/owner/sessions/countries?days=7&exclude_unknown=true', signal),
+      fetchPollingJson<SessionsPayload>(`/api/owner/sessions?${sessionsParams.toString()}`, signal),
+      fetchPollingJson<SessionsPayload>(`/api/owner/sessions?${bannerParams.toString()}`, signal)
     ]);
+
+    if (signal.aborted || requestId !== requestSequenceRef.current || session?.sessionKey !== requestedSessionKey) return;
 
     setKpis(kpisData);
     setHourly(Array.isArray(hourlyData.hours) && hourlyData.hours.length === 24 ? hourlyData.hours : new Array(24).fill(0));
@@ -152,30 +153,68 @@ export function AccessControlDashboard() {
     setCountries(countriesData.countries ?? []);
     setSessionsPayload(sessionsData);
     setAnomalyBanner(anomalyData.sessions ?? []);
-  }, [page, search, statusFilter, tenantFilter]);
+  }, [debouncedSearch, isAdmin, page, session?.sessionKey, statusFilter, tenantFilter]);
 
   useEffect(() => {
-    let mounted = true;
+    const timer = window.setTimeout(() => setDebouncedSearch(search), SEARCH_DEBOUNCE_MS);
+    return () => window.clearTimeout(timer);
+  }, [search]);
 
-    async function bootstrap() {
-      setLoading(true);
-      await Promise.all([loadTenants(), loadDashboard()]);
-      if (mounted) {
-        setLoading(false);
+  const loadDashboardCycle = useCallback(async (signal: AbortSignal) => {
+    setLoading(true);
+    try {
+      await Promise.all([loadTenants(signal), loadDashboard(signal)]);
+    } catch (requestError) {
+      if (signal.aborted) return;
+      if (requestError instanceof PollingRequestError && requestError.status === 401) {
+        setError('Sessione scaduta. Effettua nuovamente l’accesso.');
+      } else if (requestError instanceof PollingRequestError && requestError.status === 403) {
+        setError('Accesso non consentito alla dashboard.');
+      } else {
+        setError('Errore caricamento dashboard accessi');
       }
+      throw requestError;
+    } finally {
+      if (!signal.aborted) setLoading(false);
     }
-
-    bootstrap();
-
-    const timer = window.setInterval(() => {
-      loadDashboard();
-    }, POLLING_MS);
-
-    return () => {
-      mounted = false;
-      window.clearInterval(timer);
-    };
   }, [loadDashboard, loadTenants]);
+
+  const polling = usePolling({
+    fn: loadDashboardCycle,
+    intervalMs: POLLING_MS,
+    enabled: isAdmin,
+    identityKey: session?.sessionKey ?? 'anonymous',
+    resumeThresholdMs: 60_000,
+    backoff: { multiplier: 2, capMs: 2 * 60 * 60_000 },
+    onAuthError: (status) => {
+      if (status === 403) console.warn('Polling Access Control interrotto: autorizzazione revocata.');
+      setError(status === 401 ? 'Sessione scaduta. Effettua nuovamente l’accesso.' : 'Accesso non consentito alla dashboard.');
+    }
+  });
+
+  useEffect(() => {
+    if (!isAdmin) {
+      tenantsLoadedRef.current = false;
+      setKpis({ total7d: 0, total24h: 0, anomaliesTotal: 0, uniqueIps: 0 });
+      setHourly(new Array(24).fill(0));
+      setHourlyAnomalies(new Array(24).fill(0));
+      setTopIps([]);
+      setCountries([]);
+      setSessionsPayload({ total: 0, page: 0, perPage: 12, sessions: [] });
+      setAnomalyBanner([]);
+      setTenants([]);
+    }
+  }, [isAdmin, session?.sessionKey]);
+
+  useEffect(() => {
+    if (!filtersReadyRef.current) {
+      filtersReadyRef.current = true;
+      return;
+    }
+    polling.cancelCurrent();
+    requestSequenceRef.current += 1;
+    polling.refresh();
+  }, [page, debouncedSearch, polling.cancelCurrent, polling.refresh, statusFilter, tenantFilter]);
 
   const totalPages = useMemo(() => {
     return Math.max(1, Math.ceil((sessionsPayload.total || 0) / (sessionsPayload.perPage || 12)));

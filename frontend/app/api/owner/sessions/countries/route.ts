@@ -25,7 +25,8 @@ export async function GET(request: Request) {
 
   const response = await fetch(`${backendUrl}/owner/sessions/countries${suffix}`, {
     headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store'
+    cache: 'no-store',
+    signal: request.signal
   });
 
   const payload = await response.json().catch(() => ({}));

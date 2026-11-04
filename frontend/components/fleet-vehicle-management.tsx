@@ -5,6 +5,7 @@ import { AddIcon, ButtonContent, CancelIcon, DeleteIcon, EditIcon, FilterIcon, L
 import { StatusNotice } from './status-notice';
 import { FilterDropdown } from './filter-dropdown';
 import { FleetDeadlinesAlerts } from './fleet-deadlines-alerts';
+import { dispatchRideOpsEvent } from '../lib/app-events';
 
 type VehicleType = 'SEDAN' | 'VAN' | 'MINIBUS' | 'SUV' | 'OTHER';
 type DeadlineType = 'BOLLO' | 'ASSICURAZIONE' | 'REVISIONE' | 'TAGLIANDO' | 'ALTRO';
@@ -247,15 +248,7 @@ export function FleetVehicleManagement({ userRole = 'UNKNOWN', initialVehicleId 
   const isAdmin = userRole.toUpperCase() === 'ADMIN';
 
   function refreshFleetAlertBadge() {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('fleet-alerts-refresh'));
-      document.dispatchEvent(new Event('fleet-alerts-refresh'));
-
-      window.setTimeout(() => {
-        window.dispatchEvent(new Event('fleet-alerts-refresh'));
-        document.dispatchEvent(new Event('fleet-alerts-refresh'));
-      }, 350);
-    }
+    dispatchRideOpsEvent('fleet:refresh');
   }
 
   async function loadVehicles() {

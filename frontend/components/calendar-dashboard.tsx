@@ -4,6 +4,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } fro
 import Link from 'next/link';
 import { ArrowLeftIcon, ArrowRightIcon, ButtonContent, LockIcon, OpenIcon, SelectIcon, TodayIcon } from './action-icons';
 import { formatCurrencyEUR } from '../lib/currency';
+import { dispatchRideOpsEvent } from '../lib/app-events';
 
 type ViewMode = 'month' | 'week' | 'day';
 type ServiceType = 'TRANSFER' | 'TOUR';
@@ -963,6 +964,7 @@ export function CalendarDashboard({ driverMode = false, hidePrice = false }: Cal
     }
 
     setSuccess('Servizio segnato come ESEGUITO');
+    dispatchRideOpsEvent('services:refresh');
 
     const query = new URLSearchParams({
       from: toLocalDateTimeParam(range.from),

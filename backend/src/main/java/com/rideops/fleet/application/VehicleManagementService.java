@@ -11,6 +11,7 @@ import com.rideops.fleet.domain.DeadlineType;
 import com.rideops.multitenancy.TenantContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.context.ApplicationEventPublisher;
@@ -75,6 +76,26 @@ public class VehicleManagementService {
         );
 
         return new VehicleDetailDto(vehicleDto, upcomingCount, overdueCount, occurrences, plans);
+    }
+
+    public VehicleAlertCountsDto getTenantAlertCounts(int withinDays) {
+        ZoneId zoneId = ZoneId.systemDefault();
+        LocalDate today = LocalDate.now(zoneId);
+        LocalDate upcomingTo = today.plusDays(Math.max(1, withinDays));
+        Long tenantId = tenantContext.requireTenantId();
+        List<DeadlineStatus> closedStatuses = List.of(
+            DeadlineStatus.PAGATA,
+            DeadlineStatus.ESEGUITA,
+            DeadlineStatus.ANNULLATA
+        );
+
+        long upcoming = occurrenceRepository
+            .countByTenantIdAndStatusNotInAndDueDateGreaterThanEqualAndDueDateLessThanEqual(
+                tenantId, closedStatuses, today, upcomingTo);
+        long overdue = occurrenceRepository
+            .countByTenantIdAndStatusNotInAndDueDateLessThan(tenantId, closedStatuses, today);
+
+        return new VehicleAlertCountsDto(Math.toIntExact(upcoming), Math.toIntExact(overdue), zoneId.getId());
     }
 
     public VehicleDeadlineOccurrenceDto addOccurrence(Long vehicleId,

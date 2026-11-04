@@ -1,11 +1,15 @@
 "use client";
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SessionProvider } from './session-context';
+import { fetchPollingJson, usePolling } from '../lib/use-polling';
 
 type AppShellProps = {
+  id: number | null;
   userId: string;
   userRole: string;
+  tenantId: number | null;
   children: React.ReactNode;
 };
 
@@ -46,7 +50,63 @@ const menuItems = [
   { href: '/app/driver/assenze', label: 'Le mie assenze', icon: '🗓️', roles: ['DRIVER'] as Role[] }
 ];
 
-export function AppShell({ userId, userRole, children }: AppShellProps) {
+function getNextMidnightDelay(timeZone: string) {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  });
+  const asLocalUtc = (timestamp: number) => {
+    const parts = formatter.formatToParts(new Date(timestamp)).reduce<Record<string, number>>((acc, part) => {
+      if (part.type !== 'literal') acc[part.type] = Number(part.value);
+      return acc;
+    }, {});
+    return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  };
+  const nowParts = formatter.formatToParts(now).reduce<Record<string, number>>((acc, part) => {
+    if (part.type !== 'literal') acc[part.type] = Number(part.value);
+    return acc;
+  }, {});
+  const nextDate = new Date(Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day + 1));
+  const targetLocalAsUtc = Date.UTC(nextDate.getUTCFullYear(), nextDate.getUTCMonth(), nextDate.getUTCDate());
+  let target = targetLocalAsUtc - (asLocalUtc(now.getTime()) - now.getTime());
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    target = targetLocalAsUtc - (asLocalUtc(target) - target);
+  }
+  return Math.max(1000, target - now.getTime() + 50);
+}
+
+function getDateKeyInTimeZone(timeZone: string) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date()).reduce<Record<string, string>>((acc, part) => {
+    if (part.type !== 'literal') acc[part.type] = part.value;
+    return acc;
+  }, {});
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function AppShell({ id, userId, userRole, tenantId, children }: AppShellProps) {
+  const sessionKey = `${id ?? 'unknown'}:${tenantId ?? 'none'}:${userRole.toUpperCase()}`;
+  return (
+    <SessionProvider value={{ userId, userRole, tenantId, sessionKey }}>
+      <AppShellContent key={sessionKey} userId={userId} userRole={userRole} sessionKey={sessionKey}>
+        {children}
+      </AppShellContent>
+    </SessionProvider>
+  );
+}
+
+function AppShellContent({ userId, userRole, sessionKey, children }: Omit<AppShellProps, 'id' | 'tenantId'> & { sessionKey: string }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openMenuGroups, setOpenMenuGroups] = useState<Record<string, boolean>>({ '/app/gestionale': true });
@@ -60,87 +120,84 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
 
   const initials = useMemo(() => userName.slice(0, 2).toUpperCase(), [userName]);
 
+  const fleetRefreshRef = useRef<() => void>(() => undefined);
+  const fleetMidnightTimerRef = useRef<number | null>(null);
+  const fleetDateKeyRef = useRef<string | null>(null);
+  const fleetTimeZoneRef = useRef<string | null>(null);
+
+  const loadDeadlinesCount = useCallback(async (signal: AbortSignal) => {
+    const payload = await fetchPollingJson<{ upcoming: number; overdue: number; timezone: string }>(
+      '/api/fleet/vehicles/deadline-alert-counts?withinDays=30', signal
+    );
+    if (signal.aborted) return;
+    setFleetAlertCounts({
+      upcoming: payload.upcoming,
+      overdue: payload.overdue,
+      total: payload.upcoming + payload.overdue
+    });
+    fleetTimeZoneRef.current = payload.timezone;
+    fleetDateKeyRef.current = getDateKeyInTimeZone(payload.timezone);
+    if (fleetMidnightTimerRef.current !== null) {
+      window.clearTimeout(fleetMidnightTimerRef.current);
+    }
+    fleetMidnightTimerRef.current = window.setTimeout(
+      () => fleetRefreshRef.current(),
+      getNextMidnightDelay(payload.timezone)
+    );
+  }, []);
+
+  const fleetPolling = usePolling({
+    fn: loadDeadlinesCount,
+    intervalMs: 15 * 60_000,
+    enabled: normalizedRole === 'GESTIONALE',
+    identityKey: sessionKey,
+    resumeThresholdMs: 2 * 60_000,
+    backoff: { multiplier: 2, capMs: 2 * 60 * 60_000 },
+    onAuthError: (status) => {
+      if (status === 403) console.warn('Polling flotta interrotto: autorizzazione revocata.');
+      if (status === 401 || status === 403) setFleetAlertCounts({ total: 0, upcoming: 0, overdue: 0 });
+    }
+  });
+  const refreshFleet = fleetPolling.refresh;
+  const refreshFleetIfIdle = fleetPolling.refreshIfIdle;
+  const abortFleet = fleetPolling.abort;
+  fleetRefreshRef.current = refreshFleet;
+
   useEffect(() => {
-    const canSeeFleetAlerts = normalizedRole === 'GESTIONALE';
-    if (!canSeeFleetAlerts) {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible' || !fleetDateKeyRef.current) return;
+      if (fleetTimeZoneRef.current && getDateKeyInTimeZone(fleetTimeZoneRef.current) !== fleetDateKeyRef.current) {
+        refreshFleetIfIdle();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [refreshFleetIfIdle, sessionKey]);
+
+  useEffect(() => () => {
+    if (fleetMidnightTimerRef.current !== null) window.clearTimeout(fleetMidnightTimerRef.current);
+    abortFleet();
+  }, [abortFleet, sessionKey]);
+
+  useEffect(() => {
+    if (normalizedRole !== 'GESTIONALE') {
+      setFleetAlertCounts({ total: 0, upcoming: 0, overdue: 0 });
       return;
     }
-
-    let isMounted = true;
-
-    async function loadDeadlinesCount() {
-      const vehiclesResponse = await fetch('/api/fleet/vehicles', { cache: 'no-store' });
-      const vehiclesPayload = (await vehiclesResponse.json().catch(() => [])) as unknown;
-
-      if (!vehiclesResponse.ok || !Array.isArray(vehiclesPayload)) {
-        return;
-      }
-
-      const vehicleIds = (vehiclesPayload as Array<{ id?: number }>)
-        .map((item) => item.id)
-        .filter((id): id is number => typeof id === 'number');
-
-      if (vehicleIds.length === 0) {
-        if (isMounted) {
-          setFleetAlertCounts({ total: 0, upcoming: 0, overdue: 0 });
-        }
-        return;
-      }
-
-      const detailResponses = await Promise.all(
-        vehicleIds.map((id) =>
-          fetch(`/api/fleet/vehicles/${id}/detail?withinDays=30`, { cache: 'no-store' })
-            .then(async (response) => {
-              if (!response.ok) {
-                return null;
-              }
-              return (await response.json().catch(() => null)) as {
-                upcomingCount?: number;
-                overdueCount?: number;
-              } | null;
-            })
-            .catch(() => null)
-        )
-      );
-
-      const aggregated = detailResponses.reduce(
-        (acc, item) => {
-          if (!item) {
-            return acc;
-          }
-
-          acc.upcoming += item.upcomingCount ?? 0;
-          acc.overdue += item.overdueCount ?? 0;
-          return acc;
-        },
-        { upcoming: 0, overdue: 0 }
-      );
-
-      if (isMounted) {
-        setFleetAlertCounts({
-          upcoming: aggregated.upcoming,
-          overdue: aggregated.overdue,
-          total: aggregated.upcoming + aggregated.overdue
-        });
-      }
-    }
-
-    function handleFleetAlertsRefresh() {
-      loadDeadlinesCount();
-    }
-
-    window.addEventListener('fleet-alerts-refresh', handleFleetAlertsRefresh);
-    document.addEventListener('fleet-alerts-refresh', handleFleetAlertsRefresh as EventListener);
-    loadDeadlinesCount();
-    const pollId = window.setInterval(loadDeadlinesCount, 30_000);
-
-    return () => {
-      isMounted = false;
-      window.removeEventListener('fleet-alerts-refresh', handleFleetAlertsRefresh);
-      document.removeEventListener('fleet-alerts-refresh', handleFleetAlertsRefresh as EventListener);
-      window.clearInterval(pollId);
+    let debounceTimer: number | null = null;
+    const handleFleetRefresh = () => {
+      if (debounceTimer !== null) window.clearTimeout(debounceTimer);
+      debounceTimer = window.setTimeout(() => {
+        debounceTimer = null;
+        refreshFleet();
+      }, 200);
     };
-  }, [normalizedRole]);
+    window.addEventListener('rideops:fleet:refresh', handleFleetRefresh);
+    return () => {
+      window.removeEventListener('rideops:fleet:refresh', handleFleetRefresh);
+      if (debounceTimer !== null) window.clearTimeout(debounceTimer);
+    };
+  }, [refreshFleet, normalizedRole, sessionKey]);
 
   const serviceAlertHref = normalizedRole === 'DRIVER' ? '/app/driver' : '/app/services?unassigned=1';
 
@@ -174,35 +231,30 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
   const serviceHasAlerts = serviceAlertCounts.total > 0;
   const absenceHasAlerts = absencePendingCount > 0;
 
-  useEffect(() => {
-    if (normalizedRole !== 'GESTIONALE') return;
-    let isMounted = true;
-
-    async function loadPendingAbsences() {
-      try {
-        const response = await fetch('/api/richieste-assenza/pending-count', { cache: 'no-store' });
-        const payload = await response.json().catch(() => ({})) as { count?: number };
-        if (response.ok && isMounted) setAbsencePendingCount(payload.count ?? 0);
-      } catch {
-        // Il chip non deve interferire con il caricamento delle altre aree della shell.
-      }
+  const loadPendingAbsences = useCallback(async (signal: AbortSignal) => {
+    const payload = await fetchPollingJson<{ count?: number }>('/api/richieste-assenza/pending-count', signal);
+    if (signal.aborted) return;
+    setAbsencePendingCount(payload.count ?? 0);
+  }, []);
+  const absencePolling = usePolling({
+    fn: loadPendingAbsences,
+    intervalMs: 5 * 60_000,
+    enabled: normalizedRole === 'GESTIONALE',
+    identityKey: sessionKey,
+    resumeThresholdMs: 60_000,
+    backoff: { multiplier: 2, capMs: 2 * 60 * 60_000 },
+    onAuthError: (status) => {
+      if (status === 403) console.warn('Polling assenze interrotto: autorizzazione revocata.');
+      if (status === 401 || status === 403) setAbsencePendingCount(0);
     }
-
-    loadPendingAbsences();
-    const pollId = window.setInterval(loadPendingAbsences, 30_000);
-    return () => {
-      isMounted = false;
-      window.clearInterval(pollId);
-    };
-  }, [normalizedRole]);
+  });
+  const refreshAbsences = absencePolling.refresh;
 
   useEffect(() => {
-    const canSeeServiceAlerts = normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER';
-    if (!canSeeServiceAlerts) {
-      return;
-    }
+    if (normalizedRole !== 'GESTIONALE') setAbsencePendingCount(0);
+  }, [normalizedRole, sessionKey]);
 
-    let isMounted = true;
+  const loadServiceAlertCount = useCallback(async (signal: AbortSignal) => {
 
     function toIsoStartOfDay(date: Date) {
       const copy = new Date(date);
@@ -250,59 +302,57 @@ export function AppShell({ userId, userRole, children }: AppShellProps) {
       );
     }
 
-    async function loadServiceAlertCount() {
       if (normalizedRole === 'DRIVER') {
         const windowStart = new Date();
         windowStart.setHours(0, 0, 0, 0);
         const windowEnd = toIsoStartOfDay(addDays(windowStart, 3));
         // Driver alert count uses the unified endpoint constrained to today + next 3 days.
-        const response = await fetch(`/api/driver/services?from=${encodeURIComponent(toIsoStartOfDay(windowStart))}&to=${encodeURIComponent(windowEnd)}`, {
-          cache: 'no-store'
-        });
-
-        const payload = (await response.json().catch(() => [])) as unknown;
-
-        if (!response.ok || !Array.isArray(payload)) {
-          return;
-        }
-
-        if (isMounted) {
-          const summary = summarizeWindow(payload as Array<{ startAt?: string; status?: string }>);
-          setServiceAlertCounts({
-            ...summary,
-            total: summary.upcoming + summary.overdue
-          });
-        }
+        const payload = await fetchPollingJson<unknown>(`/api/driver/services?from=${encodeURIComponent(toIsoStartOfDay(windowStart))}&to=${encodeURIComponent(windowEnd)}`, signal);
+        if (signal.aborted) return;
+        if (!Array.isArray(payload)) return;
+        const summary = summarizeWindow(payload as Array<{ startAt?: string; status?: string }>);
+        setServiceAlertCounts({ ...summary, total: summary.upcoming + summary.overdue });
         return;
       }
 
       // Keep admin/gestionale badge aligned with the Services page "Servizi non assegnati" card.
-      const response = await fetch('/api/services/unassigned-count', { cache: 'no-store' });
-      const payload = (await response.json().catch(() => ({}))) as { count?: number };
-
-      if (!response.ok) {
-        return;
-      }
-
-      if (isMounted) {
-        const count = payload.count ?? 0;
-        // Use overdue channel to keep red emphasis when count is greater than zero.
-        const summary = { total: count, upcoming: 0, overdue: count };
-        setServiceAlertCounts({
-          ...summary,
-          total: summary.total
-        });
-      }
-    }
-
-    loadServiceAlertCount();
-    const pollId = window.setInterval(loadServiceAlertCount, 30_000);
-
-    return () => {
-      isMounted = false;
-      window.clearInterval(pollId);
-    };
+      const payload = await fetchPollingJson<{ count?: number }>('/api/services/unassigned-count', signal);
+      if (signal.aborted) return;
+      const count = payload.count ?? 0;
+      // Use overdue channel to keep red emphasis when count is greater than zero.
+      setServiceAlertCounts({ total: count, upcoming: 0, overdue: count });
   }, [normalizedRole]);
+
+  const servicePolling = usePolling({
+    fn: loadServiceAlertCount,
+    intervalMs: 60_000,
+    enabled: normalizedRole === 'GESTIONALE' || normalizedRole === 'DRIVER',
+    identityKey: sessionKey,
+    resumeThresholdMs: 60_000,
+    backoff: { multiplier: 2, capMs: 2 * 60 * 60_000 },
+    onAuthError: (status) => {
+      if (status === 403) console.warn('Polling servizi interrotto: autorizzazione revocata.');
+      if (status === 401 || status === 403) setServiceAlertCounts({ total: 0, upcoming: 0, overdue: 0 });
+    }
+  });
+  const refreshServices = servicePolling.refresh;
+
+  useEffect(() => {
+    const handleAbsenceRefresh = () => refreshAbsences();
+    const handleServiceRefresh = () => refreshServices();
+    window.addEventListener('rideops:absence:refresh', handleAbsenceRefresh);
+    window.addEventListener('rideops:services:refresh', handleServiceRefresh);
+    return () => {
+      window.removeEventListener('rideops:absence:refresh', handleAbsenceRefresh);
+      window.removeEventListener('rideops:services:refresh', handleServiceRefresh);
+    };
+  }, [refreshAbsences, refreshServices]);
+
+  useEffect(() => {
+    if (normalizedRole !== 'GESTIONALE' && normalizedRole !== 'DRIVER') {
+      setServiceAlertCounts({ total: 0, upcoming: 0, overdue: 0 });
+    }
+  }, [normalizedRole, sessionKey]);
 
   return (
     <div className="app-shell">
