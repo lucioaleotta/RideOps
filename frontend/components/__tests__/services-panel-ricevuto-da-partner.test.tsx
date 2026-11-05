@@ -8,11 +8,14 @@ function makeService(overrides: Partial<{
   id: number;
   serviceAssignmentType: 'INTERNAL' | 'INCOMING' | 'OUTSOURCED' | 'INCOMING_OUTSOURCED';
   partnerId: number | null;
+  outgoingPartnerId: number | null;
+  assignedVehicleId: number | null;
   status: 'OPEN' | 'ASSIGNED' | 'EXECUTED' | 'CLOSED';
+  startAt: string;
 }> = {}) {
   return {
     id: overrides.id ?? 1,
-    startAt: '2026-05-10T09:00:00',
+    startAt: overrides.startAt ?? '2026-05-10T09:00:00',
     pickupLocation: 'Via Roma 1',
     destination: 'Aeroporto',
     type: 'TRANSFER',
@@ -28,12 +31,12 @@ function makeService(overrides: Partial<{
     itinerary: null,
     status: overrides.status ?? 'OPEN',
     assignedDriverId: null,
-    assignedVehicleId: null,
+    assignedVehicleId: overrides.assignedVehicleId ?? null,
     assignedByUserId: null,
     assignedAt: null,
     serviceAssignmentType: overrides.serviceAssignmentType ?? 'INTERNAL',
     partnerId: overrides.partnerId ?? null,
-    outgoingPartnerId: null,
+    outgoingPartnerId: overrides.outgoingPartnerId ?? null,
     pricePartner: null,
     margin: null,
     createdAt: '2026-05-01T10:00:00',
@@ -45,7 +48,28 @@ const PARTNER = { id: 7, ragioneSociale: 'Acme Partner Srl', deleted: false };
 
 function setupFetchMock(
   service: ReturnType<typeof makeService>,
-  failingRequest?: { method: string; urlPattern: RegExp; message: string }
+  failingRequest?: { method: string; urlPattern: RegExp; message: string },
+  partnerHistory?: {
+    serviceId: number;
+    serviceAssignmentType: 'OUTSOURCED' | 'INCOMING_OUTSOURCED';
+    partnerId: number;
+    partnerRagioneSociale: string;
+    partnerEmail: string;
+    pricePartner: number;
+    margin: number;
+    outgoingPartnerId: number | null;
+    outgoingPartnerRagioneSociale: string | null;
+    outgoingPartnerEmail: string | null;
+    communications: Array<{
+      communicationId: number;
+      channel: string;
+      recipient: string;
+      subject: string;
+      createdAt: string;
+      deliveryStatus: 'OK' | 'KO';
+    }>;
+  },
+  vehicles: Array<{ id: number; plate: string; seats: number; type: string; notes: string | null }> = []
 ) {
   return jest.fn().mockImplementation((url: string, init?: RequestInit) => {
     if (failingRequest && init?.method === failingRequest.method && failingRequest.urlPattern.test(url)) {
@@ -55,12 +79,15 @@ function setupFetchMock(
       return Promise.resolve({ ok: true, json: async () => [] });
     }
     if (url.includes('/api/fleet/vehicles')) {
-      return Promise.resolve({ ok: true, json: async () => [] });
+      return Promise.resolve({ ok: true, json: async () => vehicles });
     }
     if (url.includes('/api/partners')) {
       return Promise.resolve({ ok: true, json: async () => [PARTNER] });
     }
     if (url.includes('/partner-history')) {
+      if (partnerHistory) {
+        return Promise.resolve({ ok: true, json: async () => partnerHistory });
+      }
       return Promise.resolve({ ok: false, json: async () => ({ message: 'Not found' }) });
     }
     if (url.match(/\/api\/services\/\d+/)) {
@@ -88,6 +115,12 @@ async function openEditForm(user: ReturnType<typeof userEvent.setup>) {
   // Clicca "Modifica" nel pannello dettaglio
   const modificaButton = await screen.findByRole('button', { name: /^modifica$/i });
   await user.click(modificaButton);
+}
+
+async function openServiceDetail(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole('button', { name: /azioni servizio 1/i }));
+  await user.click(await screen.findByRole('button', { name: /apri dettaglio/i }));
+  return screen.findByRole('dialog', { name: 'Servizio #1' });
 }
 
 // ─── Test suite ──────────────────────────────────────────────────────────────
@@ -174,6 +207,114 @@ describe('ServicesPanel', () => {
 
     expect(await within(dialog).findByRole('alert')).toHaveTextContent('Errore di affidamento test');
     expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
+  it('apre il dettaglio come dialogo e consente di chiuderlo', async () => {
+    const service = makeService({ assignedVehicleId: 3 });
+    global.fetch = setupFetchMock(service, undefined, undefined, [{
+      id: 3,
+      plate: 'AB123CD',
+      seats: 8,
+      type: 'VAN',
+      notes: 'Veicolo con bagagliaio maggiorato'
+    }]) as typeof fetch;
+    const user = userEvent.setup();
+
+    render(<ServicesPanel />);
+    const dialog = await openServiceDetail(user);
+
+    expect(within(dialog).getByRole('heading', { name: 'Servizio #1' })).toBeInTheDocument();
+    expect(within(dialog).getByText('Via Roma 1')).toBeInTheDocument();
+    expect(within(dialog).getByText('AB123CD')).toBeInTheDocument();
+    expect(within(dialog).getByText('Van · 8 posti · Veicolo con bagagliaio maggiorato')).toBeInTheDocument();
+    expect(within(dialog).getByText('Destinazione')).toBeInTheDocument();
+    expect(within(dialog).getByText('Passeggeri:')).toBeInTheDocument();
+    expect(within(dialog).getByText('Rif. est.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Rif. int.')).toBeInTheDocument();
+    expect(within(dialog).getByText('Economia servizio')).toBeInTheDocument();
+    expect(within(dialog).getByText('Prezzo totale')).toBeInTheDocument();
+    expect(within(dialog).getByText('Assegnazione')).toBeInTheDocument();
+    expect(within(dialog).getByText('Cliente')).toBeInTheDocument();
+    expect(within(dialog).getByText('Telefono')).toBeInTheDocument();
+    expect(within(dialog).getByText('Email')).toBeInTheDocument();
+    expect(within(dialog).getByText('Itinerario dettagliato')).toBeInTheDocument();
+    expect(within(dialog).getByText('Note del servizio')).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: /chiudi dettaglio servizio/i }));
+    expect(screen.queryByRole('dialog', { name: 'Servizio #1' })).not.toBeInTheDocument();
+  });
+
+  it('mostra lo storico email partner e permette un nuovo invio nel dettaglio', async () => {
+    const service = makeService({ serviceAssignmentType: 'OUTSOURCED', partnerId: PARTNER.id });
+    const history = {
+      serviceId: service.id,
+      serviceAssignmentType: 'OUTSOURCED' as const,
+      partnerId: PARTNER.id,
+      partnerRagioneSociale: PARTNER.ragioneSociale,
+      partnerEmail: 'partner@example.com',
+      pricePartner: 75,
+      margin: 25,
+      outgoingPartnerId: null,
+      outgoingPartnerRagioneSociale: null,
+      outgoingPartnerEmail: null,
+      communications: [{
+        communicationId: 5,
+        channel: 'EMAIL',
+        recipient: 'partner@example.com',
+        subject: 'RideOps - Dettaglio servizio RO-001',
+        createdAt: '2026-05-10T09:00:00',
+        deliveryStatus: 'KO' as const
+      }]
+    };
+    const fetchMock = setupFetchMock(service, undefined, history);
+    global.fetch = fetchMock as typeof fetch;
+    const user = userEvent.setup();
+
+    render(<ServicesPanel />);
+    const dialog = await openServiceDetail(user);
+
+    expect(await within(dialog).findByText(/almeno un invio email al partner non e` andato a buon fine/i)).toBeInTheDocument();
+    expect(within(dialog).getByRole('link', { name: 'partner@example.com' })).toBeInTheDocument();
+    expect(within(dialog).getAllByText('RideOps - Dettaglio servizio RO-001').length).toBeGreaterThan(0);
+    expect(within(dialog).getByRole('button', { name: /^modifica$/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /^elimina$/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /^stampa$/i })).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /deseleziona/i })).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole('button', { name: /invia email al partner/i }));
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/services/1/partner-communications/email', expect.objectContaining({ method: 'POST' }));
+    });
+  });
+
+  it('mostra Chiudi servizio solo con servizio OUTSOURCED scaduto e partner esecutore', async () => {
+    const user = userEvent.setup();
+    const futureService = makeService({
+      serviceAssignmentType: 'OUTSOURCED',
+      partnerId: PARTNER.id,
+      startAt: '2099-01-01T10:00:00'
+    });
+    global.fetch = setupFetchMock(futureService) as typeof fetch;
+    const futureRender = render(<ServicesPanel />);
+    let dialog = await openServiceDetail(user);
+    expect(within(dialog).queryByRole('button', { name: /chiudi servizio/i })).not.toBeInTheDocument();
+    futureRender.unmount();
+
+    const missingExecutorService = makeService({ serviceAssignmentType: 'OUTSOURCED' });
+    global.fetch = setupFetchMock(missingExecutorService) as typeof fetch;
+    const missingExecutorRender = render(<ServicesPanel />);
+    dialog = await openServiceDetail(user);
+    expect(within(dialog).queryByRole('button', { name: /chiudi servizio/i })).not.toBeInTheDocument();
+    missingExecutorRender.unmount();
+
+    const incomingOutsourcedService = makeService({
+      serviceAssignmentType: 'INCOMING_OUTSOURCED',
+      partnerId: 8,
+      outgoingPartnerId: PARTNER.id
+    });
+    global.fetch = setupFetchMock(incomingOutsourcedService) as typeof fetch;
+    render(<ServicesPanel />);
+    dialog = await openServiceDetail(user);
+    expect(within(dialog).getByRole('button', { name: /chiudi servizio/i })).toBeInTheDocument();
   });
 
   it('richiede la conferma dell’esecuzione partner prima della chiusura manuale', async () => {
