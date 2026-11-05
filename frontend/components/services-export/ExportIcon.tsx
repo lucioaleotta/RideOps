@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { downloadServicesExport, ExportFileFormat } from '../../services/exportService';
 import { ExportServiceLike } from './use-export-period';
 import { ExportPopover } from './ExportPopover';
@@ -21,10 +21,20 @@ function DownloadIcon() {
 }
 
 export function ExportIcon({ services, onBeforeExport, onExportSuccess }: ExportIconProps) {
+  const [isDesktop, setIsDesktop] = useState(typeof window === 'undefined' || window.innerWidth >= 768);
   const [open, setOpen] = useState(false);
   const [loadingFormat, setLoadingFormat] = useState<ExportFileFormat | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    function updateViewport() {
+      setIsDesktop(window.innerWidth >= 768);
+    }
+
+    window.addEventListener('resize', updateViewport);
+    return () => window.removeEventListener('resize', updateViewport);
+  }, []);
 
   async function onExport(params: { from: string; to: string; format: ExportFileFormat }) {
     if (loadingFormat) {
@@ -62,9 +72,10 @@ export function ExportIcon({ services, onBeforeExport, onExportSuccess }: Export
         type="button"
         className={`services-export-icon-btn ${loadingFormat ? 'is-loading' : ''}`}
         aria-label="Esporta lista servizi"
-        title="Esporta in Excel o CSV"
+        title={isDesktop ? 'Esporta in Excel / CSV' : undefined}
         aria-haspopup="dialog"
         aria-expanded={open}
+        style={{ minWidth: 44, minHeight: 44 }}
         onClick={() => {
           setExportError(null);
           setOpen((prev) => !prev);
