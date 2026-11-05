@@ -186,6 +186,20 @@ public class ServiceController {
         return closeServiceUseCase.execute(serviceId);
     }
 
+    @PatchMapping("/{serviceId}/close-manually")
+    public ServiceDto closeOutsourcedManually(@PathVariable @NonNull Long serviceId,
+                                              @Valid @RequestBody ManualOutsourcedCloseRequest request,
+                                              @AuthenticationPrincipal IdentityUserDetails user) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Non autorizzato");
+        }
+        return closeServiceUseCase.executeManualOutsourcedClose(
+            serviceId,
+            request.partnerExecutionConfirmed(),
+            Objects.requireNonNull(user.getId(), "userId obbligatorio")
+        );
+    }
+
     @PatchMapping("/{serviceId}/assign")
     public ServiceDto assign(@PathVariable @NonNull Long serviceId,
                              @Valid @RequestBody AssignRequest request,
@@ -318,6 +332,9 @@ public class ServiceController {
 
     record OutsourceRequest(@NotNull Long partnerId,
                             @NotNull BigDecimal pricePartner) {
+    }
+
+    record ManualOutsourcedCloseRequest(@NotNull Boolean partnerExecutionConfirmed) {
     }
 
     record CountResponse(long count) {

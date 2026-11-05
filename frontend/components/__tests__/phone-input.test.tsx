@@ -63,7 +63,7 @@ describe('PhoneInput', () => {
     render(<Harness />);
 
     expect(screen.getByRole('combobox', { name: /prefisso internazionale/i })).toHaveTextContent('+39');
-    fireEvent.change(screen.getByLabelText('Telefono'), { target: { value: '335 1122334' } });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '335 1122334' } });
 
     expect(screen.getByTestId('value')).toHaveTextContent('+39 335 1122334');
   });
@@ -77,7 +77,7 @@ describe('PhoneInput', () => {
 
   it('mantiene il prefisso digitato e lo separa dal numero nazionale', () => {
     render(<Harness />);
-    const phoneField = screen.getByLabelText('Telefono');
+    const phoneField = screen.getByRole('textbox');
 
     fireEvent.change(phoneField, { target: { value: '+' } });
     expect(phoneField).toHaveValue('+');

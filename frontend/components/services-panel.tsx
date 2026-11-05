@@ -7,6 +7,7 @@ import { AddIcon, ArrowLeftIcon, ArrowRightIcon, ButtonContent, CalendarIcon, Ca
 import { StatusNotice } from './status-notice';
 import { PhoneInput } from './phone-input';
 import { formatCurrencyEUR } from '../lib/currency';
+import { dispatchRideOpsEvent } from '../lib/app-events';
 import { ExportIcon } from './services-export/ExportIcon';
 
 type ServiceType = 'TRANSFER' | 'TOUR' | 'DISPOSIZIONE';
@@ -532,6 +533,24 @@ export function ServicesPanel() {
   const [newButtonPortalTarget, setNewButtonPortalTarget] = useState<HTMLElement | null>(null);
   const [rowMenuServiceId, setRowMenuServiceId] = useState<number | null>(null);
   const [deleteConfirmServiceId, setDeleteConfirmServiceId] = useState<number | null>(null);
+  const [manualCloseServiceId, setManualCloseServiceId] = useState<number | null>(null);
+  const [manualCloseConfirmed, setManualCloseConfirmed] = useState(false);
+  const serviceDetailDialogRef = useRef<HTMLElement | null>(null);
+  const serviceDetailCloseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const serviceDetailSwipeStartY = useRef<number | null>(null);
+  const partnerHistoryRequestSequence = useRef(0);
+  const nestedServicesDialogRef = useRef({
+    form: isFormOpen,
+    outsource: outsourceOpen,
+    deleteConfirm: deleteConfirmServiceId !== null,
+    manualClose: manualCloseServiceId !== null
+  });
+  nestedServicesDialogRef.current = {
+    form: isFormOpen,
+    outsource: outsourceOpen,
+    deleteConfirm: deleteConfirmServiceId !== null,
+    manualClose: manualCloseServiceId !== null
+  };
   const [filters, setFilters] = useState<ServicesFilterState>(defaultFilters);
   const [form, setForm] = useState<ServiceFormState>(defaultForm);
 
@@ -906,6 +925,8 @@ export function ServicesPanel() {
       return;
     }
 
+    dispatchRideOpsEvent('services:refresh');
+
     const serviceId = editingId ?? payload.id;
     if (!serviceId) {
       setSubmitting(false);
@@ -920,6 +941,7 @@ export function ServicesPanel() {
     }
 
     setSuccess(editingId ? 'Servizio aggiornato' : 'Servizio creato');
+    dispatchRideOpsEvent('services:refresh');
     closeForm();
     await loadServices();
   }
@@ -977,6 +999,7 @@ export function ServicesPanel() {
     }
     setDeleteConfirmServiceId(null);
     setSuccess('Servizio eliminato');
+    dispatchRideOpsEvent('services:refresh');
     await loadServices();
   }
 
@@ -991,7 +1014,49 @@ export function ServicesPanel() {
       return;
     }
 
-    setSuccess('Servizio chiuso (pagamento registrato)');
+    setSuccess('Servizio chiuso e ricavo registrato');
+    dispatchRideOpsEvent('services:refresh');
+    await loadServices();
+  }
+
+  function openManualCloseConfirmation(serviceId: number) {
+    clearFeedbackNotice();
+    setManualCloseServiceId(serviceId);
+    setManualCloseConfirmed(false);
+  }
+
+  function cancelManualClose() {
+    setManualCloseServiceId(null);
+    setManualCloseConfirmed(false);
+    clearFeedbackNotice();
+  }
+
+  async function submitManualOutsourcedClose() {
+    if (manualCloseServiceId === null || !manualCloseConfirmed || submitting) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    const response = await fetch(`/api/services/${manualCloseServiceId}/close-manually`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ partnerExecutionConfirmed: true })
+    });
+    const payload = (await response.json().catch(() => ({}))) as { message?: string };
+    setSubmitting(false);
+
+    if (!response.ok) {
+      setError(payload.message ?? 'Chiusura manuale fallita');
+      return;
+    }
+
+    setManualCloseServiceId(null);
+    setManualCloseConfirmed(false);
+    setSuccess('Servizio chiuso: il dovuto resta nel saldo/report partner ed è stato registrato il ricavo del margine');
+    dispatchRideOpsEvent('services:refresh');
     await loadServices();
   }
 
@@ -1048,15 +1113,21 @@ export function ServicesPanel() {
     }
 
     setSuccess('Servizio affidato a partner. Invio email in corso: verifica esito nello storico (OK/KO).');
+    dispatchRideOpsEvent('services:refresh');
     closeOutsourceModal();
     await loadServices();
     await loadPartnerHistory(selectedService.id);
   }
 
   async function loadPartnerHistory(serviceId: number) {
+    const requestId = ++partnerHistoryRequestSequence.current;
+    setPartnerHistory(null);
     setPartnerHistoryLoading(true);
     const response = await fetch(`/api/services/${serviceId}/partner-history`, { cache: 'no-store' });
     const payload = (await response.json().catch(() => ({}))) as ServicePartnerHistoryItem | { message?: string };
+    if (requestId !== partnerHistoryRequestSequence.current) {
+      return;
+    }
     setPartnerHistoryLoading(false);
 
     if (!response.ok) {
@@ -1155,6 +1226,32 @@ export function ServicesPanel() {
     return found.plate;
   }
 
+  function assignedVehicleDescription(service: ServiceItem) {
+    if (!service.assignedVehicleId) {
+      return null;
+    }
+
+    const vehicle = vehicles.find((item) => item.id === service.assignedVehicleId);
+    if (!vehicle) {
+      return null;
+    }
+
+    const vehicleTypeLabels: Record<string, string> = {
+      SEDAN: 'Berlina',
+      VAN: 'Van',
+      MINIBUS: 'Minibus',
+      SUV: 'SUV',
+      OTHER: 'Altro'
+    };
+    const details = [
+      vehicleTypeLabels[vehicle.type] ?? vehicle.type,
+      vehicle.seats ? `${vehicle.seats} posti` : null,
+      vehicle.notes?.trim() || null
+    ].filter((detail): detail is string => Boolean(detail));
+
+    return details.join(' · ') || null;
+  }
+
   function partnerLabel(partnerId: number | null) {
     if (!partnerId) {
       return '-';
@@ -1228,6 +1325,22 @@ export function ServicesPanel() {
     [orderedServices, selectedServiceId]
   );
 
+  const manualCloseExecutorPartnerId = selectedService?.serviceAssignmentType === 'INCOMING_OUTSOURCED'
+    ? selectedService.outgoingPartnerId
+    : selectedService?.serviceAssignmentType === 'OUTSOURCED'
+      ? selectedService.partnerId
+      : null;
+  const selectedServiceStartTime = selectedService ? new Date(selectedService.startAt).getTime() : Number.NaN;
+  const canManuallyCloseSelectedService = Boolean(
+    selectedService
+    && selectedService.status === 'OPEN'
+    && (selectedService.serviceAssignmentType === 'OUTSOURCED'
+      || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED')
+    && manualCloseExecutorPartnerId
+    && !Number.isNaN(selectedServiceStartTime)
+    && selectedServiceStartTime <= Date.now()
+  );
+
   const filteredPartners = useMemo(() => {
     const query = outsourcePartnerQuery.trim().toLowerCase();
     if (!query) {
@@ -1267,7 +1380,9 @@ export function ServicesPanel() {
 
   useEffect(() => {
     if (!selectedServiceId) {
+      partnerHistoryRequestSequence.current += 1;
       setPartnerHistory(null);
+      setPartnerHistoryLoading(false);
       return;
     }
     loadPartnerHistory(selectedServiceId);
@@ -1276,6 +1391,64 @@ export function ServicesPanel() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderedServices, selectedServiceId]);
+
+  useEffect(() => {
+    if (!selectedService) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    document.body.style.overflow = 'hidden';
+    serviceDetailCloseButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        const nestedDialog = nestedServicesDialogRef.current;
+        if (nestedDialog.manualClose) {
+          cancelManualClose();
+        } else if (nestedDialog.deleteConfirm) {
+          setDeleteConfirmServiceId(null);
+          clearFeedbackNotice();
+        } else if (nestedDialog.outsource) {
+          closeOutsourceModal();
+        } else if (nestedDialog.form) {
+          closeForm();
+        } else {
+          selectService(null);
+        }
+        return;
+      }
+      if (event.key !== 'Tab' || !serviceDetailDialogRef.current) {
+        return;
+      }
+      const focusable = Array.from(serviceDetailDialogRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ));
+      if (focusable.length === 0) {
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+    // Keep the dialog lifecycle tied to whether a service is selected, not list refreshes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedServiceId !== null]);
 
   useEffect(() => {
     const validIds = new Set(orderedServices.map((item) => item.id));
@@ -1316,8 +1489,10 @@ export function ServicesPanel() {
   const allCurrentPageSelected = paginatedServices.length > 0
     && paginatedServices.every((service) => selectedForPrintIds.includes(service.id));
   const hasOpenServicesDialog = isFormOpen
+    || selectedService !== null
     || (outsourceOpen && selectedService !== null)
-    || deleteConfirmServiceId !== null;
+    || deleteConfirmServiceId !== null
+    || manualCloseServiceId !== null;
 
   const selectedDriverFilter = filters.driverId
     ? drivers.find((driver) => driver.id === filters.driverId) ?? null
@@ -1601,7 +1776,7 @@ export function ServicesPanel() {
             </div>
           </div>
         )}
-        {!error && success && (
+        {!error && success && !hasOpenServicesDialog && (
           <div className="services-notice services-notice--info" role="status" aria-live="polite" style={{ marginBottom: 10 }}>
             <span className="services-notice-icon" aria-hidden="true"><ServiceNoticeIcon tone="info" /></span>
             <div className="services-notice-text">
@@ -1615,10 +1790,39 @@ export function ServicesPanel() {
         ) : (
           <>
             {selectedService && (
-              <div className="dashboard-card services-selected-detail" style={{ marginTop: 10 }}>
-                <div className="services-selected-header">
+              <div
+                className="services-detail-overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="services-detail-title"
+                onClick={(event) => {
+                  if (event.target === event.currentTarget) {
+                    selectService(null);
+                  }
+                }}
+              >
+                <article
+                  ref={serviceDetailDialogRef}
+                  className="dashboard-card services-detail-dialog"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <div
+                    className="services-detail-drag-handle"
+                    aria-hidden="true"
+                    onPointerDown={(event) => { serviceDetailSwipeStartY.current = event.clientY; }}
+                    onPointerUp={(event) => {
+                      if (serviceDetailSwipeStartY.current !== null && event.clientY - serviceDetailSwipeStartY.current > 80) {
+                        selectService(null);
+                      }
+                      serviceDetailSwipeStartY.current = null;
+                    }}
+                    onPointerCancel={() => { serviceDetailSwipeStartY.current = null; }}
+                  >
+                    <span />
+                  </div>
+                  <header className="services-selected-header services-detail-header">
                   <div className="services-selected-heading">
-                    <strong className="services-selected-title">Servizio #{selectedService.id}</strong>
+                    <h2 id="services-detail-title" className="services-selected-title">Servizio #{selectedService.id}</h2>
                     <span className={`services-selected-chip services-selected-chip-status ${statusClass(selectedService.status)}`}>
                       {statusLabel(selectedService.status)}
                     </span>
@@ -1628,203 +1832,124 @@ export function ServicesPanel() {
                     </span>
                   </div>
                   <button
+                    ref={serviceDetailCloseButtonRef}
                     type="button"
                     className="services-selected-close"
                     aria-label="Chiudi dettaglio servizio"
                     onClick={() => selectService(null)}
                   >
-                    x
+                    ×
                   </button>
-                </div>
+                  </header>
 
-                <div className="services-selected-grid">
-                  <div className="services-selected-column">
-                    <ServiceDetailRow
-                      icon={<MobileClockIcon />}
-                      label="Data e ora"
-                      value={new Date(selectedService.startAt).toLocaleString('it-IT')}
-                    />
-                    <ServiceDetailRow
-                      icon={<MobilePinIcon />}
-                      label="Pickup"
-                      value={selectedService.pickupLocation}
-                    />
-                    <ServiceDetailRow
-                      icon={<MobilePinIcon />}
-                      label="Destinazione"
-                      value={selectedService.destination}
-                    />
-                  </div>
-                  <div className="services-selected-column">
-                    <ServiceDetailRow
-                      icon={<DetailUserIcon />}
-                      label="Driver"
-                      value={assignedDriverLabel(selectedService)}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailCarIcon />}
-                      label="Veicolo"
-                      value={assignedVehicleLabel(selectedService)}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailEuroIcon />}
-                      label="Prezzo"
-                      value={formatCurrencyEUR(selectedService.price)}
-                    />
-                    {(selectedService.serviceAssignmentType === 'INCOMING' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
-                      <ServiceDetailRow
-                        icon={<DetailUserIcon />}
-                        label="Partner Fornitore"
-                        value={partnerLabel(selectedService.partnerId)}
-                      />
+                  <div className="services-detail-body">
+                    {error && !isFormOpen && !outsourceOpen && deleteConfirmServiceId === null && manualCloseServiceId === null && (
+                      <StatusNotice tone="error" className="services-modal-error">{error}</StatusNotice>
                     )}
-                    {(selectedService.serviceAssignmentType === 'OUTSOURCED') && (
-                      <ServiceDetailRow
-                        icon={<DetailUserIcon />}
-                        label="Partner Esecutore"
-                        value={partnerLabel(selectedService.partnerId)}
-                      />
-                    )}
-                    {selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED' && (
-                      <ServiceDetailRow
-                        icon={<DetailUserIcon />}
-                        label="Partner Esecutore"
-                        value={partnerLabel(selectedService.outgoingPartnerId)}
-                      />
-                    )}
-                    {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
-                      <ServiceDetailRow
-                        icon={<DetailEuroIcon />}
-                        label="Prezzo Partner Esecutore"
-                        value={formatCurrencyEUR(selectedService.pricePartner)}
-                      />
-                    )}
-                    {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
-                      <ServiceDetailRow
-                        icon={<DetailEuroIcon />}
-                        label="Margine"
-                        value={formatCurrencyEUR(selectedService.margin)}
-                      />
-                    )}
-                  </div>
-                </div>
+                    {!error && success && <StatusNotice tone="info" className="services-modal-error">{success}</StatusNotice>}
+                <div className="services-detail-content">
+                  <div className="services-detail-primary-grid">
+                    <div className="services-detail-column">
+                      <section className="services-detail-info-card">
+                        <h3 className="services-detail-section-title"><MobilePinIcon />Dettagli viaggio</h3>
+                        <div className="services-detail-datetime">
+                          <span className="services-detail-inline-icon"><MobileClockIcon /></span>
+                          <strong>{new Date(selectedService.startAt).toLocaleString('it-IT')}</strong>
+                        </div>
+                        <div className="services-detail-route">
+                          <div className="services-detail-route-point services-detail-route-point--pickup">
+                            <span className="services-detail-route-dot" aria-hidden="true" />
+                            <span className="services-detail-route-label">Pickup</span>
+                            <strong>{selectedService.pickupLocation || '-'}</strong>
+                          </div>
+                          <div className="services-detail-route-point services-detail-route-point--destination">
+                            <span className="services-detail-route-dot" aria-hidden="true" />
+                            <span className="services-detail-route-label">Destinazione</span>
+                            <strong>{selectedService.destination || '-'}</strong>
+                          </div>
+                        </div>
+                        <div className="services-detail-trip-meta">
+                          <span><DetailUserIcon /><span>Passeggeri:</span><strong>{selectedService.passengersCount ?? '-'}</strong></span>
+                          <span><span className="services-detail-meta-label">Rif. est.</span><strong>{selectedService.externalBookingReference || '-'}</strong></span>
+                          <span><span className="services-detail-meta-label">Rif. int.</span><strong>{selectedService.internalBookingReference || '-'}</strong></span>
+                        </div>
+                      </section>
 
-                <div className="services-selected-divider" />
+                      <section className="services-detail-info-card services-detail-client-card">
+                        <h3 className="services-detail-section-title"><DetailUserIcon />Cliente</h3>
+                        <strong className="services-detail-client-name">{selectedService.clientName || '-'}</strong>
+                        <ServiceDetailRow
+                          icon={<DetailPhoneIcon />}
+                          label="Telefono"
+                          value={selectedService.clientPhone || '-'}
+                        />
+                        <ServiceDetailRow
+                          icon={<DetailMailIcon />}
+                          label="Email"
+                          value={selectedService.clientEmail || '-'}
+                        />
+                      </section>
+                    </div>
 
-                <div className="services-selected-grid">
-                  <div className="services-selected-column">
-                    <ServiceDetailRow
-                      icon={<DetailUserIcon />}
-                      label="Cliente"
-                      value={selectedService.clientName ?? '-'}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailPhoneIcon />}
-                      label="Telefono"
-                      value={selectedService.clientPhone ?? '-'}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailMailIcon />}
-                      label="Email"
-                      value={selectedService.clientEmail ?? '-'}
-                    />
+                    <div className="services-detail-column">
+                      <section className="services-detail-info-card services-detail-economy-card">
+                        <h3 className="services-detail-section-title"><DetailEuroIcon />Economia servizio</h3>
+                        <div className="services-detail-total-price">
+                          <span>Prezzo totale</span>
+                          <strong>{formatCurrencyEUR(selectedService.price)}</strong>
+                        </div>
+                        {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+                          <div className="services-detail-economy-breakdown">
+                            <div><span>Prezzo partner esecutore</span><strong>{formatCurrencyEUR(selectedService.pricePartner)}</strong></div>
+                            <div><span>Margine</span><strong>{formatCurrencyEUR(selectedService.margin)}</strong></div>
+                          </div>
+                        )}
+                      </section>
+
+                      <section className="services-detail-info-card services-detail-assignment-card">
+                        <h3 className="services-detail-section-title"><DetailCarIcon />Assegnazione</h3>
+                        <div className="services-detail-assignment-grid">
+                          <div><span>Driver</span><strong>{assignedDriverLabel(selectedService)}</strong></div>
+                          <div className="services-detail-vehicle-value">
+                            <span>Veicolo</span>
+                            <strong>{assignedVehicleLabel(selectedService)}</strong>
+                            {selectedService.assignedVehicleId && (
+                              <small>{assignedVehicleDescription(selectedService) ?? 'Descrizione non disponibile'}</small>
+                            )}
+                          </div>
+                        </div>
+                        {(selectedService.serviceAssignmentType === 'INCOMING' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+                          <ServiceDetailRow
+                            icon={<DetailUserIcon />}
+                            label="Partner fornitore"
+                            value={partnerLabel(selectedService.partnerId)}
+                          />
+                        )}
+                        {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED') && (
+                          <ServiceDetailRow
+                            icon={<DetailUserIcon />}
+                            label="Partner esecutore"
+                            value={partnerLabel(selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED'
+                              ? selectedService.outgoingPartnerId
+                              : selectedService.partnerId)}
+                          />
+                        )}
+                      </section>
+                    </div>
                   </div>
-                  <div className="services-selected-column">
-                    <ServiceDetailRow
-                      icon={<DetailDocumentIcon />}
-                      label="Passeggeri"
-                      value={selectedService.passengersCount ?? '-'}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailDocumentIcon />}
-                      label="Rif. esterno"
-                      value={selectedService.externalBookingReference ?? '-'}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailDocumentIcon />}
-                      label="Rif. interno"
-                      value={selectedService.internalBookingReference ?? '-'}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailDocumentIcon />}
-                      label="Itinerario"
-                      value={selectedService.itinerary ?? '-'}
-                    />
-                    <ServiceDetailRow
-                      icon={<DetailDocumentIcon />}
-                      label="Note"
-                      value={selectedService.notes ?? '-'}
-                    />
+
+                  <div className="services-detail-long-fields">
+                    <section className="services-detail-info-card">
+                      <h3 className="services-detail-section-title"><DetailDocumentIcon />Itinerario dettagliato</h3>
+                      <div className="services-detail-long-text">{selectedService.itinerary?.trim() || '-'}</div>
+                    </section>
+                    <section className="services-detail-info-card services-detail-notes-card">
+                      <h3 className="services-detail-section-title"><DetailDocumentIcon />Note del servizio</h3>
+                      <div className="services-detail-long-text">{selectedService.notes?.trim() || '-'}</div>
+                    </section>
                   </div>
                 </div>
-
-                <div className="services-selected-divider" />
-
-                <div className="table-actions services-selected-actions" style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button type="button" className="primary-button compact-button" onClick={() => onEdit(selectedService)}>
-                    <span className="action-button-icon"><ActionEditIcon /></span>
-                    Modifica
-                  </button>
-                  <button
-                    type="button"
-                    className="primary-button compact-button services-selected-delete"
-                    onClick={() => setDeleteConfirmServiceId(selectedService.id)}
-                  >
-                    <span className="action-button-icon"><ActionDeleteIcon /></span>
-                    Elimina
-                  </button>
-                  {selectedService.status === 'EXECUTED' && (
-                    <button
-                      type="button"
-                      className="compact-button services-selected-close-service"
-                      onClick={() => onClose(selectedService.id)}
-                    >
-                      <span className="action-button-icon"><ActionLockIcon /></span>
-                      Chiudi
-                    </button>
-                  )}
-                  {(selectedService.serviceAssignmentType === 'OUTSOURCED' || selectedService.serviceAssignmentType === 'INCOMING_OUTSOURCED')
-                    && selectedService.status !== 'CLOSED'
-                    && selectedService.status !== 'EXECUTED' && (
-                    <button
-                      type="button"
-                      className="compact-button services-selected-close-service"
-                      onClick={() => onClose(selectedService.id)}
-                    >
-                      <span className="action-button-icon"><ActionLockIcon /></span>
-                      Chiudi servizio
-                    </button>
-                  )}
-                  {(selectedService.serviceAssignmentType === 'INTERNAL' || selectedService.serviceAssignmentType === 'INCOMING')
-                    && selectedService.status !== 'CLOSED'
-                    && selectedService.status !== 'EXECUTED' && (
-                    <button
-                      type="button"
-                      className="compact-button services-selected-outsource"
-                      onClick={() => openOutsourceModal(selectedService)}
-                    >
-                      <span className="action-button-icon"><ActionHandshakeIcon /></span>
-                      Affida servizio al partner
-                    </button>
-                  )}
-                  <button type="button" className="compact-button services-selected-print" onClick={() => openPrint(selectedService.id)}>
-                    <span className="action-button-icon"><ActionPrintIcon /></span>
-                    Stampa
-                  </button>
-                  <button
-                    type="button"
-                    className="compact-button services-selected-deselect"
-                    onClick={() => selectService(null)}
-                  >
-                    <span className="action-button-icon"><ActionDeselectIcon /></span>
-                    Deseleziona
-                  </button>
-                </div>
-
-              </div>
-            )}
-
-            {selectedService && isPartnerManagedAssignment(selectedService.serviceAssignmentType) && (
+            {isPartnerManagedAssignment(selectedService.serviceAssignmentType) && (
               <article className="dashboard-card sph-card">
                 <div className="sph-header">
                   <div className="sph-header-title">
@@ -1837,13 +1962,13 @@ export function ServicesPanel() {
                     <span className="sph-header-label">Storico partner servizio</span>
                   </div>
                   <span className="sph-comm-badge">
-                    # {partnerHistory?.communications.length ?? 0} comunicazion{(partnerHistory?.communications.length ?? 0) === 1 ? 'e' : 'i'}
+                    # {partnerHistory?.serviceId === selectedService.id ? partnerHistory.communications.length : 0} comunicazion{(partnerHistory?.serviceId === selectedService.id && partnerHistory.communications.length === 1) ? 'e' : 'i'}
                   </span>
                 </div>
 
                 {partnerHistoryLoading ? (
                   <p className="sph-empty">Caricamento storico...</p>
-                ) : !partnerHistory ? (
+                ) : !partnerHistory || partnerHistory.serviceId !== selectedService.id ? (
                   <p className="sph-empty">Nessuno storico disponibile per questo servizio.</p>
                 ) : (
                   <>
@@ -1972,6 +2097,70 @@ export function ServicesPanel() {
                   </>
                 )}
               </article>
+            )}
+                  </div>
+                  <footer className="services-detail-footer">
+                    <div className="table-actions services-selected-actions">
+                      <button type="button" className="primary-button compact-button" onClick={() => onEdit(selectedService)}>
+                        <span className="action-button-icon"><ActionEditIcon /></span>
+                        Modifica
+                      </button>
+                      <button
+                        type="button"
+                        className="primary-button compact-button services-selected-delete"
+                        onClick={() => setDeleteConfirmServiceId(selectedService.id)}
+                      >
+                        <span className="action-button-icon"><ActionDeleteIcon /></span>
+                        Elimina
+                      </button>
+                      {selectedService.status === 'EXECUTED' && (
+                        <button
+                          type="button"
+                          className="compact-button services-selected-close-service"
+                          onClick={() => onClose(selectedService.id)}
+                        >
+                          <span className="action-button-icon"><ActionLockIcon /></span>
+                          Chiudi
+                        </button>
+                      )}
+                      {canManuallyCloseSelectedService && (
+                        <button
+                          type="button"
+                          className="compact-button services-selected-close-service"
+                          onClick={() => openManualCloseConfirmation(selectedService.id)}
+                        >
+                          <span className="action-button-icon"><ActionLockIcon /></span>
+                          Chiudi servizio
+                        </button>
+                      )}
+                      {(selectedService.serviceAssignmentType === 'INTERNAL' || selectedService.serviceAssignmentType === 'INCOMING')
+                        && selectedService.status !== 'CLOSED'
+                        && selectedService.status !== 'EXECUTED' && (
+                        <button
+                          type="button"
+                          className="compact-button services-selected-outsource"
+                          onClick={() => openOutsourceModal(selectedService)}
+                        >
+                          <span className="action-button-icon"><ActionHandshakeIcon /></span>
+                          Affida servizio al partner
+                        </button>
+                      )}
+                      <button type="button" className="compact-button services-selected-print" onClick={() => openPrint(selectedService.id)}>
+                        <span className="action-button-icon"><ActionPrintIcon /></span>
+                        Stampa
+                      </button>
+                      <button
+                        type="button"
+                        className="compact-button services-selected-deselect"
+                        onClick={() => selectService(null)}
+                      >
+                        <span className="action-button-icon"><ActionDeselectIcon /></span>
+                        Deseleziona
+                      </button>
+                    </div>
+                  </footer>
+                </article>
+              </div>
             )}
             <div className="services-selection-toolbar">
               <div className="services-selection-summary">
@@ -2379,6 +2568,66 @@ export function ServicesPanel() {
                   <ButtonContent icon={<ActionDeleteIcon />}>Elimina</ButtonContent>
                 </button>
               </div>
+            </div>
+          </article>
+        </div>
+      )}
+
+      {manualCloseServiceId !== null && (
+        <div className="services-modal-overlay manual-close-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="manual-close-title">
+          <article className="dashboard-card services-modal-card manual-close-modal">
+            <div className="manual-close-modal-header">
+              <h2 id="manual-close-title" className="manual-close-modal-title">Conferma esecuzione partner</h2>
+              <button
+                type="button"
+                className="manual-close-modal-dismiss"
+                onClick={cancelManualClose}
+                aria-label="Chiudi modale"
+                title="Chiudi"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="manual-close-modal-body">
+              {error && <StatusNotice tone="error" className="services-modal-error">{error}</StatusNotice>}
+              <p>
+                Confermi che il partner esecutore ha completato il servizio <strong>#{manualCloseServiceId}</strong>?
+              </p>
+              <p>
+                La chiusura renderà il dovuto visibile nel report partner e registrerà il ricavo pari al margine.
+              </p>
+              <div className="manual-close-system-note">
+                Non crea un movimento COSTO né esegue un pagamento bancario.
+              </div>
+            </div>
+
+            <label className="manual-close-checkbox">
+                <input
+                  type="checkbox"
+                  checked={manualCloseConfirmed}
+                  onChange={(event) => setManualCloseConfirmed(event.target.checked)}
+                />
+              <span>Confermo di aver ricevuto conferma dell&apos;esecuzione da parte del partner.</span>
+            </label>
+
+            <div className="manual-close-modal-footer">
+                <button type="button" className="manual-close-btn manual-close-btn-cancel" onClick={cancelManualClose}>
+                  <CancelIcon />
+                  Annulla
+                </button>
+                <button
+                  type="button"
+                  className="manual-close-btn manual-close-btn-confirm"
+                  onClick={submitManualOutsourcedClose}
+                  disabled={!manualCloseConfirmed || submitting}
+                >
+                  <ActionLockIcon />
+                  {submitting ? 'Chiusura in corso...' : 'Conferma chiusura'}
+                </button>
             </div>
           </article>
         </div>

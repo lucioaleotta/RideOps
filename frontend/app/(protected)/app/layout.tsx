@@ -6,6 +6,7 @@ type MePayload = {
   userId: string;
   email: string;
   role: string;
+  tenantId: number | null;
 };
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +29,12 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   }
 
   return (
-    <AppShell userId={user?.userId ?? 'utente'} userRole={user?.role ?? 'UNKNOWN'}>
+    <AppShell
+      id={user?.id ?? null}
+      userId={user?.userId ?? 'utente'}
+      userRole={user?.role ?? 'UNKNOWN'}
+      tenantId={user?.tenantId ?? null}
+    >
       {children}
     </AppShell>
   );

@@ -12,7 +12,7 @@ function parseBackendError(status: number, payload: unknown) {
   return NextResponse.json({ message: 'Request failed' }, { status });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const token = cookies().get('access_token')?.value;
   if (!token) {
     return unauthorized();
@@ -21,7 +21,8 @@ export async function GET() {
   const backendUrl = process.env.BACKEND_URL ?? 'http://localhost:8080';
   const response = await fetch(`${backendUrl}/owner/sessions/hourly`, {
     headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store'
+    cache: 'no-store',
+    signal: request.signal
   });
 
   const payload = await response.json().catch(() => ({}));

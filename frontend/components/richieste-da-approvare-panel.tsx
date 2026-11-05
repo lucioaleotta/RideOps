@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { FilterDropdown } from './filter-dropdown';
 import { StatusNotice } from './status-notice';
 import { absenceTimeRange } from '../lib/absence-time';
+import { dispatchRideOpsEvent } from '../lib/app-events';
 import type {
   DriverAssenzaOption,
   InserimentoGestionalePayload,
@@ -176,6 +177,7 @@ export function RichiesteDaApprovarePanel() {
         throw new Error(payload?.message ?? 'Impossibile approvare la richiesta');
       }
       setSuccess('Richiesta approvata');
+      dispatchRideOpsEvent('absence:refresh');
       await loadData();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Errore imprevisto');
@@ -204,6 +206,7 @@ export function RichiesteDaApprovarePanel() {
         throw new Error(payload?.message ?? 'Impossibile rifiutare la richiesta');
       }
       setSuccess('Richiesta rifiutata');
+      dispatchRideOpsEvent('absence:refresh');
       setRifiutoTargetId(null);
       await loadData();
     } catch (err) {

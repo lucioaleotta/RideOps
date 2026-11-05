@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.rideops.fleet.application.PlanSyncResultDto;
+import com.rideops.fleet.application.VehicleAlertCountsDto;
 import com.rideops.fleet.application.VehicleDetailDto;
 import com.rideops.fleet.application.VehicleDto;
 import com.rideops.fleet.application.VehicleManagementService;
@@ -52,6 +53,17 @@ class VehicleManagementControllerTest {
             .andExpect(jsonPath("$.vehicle.plate").value("AB123CD"))
             .andExpect(jsonPath("$.upcomingCount").value(2))
             .andExpect(jsonPath("$.overdueCount").value(1));
+    }
+
+    @Test
+    void getTenantAlertCountsReturnsAggregatePayload() throws Exception {
+        when(service.getTenantAlertCounts(eq(30))).thenReturn(new VehicleAlertCountsDto(4, 2, "Europe/Rome"));
+
+        mockMvc.perform(get("/fleet/vehicles/deadline-alert-counts"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.upcoming").value(4))
+            .andExpect(jsonPath("$.overdue").value(2))
+            .andExpect(jsonPath("$.timezone").value("Europe/Rome"));
     }
 
     @Test

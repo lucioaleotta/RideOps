@@ -135,25 +135,31 @@ class PartnerServiceTest {
         when(partnerRepository.findByIdAndTenantId(7L, 1L)).thenReturn(java.util.Optional.of(partner));
         when(rideServiceRepository.countByPartnerIdAndServiceAssignmentTypeAndTenantId(7L, ServiceAssignmentType.OUTSOURCED, 1L))
             .thenReturn(8L);
+        when(rideServiceRepository.countByOutgoingPartnerIdAndServiceAssignmentTypeAndTenantId(
+            7L, ServiceAssignmentType.INCOMING_OUTSOURCED, 1L)).thenReturn(2L);
         when(rideServiceRepository.countByPartnerIdAndServiceAssignmentTypeAndTenantId(7L, ServiceAssignmentType.INCOMING, 1L))
             .thenReturn(3L);
         when(rideServiceRepository.sumMarginByPartnerIdAndAssignmentType(7L, ServiceAssignmentType.OUTSOURCED, 1L))
             .thenReturn(new BigDecimal("1240.50"));
+        when(rideServiceRepository.sumMarginByOutgoingPartnerIdAndAssignmentType(
+            7L, ServiceAssignmentType.INCOMING_OUTSOURCED, 1L)).thenReturn(new BigDecimal("50.00"));
         when(rideServiceRepository.sumPriceByPartnerIdAndAssignmentType(7L, ServiceAssignmentType.INCOMING, 1L))
             .thenReturn(new BigDecimal("2750.00"));
         when(rideServiceRepository.sumPricePartnerByPartnerIdAndAssignmentType(7L, ServiceAssignmentType.OUTSOURCED, 1L))
             .thenReturn(new BigDecimal("1980.00"));
+        when(rideServiceRepository.sumPricePartnerByOutgoingPartnerIdAndAssignmentType(
+            7L, ServiceAssignmentType.INCOMING_OUTSOURCED, 1L)).thenReturn(new BigDecimal("100.00"));
 
         PartnerDto result = service.getById(7L);
 
-        assertEquals(8L, result.numeroServiziAffidati());
+        assertEquals(10L, result.numeroServiziAffidati());
         assertEquals(3L, result.numeroServiziRicevuti());
-        assertEquals(new BigDecimal("1240.50"), result.totaleMarginiOutsourced());
+        assertEquals(new BigDecimal("1290.50"), result.totaleMarginiOutsourced());
         assertEquals(new BigDecimal("2750.00"), result.totaleRicaviIncoming());
-        assertEquals(new BigDecimal("3990.50"), result.totaleGuadagni());
+        assertEquals(new BigDecimal("4040.50"), result.totaleGuadagni());
         assertEquals(new BigDecimal("2750.00"), result.totaleCrediti());
-        assertEquals(new BigDecimal("1980.00"), result.totaleDebiti());
-        assertEquals(new BigDecimal("770.00"), result.saldoAttuale());
+        assertEquals(new BigDecimal("2080.00"), result.totaleDebiti());
+        assertEquals(new BigDecimal("670.00"), result.saldoAttuale());
     }
 
     private PartnerEntity partner(Long id, PartnerType type, String ragioneSociale, boolean deleted) {

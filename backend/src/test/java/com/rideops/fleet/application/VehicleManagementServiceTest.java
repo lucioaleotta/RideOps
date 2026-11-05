@@ -3,6 +3,7 @@ package com.rideops.fleet.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -185,6 +186,23 @@ class VehicleManagementServiceTest {
 
         assertEquals(1, dto.upcomingCount());
         assertEquals(1, dto.overdueCount());
+    }
+
+    @Test
+    void getTenantAlertCountsUsesTenantScopedQueriesAndReturnsTimezone() {
+        LocalDate today = LocalDate.now();
+        when(occurrenceRepository.countByTenantIdAndStatusNotInAndDueDateGreaterThanEqualAndDueDateLessThanEqual(
+            eq(1L), any(), any(), any())).thenReturn(3L);
+        when(occurrenceRepository.countByTenantIdAndStatusNotInAndDueDateLessThan(eq(1L), any(), any())).thenReturn(2L);
+
+        VehicleAlertCountsDto result = service.getTenantAlertCounts(30);
+
+        assertEquals(3, result.upcoming());
+        assertEquals(2, result.overdue());
+        assertEquals(java.time.ZoneId.systemDefault().getId(), result.timezone());
+        verify(occurrenceRepository).countByTenantIdAndStatusNotInAndDueDateGreaterThanEqualAndDueDateLessThanEqual(
+            eq(1L), any(), eq(today), eq(today.plusDays(30)));
+        verify(occurrenceRepository).countByTenantIdAndStatusNotInAndDueDateLessThan(eq(1L), any(), eq(today));
     }
 
     @Test

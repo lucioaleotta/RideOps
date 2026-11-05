@@ -102,6 +102,15 @@ public class RideServiceEntity {
     @Column(name = "outgoing_partner_id")
     private Long outgoingPartnerId;
 
+    @Column(name = "closed_by_user_id")
+    private Long closedByUserId;
+
+    @Column(name = "closed_at")
+    private LocalDateTime closedAt;
+
+    @Column(name = "close_mode", length = 40)
+    private String closeMode;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -343,5 +352,29 @@ public class RideServiceEntity {
 
     public void setOutgoingPartnerId(Long outgoingPartnerId) {
         this.outgoingPartnerId = outgoingPartnerId;
+    }
+
+    public Long getClosedByUserId() {
+        return closedByUserId;
+    }
+
+    public void setClosedByUserId(Long closedByUserId) {
+        this.closedByUserId = closedByUserId;
+    }
+
+    public LocalDateTime getClosedAt() {
+        return closedAt;
+    }
+
+    public void setClosedAt(LocalDateTime closedAt) {
+        this.closedAt = closedAt;
+    }
+
+    public String getCloseMode() {
+        return closeMode;
+    }
+
+    public void setCloseMode(String closeMode) {
+        this.closeMode = closeMode;
     }
 }

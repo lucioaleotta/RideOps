@@ -4,6 +4,7 @@ import com.rideops.fleet.application.DeadlineOccurrenceNotFoundException;
 import com.rideops.fleet.application.DeadlinePlanNotFoundException;
 import com.rideops.fleet.application.FleetValidationException;
 import com.rideops.fleet.application.PlanSyncResultDto;
+import com.rideops.fleet.application.VehicleAlertCountsDto;
 import com.rideops.fleet.application.VehicleDeadlineOccurrenceDto;
 import com.rideops.fleet.application.VehicleDeadlinePlanDto;
 import com.rideops.fleet.application.VehicleDetailDto;
@@ -48,6 +49,12 @@ public class VehicleManagementController {
     public VehicleDetailDto getVehicleDetail(@PathVariable Long vehicleId,
                                              @RequestParam(defaultValue = "30") @Min(1) @Max(365) int withinDays) {
         return vehicleManagementService.getVehicleDetail(vehicleId, withinDays);
+    }
+
+    @GetMapping("/vehicles/deadline-alert-counts")
+    public VehicleAlertCountsDto getTenantAlertCounts(
+        @RequestParam(defaultValue = "30") @Min(1) @Max(365) int withinDays) {
+        return vehicleManagementService.getTenantAlertCounts(withinDays);
     }
 
     @PostMapping("/vehicles/{vehicleId}/occurrences")

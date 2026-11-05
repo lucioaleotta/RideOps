@@ -40,6 +40,11 @@ public class RideServiceJpaAdapter implements ServiceRepositoryPort {
     }
 
     @Override
+    public Optional<RideServiceEntity> findByIdForUpdate(@NonNull Long id) {
+        return rideServiceRepository.findByIdAndTenantIdForUpdate(id, tenantContext.requireTenantId());
+    }
+
+    @Override
     public List<RideServiceEntity> findAllByOrderByStartAtDesc() {
         return rideServiceRepository.findAllByTenantIdOrderByStartAtDesc(tenantContext.requireTenantId());
     }

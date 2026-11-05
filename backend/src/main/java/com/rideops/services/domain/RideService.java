@@ -24,6 +24,13 @@ public class RideService {
         transitionTo(ServiceStatus.CLOSED);
     }
 
+    public void closeManuallyAfterPartnerConfirmation() {
+        if (status != ServiceStatus.OPEN) {
+            throw new ServiceDomainException("La chiusura manuale da OPEN è consentita solo per servizi OPEN");
+        }
+        status = ServiceStatus.CLOSED;
+    }
+
     public void transitionTo(ServiceStatus targetStatus) {
         if (!status.canTransitionTo(targetStatus)) {
             throw new ServiceDomainException("Transizione non valida: " + status + " -> " + targetStatus);
